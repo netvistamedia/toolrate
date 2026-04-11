@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     # Anti-gaming
     max_reports_per_fingerprint_per_tool_per_day: int = 100
 
+    # Anthropic (for on-demand tool assessment)
+    anthropic_api_key: str = ""
+
     # Email (SendGrid)
     sendgrid_api_key: str = ""
     sendgrid_from_email: str = "bleep@nemoflow.com"

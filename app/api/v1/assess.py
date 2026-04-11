@@ -68,12 +68,24 @@ async def assess_tool(
 
 
 async def _cold_start(body: AssessRequest, db: Db, redis: RedisClient, ctx_hash: str, data_pool: str | None):
-    """Handle assessment for unknown tools — create the tool and return Bayesian prior."""
+    """Handle assessment for unknown tools — try LLM assessment, fall back to Bayesian prior."""
     from app.services.report_ingest import upsert_tool
-    from app.services.scoring import _cold_start_response
+    from app.services.scoring import _cold_start_response, compute_score
+    from app.services.llm_assess import assess_tool_with_llm, create_tool_from_assessment
     from datetime import datetime, timezone
 
     tool = await upsert_tool(db, body.tool_identifier)
     await db.commit()
     await redis.set(f"tool:{body.tool_identifier}", str(tool.id), ex=3600)
+
+    # Try on-demand LLM assessment for an intelligent first response
+    if settings.anthropic_api_key:
+        assessment = await assess_tool_with_llm(body.tool_identifier)
+        if assessment:
+            await create_tool_from_assessment(db, tool, assessment)
+            # Now compute a real score from the generated reports
+            response = await compute_score(db, tool, ctx_hash, data_pool)
+            await set_cached_score(redis, str(tool.id), ctx_hash, data_pool, response, settings.cache_ttl_cold)
+            return response
+
     return _cold_start_response(datetime.now(timezone.utc))
