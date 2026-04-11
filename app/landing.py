@@ -150,6 +150,7 @@ body::after {
 .btn-primary {
   background: var(--orange);
   color: #fff;
+  font-weight: 700;
 }
 .btn-primary:hover {
   background: #e0650f;
