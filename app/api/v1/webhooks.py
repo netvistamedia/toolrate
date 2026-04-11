@@ -1,4 +1,5 @@
 import secrets
+import uuid as _uuid
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field, HttpUrl
@@ -106,8 +107,13 @@ async def delete_webhook(
     db: Db,
     api_key: AuthenticatedKey,
 ):
+    try:
+        wh_uuid = _uuid.UUID(webhook_id)
+    except ValueError:
+        raise HTTPException(404, "Webhook not found")
+
     result = await db.execute(
-        select(Webhook).where(Webhook.id == webhook_id, Webhook.api_key_id == api_key.id)
+        select(Webhook).where(Webhook.id == wh_uuid, Webhook.api_key_id == api_key.id)
     )
     wh = result.scalar_one_or_none()
     if not wh:

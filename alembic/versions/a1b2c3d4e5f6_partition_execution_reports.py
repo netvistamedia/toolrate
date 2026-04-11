@@ -20,11 +20,17 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+def _add_months(dt: datetime, months: int) -> datetime:
+    """Add months to a datetime, handling year overflow."""
+    m = dt.month - 1 + months
+    return datetime(dt.year + m // 12, m % 12 + 1, 1)
+
+
 def upgrade() -> None:
     # 1. Rename existing table
     op.execute("ALTER TABLE execution_reports RENAME TO execution_reports_old")
 
-    # 2. Create partitioned table with same schema
+    # 2. Create partitioned table with same schema (reporter_fingerprint NOT NULL)
     op.execute("""
         CREATE TABLE execution_reports (
             id BIGSERIAL,
@@ -33,7 +39,7 @@ def upgrade() -> None:
             error_category VARCHAR(128),
             latency_ms INTEGER,
             context_hash VARCHAR(64) DEFAULT '__global__',
-            reporter_fingerprint VARCHAR(64),
+            reporter_fingerprint VARCHAR(64) NOT NULL,
             data_pool VARCHAR(128),
             session_id VARCHAR(64),
             attempt_number INTEGER,
@@ -50,7 +56,6 @@ def upgrade() -> None:
     """)
 
     # 4. Create partitions for existing data range + a few months ahead
-    # Find the date range of existing data and create monthly partitions
     conn = op.get_bind()
     result = conn.execute(sa.text(
         "SELECT MIN(created_at), MAX(created_at) FROM execution_reports_old"
@@ -59,16 +64,11 @@ def upgrade() -> None:
     min_date, max_date = row[0], row[1]
 
     if min_date is not None:
-        # Create partitions from min_date month through 3 months after max_date
         current = datetime(min_date.year, min_date.month, 1)
-        end = datetime(max_date.year, max_date.month + 4, 1) if max_date.month <= 9 else datetime(max_date.year + 1, (max_date.month + 4 - 1) % 12 + 1, 1)
+        end = _add_months(datetime(max_date.year, max_date.month, 1), 4)
 
         while current < end:
-            if current.month == 12:
-                next_month = datetime(current.year + 1, 1, 1)
-            else:
-                next_month = datetime(current.year, current.month + 1, 1)
-
+            next_month = _add_months(current, 1)
             name = f"execution_reports_y{current.year}m{current.month:02d}"
             op.execute(f"""
                 CREATE TABLE "{name}"
@@ -77,7 +77,7 @@ def upgrade() -> None:
             """)
             current = next_month
 
-    # 5. Copy data from old table
+    # 5. Copy data from old table (skip rows with NULL created_at)
     op.execute("""
         INSERT INTO execution_reports (
             id, tool_id, success, error_category, latency_ms, context_hash,
@@ -85,15 +85,19 @@ def upgrade() -> None:
             previous_tool, created_at
         )
         SELECT id, tool_id, success, error_category, latency_ms, context_hash,
-               reporter_fingerprint, data_pool, session_id, attempt_number,
-               previous_tool, created_at
+               COALESCE(reporter_fingerprint, '__unknown__'), data_pool,
+               session_id, attempt_number, previous_tool, created_at
         FROM execution_reports_old
+        WHERE created_at IS NOT NULL
     """)
 
-    # 6. Recreate indexes
+    # 6. Recreate ALL indexes (including those from initial + journey tracking migrations)
     op.execute("CREATE INDEX IF NOT EXISTS idx_reports_tool_created ON execution_reports (tool_id, created_at DESC)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_reports_tool_context_created ON execution_reports (tool_id, context_hash, created_at DESC)")
     op.execute("CREATE INDEX IF NOT EXISTS idx_reports_session ON execution_reports (session_id) WHERE session_id IS NOT NULL")
     op.execute("CREATE INDEX IF NOT EXISTS idx_reports_created ON execution_reports (created_at DESC)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_reports_previous_tool ON execution_reports (previous_tool, created_at DESC)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_reports_fingerprint_created ON execution_reports (reporter_fingerprint, created_at DESC)")
 
     # 7. Re-add foreign key
     op.execute("""
@@ -102,14 +106,13 @@ def upgrade() -> None:
     """)
 
     # 8. Reset sequence
-    op.execute("SELECT setval('execution_reports_id_seq', (SELECT COALESCE(MAX(id), 0) + 1 FROM execution_reports_old))")
+    op.execute("SELECT setval('execution_reports_id_seq', (SELECT COALESCE(MAX(id), 0) FROM execution_reports_old), true)")
 
     # 9. Drop old table
     op.execute("DROP TABLE execution_reports_old")
 
 
 def downgrade() -> None:
-    # Convert back to regular table
     op.execute("ALTER TABLE execution_reports RENAME TO execution_reports_partitioned")
 
     op.execute("""
@@ -120,7 +123,7 @@ def downgrade() -> None:
             error_category VARCHAR(128),
             latency_ms INTEGER,
             context_hash VARCHAR(64) DEFAULT '__global__',
-            reporter_fingerprint VARCHAR(64),
+            reporter_fingerprint VARCHAR(64) NOT NULL,
             data_pool VARCHAR(128),
             session_id VARCHAR(64),
             attempt_number INTEGER,
@@ -130,11 +133,21 @@ def downgrade() -> None:
     """)
 
     op.execute("""
-        INSERT INTO execution_reports
-        SELECT * FROM execution_reports_partitioned
+        INSERT INTO execution_reports (
+            id, tool_id, success, error_category, latency_ms, context_hash,
+            reporter_fingerprint, data_pool, session_id, attempt_number,
+            previous_tool, created_at
+        )
+        SELECT id, tool_id, success, error_category, latency_ms, context_hash,
+               reporter_fingerprint, data_pool, session_id, attempt_number,
+               previous_tool, created_at
+        FROM execution_reports_partitioned
     """)
 
     op.execute("DROP TABLE execution_reports_partitioned CASCADE")
     op.execute("CREATE INDEX idx_reports_tool_created ON execution_reports (tool_id, created_at DESC)")
+    op.execute("CREATE INDEX idx_reports_tool_context_created ON execution_reports (tool_id, context_hash, created_at DESC)")
     op.execute("CREATE INDEX idx_reports_session ON execution_reports (session_id)")
     op.execute("CREATE INDEX idx_reports_created ON execution_reports (created_at DESC)")
+    op.execute("CREATE INDEX idx_reports_previous_tool ON execution_reports (previous_tool, created_at DESC)")
+    op.execute("CREATE INDEX idx_reports_fingerprint_created ON execution_reports (reporter_fingerprint, created_at DESC)")

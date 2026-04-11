@@ -2,8 +2,10 @@ import hashlib
 
 from redis.asyncio import Redis
 from sqlalchemy import select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.models.report import ExecutionReport
 from app.models.tool import Tool
 
@@ -15,7 +17,7 @@ def _context_hash(context: str) -> str:
 
 
 async def upsert_tool(db: AsyncSession, identifier: str) -> Tool:
-    """Get or create a tool by identifier."""
+    """Get or create a tool by identifier. Handles concurrent inserts safely."""
     result = await db.execute(select(Tool).where(Tool.identifier == identifier))
     tool = result.scalar_one_or_none()
     if tool:
@@ -23,7 +25,12 @@ async def upsert_tool(db: AsyncSession, identifier: str) -> Tool:
 
     tool = Tool(identifier=identifier)
     db.add(tool)
-    await db.flush()
+    try:
+        await db.flush()
+    except IntegrityError:
+        await db.rollback()
+        result = await db.execute(select(Tool).where(Tool.identifier == identifier))
+        tool = result.scalar_one()
     return tool
 
 
@@ -40,9 +47,17 @@ async def ingest_report(
     session_id: str | None = None,
     attempt_number: int | None = None,
     previous_tool: str | None = None,
-) -> tuple[Tool, ExecutionReport]:
+) -> tuple[Tool, ExecutionReport | None]:
     tool = await upsert_tool(db, tool_identifier)
     ctx_hash = _context_hash(context)
+
+    # Anti-gaming: limit reports per fingerprint per tool per day
+    fp_key = f"fp:{reporter_fingerprint}:{tool.id}"
+    fp_count = await redis.incr(fp_key)
+    if fp_count == 1:
+        await redis.expire(fp_key, 86400)
+    if fp_count > settings.max_reports_per_fingerprint_per_tool_per_day:
+        return tool, None  # silently drop, don't reveal the limit
 
     report = ExecutionReport(
         tool_id=tool.id,
@@ -63,13 +78,9 @@ async def ingest_report(
         update(Tool).where(Tool.id == tool.id).values(report_count=Tool.report_count + 1)
     )
 
-    await db.commit()
-
-    # Invalidate cache and check for webhook-worthy score changes
+    # Read old cached score BEFORE commit (avoids race with cache invalidation)
     tool_id_str = str(tool.id)
     global_cache_key = f"score:{tool_id_str}:__global__:{data_pool or ''}"
-
-    # Read old score before invalidating
     old_score_raw = await redis.get(global_cache_key)
     old_score = None
     if old_score_raw:
@@ -79,16 +90,20 @@ async def ingest_report(
         except (json.JSONDecodeError, AttributeError):
             pass
 
+    await db.commit()
+
+    # Invalidate cache
     await redis.delete(f"score:{tool_id_str}:{ctx_hash}:{data_pool or ''}")
     await redis.delete(global_cache_key)
 
     # Dispatch webhooks if score changed significantly
     if old_score is not None:
         from app.services.scoring import compute_score
+        await db.refresh(tool)
         new_response = await compute_score(db, tool, "__global__", data_pool)
         new_score = new_response.reliability_score
         if abs(new_score - old_score) >= 1:
             from app.services.webhook_dispatch import dispatch_score_change
-            await dispatch_score_change(db, tool_identifier, old_score, new_score)
+            await dispatch_score_change(tool_identifier, old_score, new_score)
 
     return tool, report

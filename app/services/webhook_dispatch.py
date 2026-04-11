@@ -2,7 +2,7 @@
 Webhook dispatch service.
 
 When a tool's reliability score changes significantly, notify registered webhooks.
-Dispatches are fire-and-forget via asyncio tasks to avoid blocking the request path.
+Dispatches are fire-and-forget via asyncio tasks with their own DB sessions.
 """
 import asyncio
 import hashlib
@@ -12,8 +12,7 @@ import logging
 from datetime import datetime, timezone
 
 import httpx
-from sqlalchemy import select, or_
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, or_, update
 
 from app.models.webhook import Webhook
 
@@ -34,27 +33,30 @@ def sign_payload(payload: bytes, secret: str) -> str:
 
 
 async def dispatch_score_change(
-    db: AsyncSession,
     tool_identifier: str,
     old_score: float,
     new_score: float,
 ):
-    """Check if any webhooks should fire for this score change."""
+    """Check if any webhooks should fire for this score change.
+    Uses its own DB session to avoid request-scoped session lifecycle issues."""
+    from app.db.session import async_session
+
     delta = abs(new_score - old_score)
     if delta < 1:
         return
 
-    stmt = select(Webhook).where(
-        Webhook.is_active == True,  # noqa: E712
-        Webhook.event == "score.change",
-        Webhook.threshold <= delta,
-        or_(
-            Webhook.tool_identifier.is_(None),
-            Webhook.tool_identifier == tool_identifier,
-        ),
-    )
-    result = await db.execute(stmt)
-    webhooks = result.scalars().all()
+    async with async_session() as db:
+        stmt = select(Webhook).where(
+            Webhook.is_active == True,  # noqa: E712
+            Webhook.event == "score.change",
+            Webhook.threshold <= delta,
+            or_(
+                Webhook.tool_identifier.is_(None),
+                Webhook.tool_identifier == tool_identifier,
+            ),
+        )
+        result = await db.execute(stmt)
+        webhooks = result.scalars().all()
 
     if not webhooks:
         return
@@ -69,18 +71,22 @@ async def dispatch_score_change(
     }
 
     for wh in webhooks:
-        asyncio.create_task(_deliver(db, wh, payload))
+        asyncio.create_task(_deliver(wh.id, wh.url, wh.secret, payload))
 
 
-async def _deliver(db: AsyncSession, webhook: Webhook, payload: dict):
-    """Deliver a single webhook. Deactivate after 10 consecutive failures."""
+async def _deliver(webhook_id, url: str, secret: str, payload: dict):
+    """Deliver a single webhook. Deactivate after 10 consecutive failures.
+    Uses its own DB session for updates."""
+    from app.db.session import async_session
+
     body = json.dumps(payload).encode()
-    signature = sign_payload(body, webhook.secret)
+    signature = sign_payload(body, secret)
+    success = False
 
     try:
         client = _get_client()
         resp = await client.post(
-            webhook.url,
+            url,
             content=body,
             headers={
                 "Content-Type": "application/json",
@@ -88,18 +94,29 @@ async def _deliver(db: AsyncSession, webhook: Webhook, payload: dict):
                 "X-NemoFlow-Event": payload["event"],
             },
         )
-        if resp.status_code < 300:
-            webhook.failure_count = 0
-            webhook.last_triggered_at = datetime.now(timezone.utc)
-        else:
-            webhook.failure_count += 1
-            logger.warning("Webhook %s returned %s", webhook.id, resp.status_code)
+        success = resp.status_code < 300
+        if not success:
+            logger.warning("Webhook %s returned %s", webhook_id, resp.status_code)
     except Exception as e:
-        webhook.failure_count += 1
-        logger.warning("Webhook %s delivery failed: %s", webhook.id, e)
+        logger.warning("Webhook %s delivery failed: %s", webhook_id, e)
 
-    if webhook.failure_count >= 10:
-        webhook.is_active = False
-        logger.info("Webhook %s deactivated after 10 failures", webhook.id)
-
-    await db.commit()
+    async with async_session() as db:
+        if success:
+            await db.execute(
+                update(Webhook)
+                .where(Webhook.id == webhook_id)
+                .values(failure_count=0, last_triggered_at=datetime.now(timezone.utc))
+            )
+        else:
+            await db.execute(
+                update(Webhook)
+                .where(Webhook.id == webhook_id)
+                .values(failure_count=Webhook.failure_count + 1)
+            )
+            # Deactivate after 10 consecutive failures
+            await db.execute(
+                update(Webhook)
+                .where(Webhook.id == webhook_id, Webhook.failure_count >= 10)
+                .values(is_active=False)
+            )
+        await db.commit()

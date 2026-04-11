@@ -1,4 +1,5 @@
 import hashlib
+import uuid as _uuid
 
 from fastapi import APIRouter
 from sqlalchemy import select
@@ -37,7 +38,7 @@ async def assess_tool(
     cached_tool_id = await redis.get(tool_cache_key)
 
     if cached_tool_id:
-        result = await db.execute(select(Tool).where(Tool.id == cached_tool_id))
+        result = await db.execute(select(Tool).where(Tool.id == _uuid.UUID(cached_tool_id)))
         tool = result.scalar_one_or_none()
     else:
         result = await db.execute(

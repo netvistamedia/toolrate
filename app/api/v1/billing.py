@@ -1,4 +1,6 @@
+import asyncio
 import logging
+import uuid as _uuid
 
 import stripe
 from fastapi import APIRouter, Request, HTTPException
@@ -28,18 +30,20 @@ async def create_checkout(
 
     stripe.api_key = settings.stripe_secret_key
 
-    # Create or reuse Stripe customer
+    # Create or reuse Stripe customer (run in thread to avoid blocking event loop)
     if api_key.stripe_customer_id:
         customer_id = api_key.stripe_customer_id
     else:
-        customer = stripe.Customer.create(
+        customer = await asyncio.to_thread(
+            stripe.Customer.create,
             metadata={"api_key_id": str(api_key.id), "key_prefix": api_key.key_prefix},
         )
         customer_id = customer.id
         api_key.stripe_customer_id = customer_id
         await db.commit()
 
-    session = stripe.checkout.Session.create(
+    session = await asyncio.to_thread(
+        stripe.checkout.Session.create,
         customer=customer_id,
         mode="subscription",
         line_items=[{"price": settings.stripe_pro_price_id, "quantity": 1}],
@@ -54,7 +58,7 @@ async def create_checkout(
 @router.post("/billing/webhook", tags=["Billing"], include_in_schema=False)
 async def stripe_webhook(request: Request, db: Db):
     """Handle Stripe webhook events for subscription lifecycle."""
-    if not settings.stripe_secret_key:
+    if not settings.stripe_secret_key or not settings.stripe_webhook_secret:
         raise HTTPException(503, "Billing is not configured")
 
     payload = await request.body()
@@ -93,9 +97,15 @@ async def _handle_checkout_completed(db, session):
         logger.warning("Checkout completed without api_key_id metadata")
         return
 
+    try:
+        key_uuid = _uuid.UUID(api_key_id)
+    except ValueError:
+        logger.warning("Invalid api_key_id in checkout metadata: %s", api_key_id)
+        return
+
     await db.execute(
         update(ApiKey)
-        .where(ApiKey.id == api_key_id)
+        .where(ApiKey.id == key_uuid)
         .values(
             tier="pro",
             daily_limit=settings.pro_daily_limit,
@@ -119,6 +129,15 @@ async def _handle_subscription_updated(db, subscription):
             .values(tier="pro", daily_limit=settings.pro_daily_limit)
         )
         await db.commit()
+    elif status in ("past_due", "unpaid", "paused"):
+        # Restrict to free limits but keep subscription link for recovery
+        await db.execute(
+            update(ApiKey)
+            .where(ApiKey.stripe_subscription_id == subscription_id)
+            .values(tier="free", daily_limit=settings.free_daily_limit)
+        )
+        await db.commit()
+        logger.warning("Subscription %s status changed to %s — downgraded to free limits", subscription_id, status)
 
 
 async def _handle_subscription_deleted(db, subscription):

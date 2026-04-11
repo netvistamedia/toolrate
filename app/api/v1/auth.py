@@ -60,7 +60,7 @@ async def register(
     # so we store email hash in data_pool field as "email:<hash>" for free keys)
     email_tag = f"email:{email_hash[:16]}"
     result = await db.execute(
-        select(ApiKey).where(ApiKey.data_pool == email_tag, ApiKey.tier == "free")
+        select(ApiKey).where(ApiKey.data_pool == email_tag)
     )
     existing = result.scalar_one_or_none()
 

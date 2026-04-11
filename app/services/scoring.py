@@ -140,11 +140,12 @@ async def compute_score(
     success_rate_str = f"{sr_30d}% (last 30 days, {total} calls)"
 
     # Step 6: Common pitfalls and mitigations
+    total_failures = sum(1 for r in reports if not r.success)
     sorted_errors = sorted(error_counts.items(), key=lambda x: x[1], reverse=True)[:5]
     pitfalls = []
     mitigations = []
     for category, count in sorted_errors:
-        pct = round(count / total * 100)
+        pct = round(count / total_failures * 100) if total_failures else 0
         pitfalls.append(f"{category} ({pct}% of failures)")
         if category in MITIGATIONS:
             mitigations.append(MITIGATIONS[category])
