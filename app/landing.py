@@ -27,9 +27,9 @@ LANDING_HTML = r"""<!DOCTYPE html>
   --surface-2: #141620;
   --border: #1c1f2e;
   --border-bright: #282c40;
-  --text: #b8bdd0;
-  --text-dim: #5a5f75;
-  --text-bright: #eaedf5;
+  --text: #d4d8e8;
+  --text-dim: #9299b0;
+  --text-bright: #f0f2f8;
   --orange: #f07019;
   --orange-dim: rgba(240, 112, 25, 0.08);
   --orange-glow: rgba(240, 112, 25, 0.2);
