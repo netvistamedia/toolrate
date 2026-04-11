@@ -1,6 +1,6 @@
-# NemoFlow SDK
+# NemoFlow TypeScript SDK
 
-TypeScript SDK for the NemoFlow API. Requires Node.js 18+ (uses native `fetch`).
+TypeScript client for the [NemoFlow API](https://api.nemoflow.ai) — the reliability oracle for AI agents. Requires Node.js 18+ (uses native `fetch`).
 
 ## Installation
 
@@ -8,72 +8,77 @@ TypeScript SDK for the NemoFlow API. Requires Node.js 18+ (uses native `fetch`).
 npm install nemoflow
 ```
 
-## Quick start
+## Quick start — one line with guard()
 
 ```typescript
 import { NemoFlow } from "nemoflow";
 
-const client = new NemoFlow("your-api-key");
+const nemo = new NemoFlow("nf_live_...");
+
+// Wrap any tool call — assess, execute, report, auto-fallback
+const result = await nemo.guard(
+  "https://api.openai.com/v1/chat/completions",
+  () => openai.chat.completions.create({ model: "gpt-4", messages }),
+);
 ```
 
-## Assess a tool
+## Auto-fallback
 
 ```typescript
-const result = await client.assess({
-  toolIdentifier: "stripe.charges.create",
-  context: "processing a one-time payment",
-  samplePayload: { amount: 2000, currency: "usd" },
+const result = await nemo.guard(
+  "https://api.openai.com/v1/chat/completions",
+  () => openai.chat.completions.create({ model: "gpt-4", messages }),
+  {
+    minScore: 50,
+    fallbacks: [
+      {
+        toolIdentifier: "https://api.anthropic.com/v1/messages",
+        fn: () => anthropic.messages.create({ model: "claude-sonnet-4-20250514", messages }),
+      },
+    ],
+  },
+);
+```
+
+## Journey tracking
+
+```typescript
+// First attempt fails
+await nemo.report({
+  toolIdentifier: "https://api.sendgrid.com/v3/mail/send",
+  success: false, errorCategory: "rate_limit",
+  sessionId: "session-123", attemptNumber: 1,
 });
 
-console.log(result.reliabilityScore); // 94
-console.log(result.predictedFailureRisk); // "low"
-console.log(result.topAlternatives); // [{ tool: "...", score: 97, reason: "..." }]
-```
-
-## Report an outcome
-
-```typescript
-await client.report({
-  toolIdentifier: "stripe.charges.create",
-  success: true,
-  latencyMs: 200,
-  context: "one-time payment",
+// Fallback succeeds
+await nemo.report({
+  toolIdentifier: "https://api.resend.com/emails",
+  success: true, latencyMs: 180,
+  sessionId: "session-123", attemptNumber: 2,
+  previousTool: "https://api.sendgrid.com/v3/mail/send",
 });
 ```
 
-## Report a failure
+## Discovery
 
 ```typescript
-await client.report({
-  toolIdentifier: "stripe.charges.create",
-  success: false,
-  errorCategory: "timeout",
-  latencyMs: 30000,
-  context: "one-time payment",
+const gems = await nemo.discoverHiddenGems({ category: "email" });
+const chain = await nemo.discoverFallbackChain("https://api.sendgrid.com/v3/mail/send");
+```
+
+## Direct API usage
+
+```typescript
+const result = await nemo.assess({
+  toolIdentifier: "https://api.openai.com/v1/chat/completions",
+  context: "customer support chatbot",
 });
-```
+console.log(result.reliabilityScore);      // 89.0
+console.log(result.predictedFailureRisk);  // "low"
+console.log(result.topAlternatives);       // [{ tool: "...", score: 90 }]
 
-## Error handling
-
-```typescript
-import { NemoFlow, NemoFlowError } from "nemoflow";
-
-const client = new NemoFlow("your-api-key");
-
-try {
-  await client.assess({ toolIdentifier: "some.tool" });
-} catch (err) {
-  if (err instanceof NemoFlowError) {
-    console.error(err.status); // HTTP status code
-    console.error(err.body);   // parsed response body
-  }
-}
-```
-
-## Custom base URL
-
-```typescript
-const client = new NemoFlow("your-api-key", {
-  baseUrl: "https://custom.endpoint.example.com",
+await nemo.report({
+  toolIdentifier: "https://api.openai.com/v1/chat/completions",
+  success: true, latencyMs: 2500,
 });
 ```

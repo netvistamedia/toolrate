@@ -4,6 +4,9 @@ import {
   type AssessResponse,
   type ReportParams,
   type ReportResponse,
+  type HiddenGemsResponse,
+  type FallbackChainResponse,
+  type GuardOptions,
   NemoFlowError,
 } from "./types.js";
 
@@ -21,11 +24,11 @@ export class NemoFlow {
     this.baseUrl = (options?.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
   }
 
-  // ── Public methods ──────────────────────────────────────────────
+  // ── Core endpoints ─────────────────────────────────────────────
 
   /** Assess a tool's reliability and get recommendations. */
   async assess(params: AssessParams): Promise<AssessResponse> {
-    const raw = await this.request<RawAssessResponse>("/v1/assess", {
+    const raw = await this.post<RawAssessResponse>("/v1/assess", {
       tool_identifier: params.toolIdentifier,
       context: params.context,
       sample_payload: params.samplePayload,
@@ -50,12 +53,15 @@ export class NemoFlow {
 
   /** Report an outcome for a tool invocation. */
   async report(params: ReportParams): Promise<ReportResponse> {
-    const raw = await this.request<RawReportResponse>("/v1/report", {
+    const raw = await this.post<RawReportResponse>("/v1/report", {
       tool_identifier: params.toolIdentifier,
       success: params.success,
       error_category: params.errorCategory,
       latency_ms: params.latencyMs,
       context: params.context,
+      session_id: params.sessionId,
+      attempt_number: params.attemptNumber,
+      previous_tool: params.previousTool,
     });
 
     return {
@@ -64,18 +70,208 @@ export class NemoFlow {
     };
   }
 
-  // ── Internals ───────────────────────────────────────────────────
+  // ── Discovery endpoints ────────────────────────────────────────
 
-  private async request<T>(path: string, body: Record<string, unknown>): Promise<T> {
-    const url = `${this.baseUrl}${path}`;
+  /** Find hidden gem tools that shine as fallbacks. */
+  async discoverHiddenGems(
+    options?: { category?: string; limit?: number },
+  ): Promise<HiddenGemsResponse> {
+    const params = new URLSearchParams();
+    if (options?.category) params.set("category", options.category);
+    if (options?.limit) params.set("limit", String(options.limit));
 
-    const response = await fetch(url, {
+    const raw = await this.get<RawHiddenGemsResponse>(
+      `/v1/discover/hidden-gems?${params}`,
+    );
+
+    return {
+      hiddenGems: raw.hidden_gems.map((g) => ({
+        tool: g.tool,
+        displayName: g.display_name,
+        category: g.category,
+        fallbackSuccessRate: g.fallback_success_rate,
+        timesUsedAsFallback: g.times_used_as_fallback,
+        avgLatencyMs: g.avg_latency_ms,
+      })),
+      count: raw.count,
+    };
+  }
+
+  /** Get the best fallback tools when a specific tool fails. */
+  async discoverFallbackChain(
+    toolIdentifier: string,
+    options?: { limit?: number },
+  ): Promise<FallbackChainResponse> {
+    const params = new URLSearchParams({
+      tool_identifier: toolIdentifier,
+    });
+    if (options?.limit) params.set("limit", String(options.limit));
+
+    const raw = await this.get<RawFallbackChainResponse>(
+      `/v1/discover/fallback-chain?${params}`,
+    );
+
+    return {
+      tool: raw.tool,
+      fallbackChain: raw.fallback_chain.map((f) => ({
+        fallbackTool: f.fallback_tool,
+        displayName: f.display_name,
+        timesChosenAfterFailure: f.times_chosen_after_failure,
+        successRate: f.success_rate,
+        avgLatencyMs: f.avg_latency_ms,
+      })),
+      count: raw.count,
+    };
+  }
+
+  // ── Guard ──────────────────────────────────────────────────────
+
+  /**
+   * Execute a tool call with automatic reliability guard.
+   *
+   * 1. Assesses the tool's reliability score
+   * 2. If score < minScore and fallbacks exist, skips to next
+   * 3. Executes the tool call
+   * 4. Reports success/failure back to NemoFlow
+   * 5. On failure with fallbacks, tries the next option
+   */
+  async guard<T>(
+    toolIdentifier: string,
+    fn: () => Promise<T>,
+    options?: GuardOptions<T>,
+  ): Promise<T> {
+    const context = options?.context ?? "";
+    const minScore = options?.minScore ?? 0;
+    const sessionId = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+
+    const allTools: Array<{ toolIdentifier: string; fn: () => Promise<T> }> = [
+      { toolIdentifier, fn },
+      ...(options?.fallbacks ?? []),
+    ];
+
+    let lastError: Error | undefined;
+
+    for (let i = 0; i < allTools.length; i++) {
+      const attempt = i + 1;
+      const tool = allTools[i];
+      const previousTool = i > 0 ? allTools[i - 1].toolIdentifier : undefined;
+
+      // Assess
+      let score = 100;
+      try {
+        const assessment = await this.assess({
+          toolIdentifier: tool.toolIdentifier,
+          context,
+        });
+        score = assessment.reliabilityScore;
+      } catch {
+        // If assess fails, don't block the tool call
+      }
+
+      // Skip if score too low and we have more options
+      if (score < minScore && attempt < allTools.length) {
+        try {
+          await this.report({
+            toolIdentifier: tool.toolIdentifier,
+            success: false,
+            errorCategory: "skipped_low_score",
+            context,
+            sessionId,
+            attemptNumber: attempt,
+            previousTool,
+          });
+        } catch {
+          // Best-effort reporting
+        }
+        continue;
+      }
+
+      // Execute
+      const start = performance.now();
+      try {
+        const result = await tool.fn();
+        const latencyMs = Math.round(performance.now() - start);
+
+        // Report success (best-effort)
+        try {
+          await this.report({
+            toolIdentifier: tool.toolIdentifier,
+            success: true,
+            latencyMs,
+            context,
+            sessionId,
+            attemptNumber: attempt,
+            previousTool,
+          });
+        } catch {
+          // Don't fail the call if reporting fails
+        }
+
+        return result;
+      } catch (e) {
+        const latencyMs = Math.round(performance.now() - start);
+        lastError = e instanceof Error ? e : new Error(String(e));
+
+        // Report failure (best-effort)
+        try {
+          await this.report({
+            toolIdentifier: tool.toolIdentifier,
+            success: false,
+            errorCategory: classifyError(lastError),
+            latencyMs,
+            context,
+            sessionId,
+            attemptNumber: attempt,
+            previousTool,
+          });
+        } catch {
+          // Best-effort reporting
+        }
+
+        // If no more fallbacks, throw
+        if (attempt >= allTools.length) {
+          throw lastError;
+        }
+      }
+    }
+
+    throw lastError;
+  }
+
+  // ── Internals ──────────────────────────────────────────────────
+
+  private async post<T>(path: string, body: Record<string, unknown>): Promise<T> {
+    // Strip undefined values
+    const clean = Object.fromEntries(
+      Object.entries(body).filter(([, v]) => v !== undefined),
+    );
+
+    const response = await fetch(`${this.baseUrl}${path}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Api-Key": this.apiKey,
       },
-      body: JSON.stringify(body),
+      body: JSON.stringify(clean),
+    });
+
+    const responseBody: unknown = await response.json();
+
+    if (!response.ok) {
+      throw new NemoFlowError(
+        `NemoFlow API error: ${response.status} ${response.statusText}`,
+        response.status,
+        responseBody,
+      );
+    }
+
+    return responseBody as T;
+  }
+
+  private async get<T>(path: string): Promise<T> {
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      method: "GET",
+      headers: { "X-Api-Key": this.apiKey },
     });
 
     const responseBody: unknown = await response.json();
@@ -92,7 +288,31 @@ export class NemoFlow {
   }
 }
 
-// ── Raw API shapes (snake_case) ───────────────────────────────────
+// ── Error classification ─────────────────────────────────────────
+
+function classifyError(error: Error): string {
+  const name = error.name.toLowerCase();
+  const msg = error.message.toLowerCase();
+
+  if (name.includes("timeout") || msg.includes("timeout") || msg.includes("timed out"))
+    return "timeout";
+  if (name.includes("ratelimit") || msg.includes("rate") || msg.includes("429") || msg.includes("too many"))
+    return "rate_limit";
+  if (name.includes("auth") || msg.includes("unauthorized") || msg.includes("401") || msg.includes("403"))
+    return "auth_failure";
+  if (name.includes("validation") || msg.includes("invalid") || msg.includes("422"))
+    return "validation_error";
+  if (msg.includes("not found") || msg.includes("404"))
+    return "not_found";
+  if (msg.includes("permission") || msg.includes("forbidden"))
+    return "permission_denied";
+  if (name.includes("connect") || msg.includes("connection") || msg.includes("econnrefused"))
+    return "connection_error";
+
+  return "server_error";
+}
+
+// ── Raw API shapes (snake_case) ──────────────────────────────────
 
 interface RawAssessResponse {
   reliability_score: number;
@@ -109,4 +329,28 @@ interface RawAssessResponse {
 interface RawReportResponse {
   status: string;
   tool_id: string;
+}
+
+interface RawHiddenGemsResponse {
+  hidden_gems: Array<{
+    tool: string;
+    display_name: string;
+    category: string;
+    fallback_success_rate: number;
+    times_used_as_fallback: number;
+    avg_latency_ms: number | null;
+  }>;
+  count: number;
+}
+
+interface RawFallbackChainResponse {
+  tool: string;
+  fallback_chain: Array<{
+    fallback_tool: string;
+    display_name: string;
+    times_chosen_after_failure: number;
+    success_rate: number;
+    avg_latency_ms: number | null;
+  }>;
+  count: number;
 }
