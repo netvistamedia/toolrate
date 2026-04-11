@@ -91,9 +91,9 @@ def upgrade() -> None:
     """)
 
     # 6. Recreate indexes
-    op.execute("CREATE INDEX idx_reports_tool_created ON execution_reports (tool_id, created_at DESC)")
-    op.execute("CREATE INDEX idx_reports_session ON execution_reports (session_id) WHERE session_id IS NOT NULL")
-    op.execute("CREATE INDEX idx_reports_created ON execution_reports (created_at DESC)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_reports_tool_created ON execution_reports (tool_id, created_at DESC)")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_reports_session ON execution_reports (session_id) WHERE session_id IS NOT NULL")
+    op.execute("CREATE INDEX IF NOT EXISTS idx_reports_created ON execution_reports (created_at DESC)")
 
     # 7. Re-add foreign key
     op.execute("""
