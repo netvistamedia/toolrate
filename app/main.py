@@ -187,7 +187,7 @@ a.btn{display:inline-block;padding:.75rem 1.75rem;border-radius:8px;text-decorat
 <div class="container">
 
 <div class="hero">
-<h1>NemoFlow</h1>
+<img src="https://nemoflow.ai/nemoflow-logo.webp" alt="NemoFlow" style="max-width:280px;margin-bottom:1rem">
 <p class="tagline">Pick the right tool from the start</p>
 </div>
 
