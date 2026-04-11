@@ -6,7 +6,7 @@ import redis.asyncio as aioredis
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from app.config import settings
 from app.db.session import engine
@@ -89,6 +89,11 @@ async def global_exception_handler(request: Request, exc: Exception):
 from app.api.v1.router import router as v1_router  # noqa: E402
 
 app.include_router(v1_router)
+
+
+@app.get("/", include_in_schema=False)
+async def root():
+    return RedirectResponse(url="/docs")
 
 
 @app.get("/health")
