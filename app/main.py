@@ -32,13 +32,52 @@ async def lifespan(app: FastAPI):
     logger.info("NemoFlow API stopped")
 
 
+DESCRIPTION = """
+**The reliability oracle for AI agents.**
+
+NemoFlow provides real-time reliability scores for external tools and APIs,
+based on the collective experience of thousands of AI agents.
+
+## How it works
+
+1. **Assess** before calling a tool — get a reliability score, failure risk, common pitfalls, and alternatives
+2. **Report** after calling a tool — contribute success/failure data back to the community
+3. The data moat grows with every report, making scores more accurate for everyone
+
+## Authentication
+
+All endpoints require an API key passed via the `X-Api-Key` header.
+
+```
+X-Api-Key: nf_live_your_key_here
+```
+
+## Rate Limits
+
+| Tier | Daily Limit |
+|------|------------|
+| Free | 100 calls |
+| Pro | 10,000 calls |
+| Enterprise | Custom |
+
+## SDKs
+
+- **Python**: `pip install nemoflow`
+- **TypeScript**: `npm install nemoflow`
+"""
+
 app = FastAPI(
     title="NemoFlow",
-    description="Reliability oracle for AI agents. Assess tool reliability before every call.",
+    description=DESCRIPTION,
     version="0.1.0",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
+    contact={"name": "NemoFlow", "url": "https://nemoflow.ai"},
+    openapi_tags=[
+        {"name": "Assessment", "description": "Check tool reliability before calling"},
+        {"name": "Reporting", "description": "Report execution results to build the data moat"},
+    ],
 )
 
 # CORS

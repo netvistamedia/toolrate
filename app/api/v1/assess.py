@@ -19,7 +19,10 @@ def _context_hash(context: str) -> str:
     return hashlib.sha256(context.encode()).hexdigest()[:16]
 
 
-@router.post("/assess", response_model=AssessResponse)
+@router.post("/assess", response_model=AssessResponse, tags=["Assessment"],
+             summary="Assess tool reliability",
+             description="Get a real-time reliability score for any external tool or API before calling it. "
+                         "Returns reliability score, confidence, failure risk, common pitfalls, mitigations, and alternatives.")
 async def assess_tool(
     body: AssessRequest,
     db: Db,

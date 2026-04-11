@@ -8,7 +8,9 @@ from app.services.report_ingest import ingest_report
 router = APIRouter()
 
 
-@router.post("/report", response_model=ReportResponse)
+@router.post("/report", response_model=ReportResponse, tags=["Reporting"],
+             summary="Report execution result",
+             description="Report the outcome of a tool call. Every report strengthens the reliability data for the entire community.")
 async def submit_report(
     body: ReportRequest,
     request: Request,
