@@ -196,6 +196,10 @@ input::placeholder{color:#5a5f75}
       <span class="copy-hint">click to copy</span>
     </div>
     <p class="warning">Save this key now — it cannot be retrieved later. A copy has been sent to your email.</p>
+    <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #282c40">
+      <p style="font-size:0.82rem;color:#d4d8e8;margin-bottom:0.75rem">Need more than 100 calls/day?</p>
+      <a href="/upgrade" class="btn" style="display:block;text-align:center;text-decoration:none;margin-top:0">Upgrade to Pro — $29/mo</a>
+    </div>
   </div>
 
   <p class="privacy">Your email is hashed for deduplication only — we never store it in plain text.</p>
@@ -254,28 +258,136 @@ function copyKey() {
 </html>"""
 
 
+@app.get("/upgrade", include_in_schema=False, response_class=HTMLResponse)
+async def upgrade_page():
+    return """<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NemoFlow — Upgrade to Pro</title>
+<link rel="icon" href="https://nemoflow.ai/nemoflow-logo.webp" type="image/webp">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Poppins','Segoe UI',Arial,sans-serif;background:#0a0b10;color:#d4d8e8;min-height:100vh;display:flex;justify-content:center;align-items:center}
+.card{max-width:480px;width:100%;margin:2rem;padding:2.5rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}
+h1{font-size:1.5rem;font-weight:700;color:#f0f2f8;margin-bottom:0.4rem}
+.sub{font-size:0.85rem;color:#9299b0;margin-bottom:2rem;line-height:1.5}
+.plan{background:#141620;border:1px solid #f07019;border-radius:12px;padding:1.5rem;margin-bottom:2rem;position:relative}
+.plan::before{content:'PRO';position:absolute;top:-0.5rem;left:1.25rem;font-size:0.6rem;font-weight:700;letter-spacing:0.08em;color:#fff;background:#f07019;padding:0.15rem 0.5rem;border-radius:4px}
+.plan-price{font-size:2rem;font-weight:700;color:#f0f2f8;margin-bottom:0.25rem}
+.plan-price span{font-size:0.85rem;font-weight:300;color:#9299b0}
+.plan-features{list-style:none;margin-top:1rem}
+.plan-features li{font-size:0.82rem;color:#d4d8e8;padding:0.35rem 0;display:flex;align-items:center;gap:0.5rem}
+.plan-features li::before{content:'+';color:#f07019;font-weight:700}
+label{display:block;font-size:0.78rem;font-weight:500;color:#9299b0;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em}
+input{width:100%;padding:0.75rem 1rem;background:#141620;border:1px solid #282c40;border-radius:8px;color:#f0f2f8;font-family:'Fira Code',monospace;font-size:0.82rem;outline:none;transition:border-color 0.2s}
+input:focus{border-color:#f07019}
+input::placeholder{color:#5a5f75}
+.btn{width:100%;padding:0.8rem;margin-top:1.25rem;background:#f07019;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all 0.2s}
+.btn:hover{background:#e0650f;box-shadow:0 0 30px rgba(240,112,25,0.2)}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.error{display:none;margin-top:1rem;padding:0.75rem 1rem;background:rgba(240,90,90,0.08);border:1px solid rgba(240,90,90,0.2);border-radius:8px;font-size:0.82rem;color:#f05a5a}
+.links{display:flex;justify-content:space-between;margin-top:1.5rem}
+.links a{font-size:0.8rem;color:#9299b0;text-decoration:none}
+.links a:hover{color:#f07019}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Upgrade to Pro</h1>
+  <p class="sub">Unlock 10,000 daily API calls for your production agents.</p>
+
+  <div class="plan">
+    <div class="plan-price">$29 <span>/ month</span></div>
+    <ul class="plan-features">
+      <li>10,000 API calls / day</li>
+      <li>All endpoints included</li>
+      <li>Webhook score alerts</li>
+      <li>Priority support</li>
+      <li>Cancel anytime</li>
+    </ul>
+  </div>
+
+  <form id="upgradeForm" onsubmit="return handleUpgrade(event)">
+    <label for="apiKey">Your API Key</label>
+    <input type="text" id="apiKey" name="apiKey" placeholder="nf_live_..." required>
+    <button type="submit" class="btn" id="submitBtn">Continue to Payment</button>
+  </form>
+
+  <div class="error" id="error"></div>
+
+  <div class="links">
+    <a href="/">&larr; Back to NemoFlow</a>
+    <a href="/register">Need an API key first?</a>
+  </div>
+</div>
+
+<script>
+async function handleUpgrade(e) {
+  e.preventDefault();
+  var btn = document.getElementById('submitBtn');
+  var err = document.getElementById('error');
+  err.style.display = 'none';
+  btn.disabled = true;
+  btn.textContent = 'Redirecting to Stripe...';
+
+  try {
+    var resp = await fetch('/v1/billing/checkout', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Api-Key': document.getElementById('apiKey').value.trim()
+      }
+    });
+    var data = await resp.json();
+
+    if (!resp.ok) {
+      err.textContent = data.detail || 'Invalid API key or billing not available.';
+      err.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Continue to Payment';
+      return;
+    }
+
+    window.location.href = data.checkout_url;
+  } catch(e) {
+    err.textContent = 'Network error. Please try again.';
+    err.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Continue to Payment';
+  }
+}
+</script>
+</body>
+</html>"""
+
+
 @app.get("/billing/success", include_in_schema=False, response_class=HTMLResponse)
 async def billing_success():
-    return """<!DOCTYPE html><html><head><meta charset="utf-8"><title>NemoFlow — Payment Successful</title>
-<style>body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#e0e0e0;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0}
-.card{text-align:center;max-width:480px;padding:3rem;background:#111;border:1px solid #222;border-radius:16px}
-h1{color:#00d4ff;margin-bottom:1rem}p{color:#aaa;line-height:1.6}
-a{color:#7b61ff;text-decoration:none}</style></head>
+    return """<!DOCTYPE html><html><head><meta charset="utf-8"><title>NemoFlow — Welcome to Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Poppins',sans-serif;background:#0a0b10;color:#d4d8e8;display:flex;justify-content:center;align-items:center;min-height:100vh}
+.card{text-align:center;max-width:480px;padding:3rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}
+h1{font-size:1.5rem;color:#f07019;margin-bottom:1rem}p{color:#9299b0;line-height:1.6;font-size:0.9rem}
+a{color:#f07019;text-decoration:none;font-weight:600}a:hover{text-decoration:underline}</style></head>
 <body><div class="card"><h1>Welcome to Pro!</h1>
-<p>Your API key has been upgraded to 10,000 daily calls. The change is effective immediately.</p>
-<p style="margin-top:1.5rem"><a href="/docs">Go to API docs</a></p></div></body></html>"""
+<p>Your API key has been upgraded to <strong style="color:#f0f2f8">10,000 daily calls</strong>. The change is effective immediately.</p>
+<p style="margin-top:1.5rem"><a href="/docs">Go to API Docs &rarr;</a></p></div></body></html>"""
 
 
 @app.get("/billing/cancel", include_in_schema=False, response_class=HTMLResponse)
 async def billing_cancel():
     return """<!DOCTYPE html><html><head><meta charset="utf-8"><title>NemoFlow — Checkout Cancelled</title>
-<style>body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#e0e0e0;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0}
-.card{text-align:center;max-width:480px;padding:3rem;background:#111;border:1px solid #222;border-radius:16px}
-h1{color:#ff6b9d;margin-bottom:1rem}p{color:#aaa;line-height:1.6}
-a{color:#7b61ff;text-decoration:none}</style></head>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Poppins',sans-serif;background:#0a0b10;color:#d4d8e8;display:flex;justify-content:center;align-items:center;min-height:100vh}
+.card{text-align:center;max-width:480px;padding:3rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}
+h1{font-size:1.5rem;color:#9299b0;margin-bottom:1rem}p{color:#9299b0;line-height:1.6;font-size:0.9rem}
+a{color:#f07019;text-decoration:none;font-weight:600}a:hover{text-decoration:underline}</style></head>
 <body><div class="card"><h1>Checkout Cancelled</h1>
-<p>No charges were made. You can upgrade anytime via the API.</p>
-<p style="margin-top:1.5rem"><a href="/docs">Back to API docs</a></p></div></body></html>"""
+<p>No charges were made. You can upgrade anytime.</p>
+<p style="margin-top:1.5rem"><a href="/upgrade">&larr; Try again</a> &nbsp;&middot;&nbsp; <a href="/">Back to NemoFlow</a></p></div></body></html>"""
 
 
 @app.get("/health")

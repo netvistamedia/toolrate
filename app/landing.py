@@ -812,7 +812,7 @@ curl -X POST https://api.nemoflow.ai/v1/report \
         <li>Webhook alerts</li>
         <li>Priority support</li>
       </ul>
-      <a href="/docs" class="btn btn-primary" style="width:100%;justify-content:center">Upgrade to Pro</a>
+      <a href="/upgrade" class="btn btn-primary" style="width:100%;justify-content:center">Upgrade to Pro</a>
     </div>
   </div>
 </section>
