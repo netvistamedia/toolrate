@@ -75,6 +75,7 @@ app = FastAPI(
     redoc_url="/redoc",
     contact={"name": "NemoFlow", "url": "https://nemoflow.ai"},
     openapi_tags=[
+        {"name": "Auth", "description": "Register for an API key"},
         {"name": "Assessment", "description": "Check tool reliability before calling"},
         {"name": "Reporting", "description": "Report execution results to build the data moat"},
         {"name": "Discovery", "description": "Discover hidden gem tools and fallback chains based on real agent journeys"},
