@@ -17,5 +17,11 @@ venv/
 # Docker
 docker-compose.override.yml
 
+# Test databases
+*.db
+
+# Build artifacts
+sdks/python/dist/
+
 # OS
 .DS_Store

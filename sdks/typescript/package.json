@@ -1,7 +1,7 @@
 {
   "name": "nemoflow",
   "version": "0.1.0",
-  "description": "TypeScript SDK for the NemoFlow API",
+  "description": "Reliability oracle for AI agents — pick the right tool from the start",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -13,10 +13,21 @@
   },
   "keywords": [
     "nemoflow",
+    "ai",
+    "agents",
+    "reliability",
+    "tools",
+    "llm",
     "api",
-    "sdk"
+    "fallback"
   ],
+  "author": "NemoFlow <hello@nemoflow.ai>",
   "license": "MIT",
+  "homepage": "https://nemoflow.ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/netvistamedia/nemoflow"
+  },
   "engines": {
     "node": ">=18.0.0"
   },
