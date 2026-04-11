@@ -1,18 +1,35 @@
-# NemoFlow
+<p align="center">
+  <img src="https://nemoflow.ai/nemoflow-logo.webp" alt="NemoFlow" width="80">
+</p>
 
-**The reliability oracle for AI agents.**
+<h1 align="center">NemoFlow</h1>
 
-Before your agent calls an external tool, NemoFlow tells it: how reliable is this tool right now? What are the common pitfalls? What's a better alternative? After the call, your agent reports back — building a live data moat that makes every agent smarter.
+<p align="center">
+  <strong>Stop your AI agents from calling tools that are about to fail.</strong>
+</p>
 
-**Live at [api.nemoflow.ai](https://api.nemoflow.ai)**
+<p align="center">
+  <a href="https://api.nemoflow.ai">API</a> &nbsp;|&nbsp;
+  <a href="https://api.nemoflow.ai/docs">Docs</a> &nbsp;|&nbsp;
+  <a href="https://api.nemoflow.ai/register">Get API Key</a>
+</p>
 
-## Why
+---
 
-AI agents fail 60-80% of the time on external tool calls. Timeouts, rate limits, auth failures, flaky APIs. NemoFlow fixes this by giving agents real-time reliability intelligence before every call.
+NemoFlow is a reliability oracle for AI agents. It scores 600+ tools and APIs in real time so your agent picks the right one *before* wasting a call on a failing endpoint. One line wraps any tool call with assess-before, report-after, and automatic fallback.
+
+<p align="center">
+  <img src="https://nemoflow.com/nemo-tool-rating.webp" alt="NemoFlow mascot rating tools" width="360">
+</p>
+
+## The problem
+
+AI agents fail **60-80% of the time** on external tool calls. Timeouts, rate limits, auth failures, flaky APIs. Your agent retries blindly, burns tokens, and still fails. NemoFlow gives it the information it needs to make smarter choices.
 
 ## One line of code
 
-**Python:**
+**Python**
+
 ```python
 from nemoflow import NemoFlowClient, guard
 
@@ -22,9 +39,11 @@ result = guard(client, "https://api.openai.com/v1/chat/completions",
                lambda: openai.chat.completions.create(model="gpt-4", messages=msgs))
 ```
 
-**TypeScript:**
+**TypeScript**
+
 ```typescript
 import { NemoFlow } from "nemoflow";
+
 const nemo = new NemoFlow("nf_live_...");
 
 const result = await nemo.guard(
@@ -33,13 +52,70 @@ const result = await nemo.guard(
 );
 ```
 
-This automatically:
-- Checks the tool's reliability score before calling
-- Executes the tool
-- Reports success/failure (with auto error classification)
-- On failure, tries fallback tools if configured
+`guard()` automatically assesses reliability before calling, executes the tool, reports the outcome, and on failure tries your fallback tools.
 
-## Auto-fallback
+## What you get back
+
+```json
+{
+  "reliability_score": 94.2,
+  "confidence": 0.87,
+  "historical_success_rate": "89% (last 30 days, 12k calls)",
+  "predicted_failure_risk": "low",
+  "common_pitfalls": [
+    "timeout (8% of failures)",
+    "rate_limit (3% of failures)"
+  ],
+  "recommended_mitigations": [
+    "Increase timeout to 30s; implement retry with exponential backoff",
+    "Add request throttling; use credential rotation if available"
+  ],
+  "top_alternatives": [
+    {
+      "tool": "https://api.lemonsqueezy.com/v1/checkouts",
+      "score": 97.1,
+      "reason": "Alternative provider"
+    }
+  ],
+  "estimated_latency_ms": 420,
+  "last_updated": "2026-04-11T09:05:00Z"
+}
+```
+
+A single call gives your agent a reliability score, failure risk, common pitfalls, mitigations, and ranked alternatives -- everything it needs to decide whether to proceed, retry, or switch tools.
+
+## Install
+
+```bash
+pip install nemoflow        # Python
+npm install nemoflow        # TypeScript / Node.js
+```
+
+## Quickstart
+
+**1. Get an API key** (free, no credit card):
+
+```
+https://api.nemoflow.ai/register
+```
+
+**2. Assess a tool:**
+
+```python
+from nemoflow import NemoFlowClient
+
+client = NemoFlowClient("nf_live_...")
+score = client.assess("https://api.stripe.com/v1/charges", context="e-commerce checkout")
+print(score["reliability_score"])  # 94.2
+```
+
+**3. Report outcomes** (builds the data moat):
+
+```python
+client.report("https://api.stripe.com/v1/charges", success=True, latency_ms=420)
+```
+
+**4. Use guard() with auto-fallback:**
 
 ```python
 result = guard(client, "https://api.openai.com/v1/chat/completions",
@@ -53,81 +129,58 @@ result = guard(client, "https://api.openai.com/v1/chat/completions",
     ])
 ```
 
-## API
-
-### POST /v1/assess
-
-```bash
-curl -X POST https://api.nemoflow.ai/v1/assess \
-  -H "X-Api-Key: nf_live_..." \
-  -H "Content-Type: application/json" \
-  -d '{"tool_identifier": "https://api.stripe.com/v1/charges", "context": "e-commerce checkout"}'
-```
-
-```json
-{
-  "reliability_score": 94.2,
-  "confidence": 0.87,
-  "historical_success_rate": "89% (last 30 days, 12k calls)",
-  "predicted_failure_risk": "low",
-  "common_pitfalls": ["timeout (8% of failures)"],
-  "recommended_mitigations": ["Increase timeout to 30s; implement retry with exponential backoff"],
-  "top_alternatives": [{"tool": "https://api.lemonsqueezy.com/v1/checkouts", "score": 97.1}],
-  "estimated_latency_ms": 420,
-  "last_updated": "2026-04-11T09:05:00Z"
-}
-```
-
-### POST /v1/report
-
-```bash
-curl -X POST https://api.nemoflow.ai/v1/report \
-  -H "X-Api-Key: nf_live_..." \
-  -H "Content-Type: application/json" \
-  -d '{"tool_identifier": "https://api.stripe.com/v1/charges", "success": true, "latency_ms": 420}'
-```
-
-### GET /v1/discover/hidden-gems
-
-Find tools that are rarely the first choice but have high success rates as fallbacks.
-
-### GET /v1/discover/fallback-chain?tool_identifier=...
-
-When a tool fails, what do agents typically switch to?
-
-## SDKs
-
-| SDK | Install | Docs |
-|-----|---------|------|
-| Python | `pip install nemoflow` | [sdks/python](sdks/python/) |
-| TypeScript | `npm install nemoflow` | [sdks/typescript](sdks/typescript/) |
+If the primary tool's score is below `min_score`, guard skips straight to the highest-scoring fallback. If execution fails, it automatically tries the next one.
 
 ## Features
 
-- **600+ tools** with reliability data from 9 LLM consensus sources
-- **Real-time scoring** with Bayesian smoothing and recency weighting
-- **<10ms** response on cache hit, <200ms on cache miss
-- **Journey tracking** — track agent tool-calling sessions and fallback patterns
-- **Hidden gems** — discover underrated tools with high fallback success rates
-- **Auto-fallback** — guard() wrapper with automatic retry on better alternatives
-- **GDPR compliant** — only hashes, no payloads stored
+| Feature | Description |
+|---------|-------------|
+| **Reliability scoring** | Bayesian-smoothed, recency-weighted scores for 600+ tools. New tools start at ~83% and converge after ~25 reports. |
+| **guard() wrapper** | One-line wrapper that assesses, executes, reports, and falls back automatically. Available in Python and TypeScript. |
+| **On-demand LLM assessment** | Unknown tool? NemoFlow uses Claude Sonnet to generate an instant reliability assessment from 10 LLM sources. |
+| **Hidden gems** | Discover tools that are rarely the first choice but consistently succeed as fallbacks. |
+| **Fallback chains** | See what agents actually switch to when a tool fails, ranked by success rate. |
+| **Webhooks** | Get notified when a tool's reliability score changes significantly. |
+| **MCP server** | Works with Claude Code and Cursor as an MCP tool provider. |
+| **Journey tracking** | Track multi-step agent sessions with `session_id` and `attempt_number` to build fallback intelligence. |
+| **GDPR compliant** | Hosted in Germany (Hetzner, Nuremberg). Only hashes stored, no payloads. |
 
 ## How scoring works
 
-1. **Recency-weighted average** — 70% weight on last 7 days (exponential decay, half-life 3.5 days)
-2. **Bayesian smoothing** — new tools start at ~83% reliability, converge to actual performance after ~25 reports
-3. **Context bucketing** — different scores for different workflow contexts
-4. **Trend detection** — failure risk adjusts upward if last 24h is worse than 7d average
+1. **Recency-weighted average** -- 70% weight on last 7 days (exponential decay, half-life 3.5 days)
+2. **Bayesian smoothing** -- new tools start at ~83%, converge to real performance after ~25 reports
+3. **Context bucketing** -- different scores for different workflow contexts
+4. **Trend detection** -- failure risk adjusts if last 24h is worse than the 7-day average
+5. **Error aggregation** -- common pitfalls ranked by frequency across all reports
 
-## Interactive docs
+## API endpoints
 
-Visit [api.nemoflow.ai/docs](https://api.nemoflow.ai/docs) for the full OpenAPI documentation with try-it-out.
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/v1/assess` | Get reliability score, pitfalls, and alternatives |
+| `POST` | `/v1/report` | Report tool execution outcome |
+| `GET`  | `/v1/discover/hidden-gems` | Find high-success fallback tools |
+| `GET`  | `/v1/discover/fallback-chain` | Best alternatives when a tool fails |
+| `GET`  | `/v1/tools` | Search and browse tools by category |
+| `POST` | `/v1/webhooks` | Register score change webhooks |
+| `POST` | `/v1/auth/register` | Get a free API key |
+| `GET`  | `/v1/stats` | Platform metrics |
+
+All endpoints (except register and health) require an `X-Api-Key` header.
+
+Full interactive documentation: **[api.nemoflow.ai/docs](https://api.nemoflow.ai/docs)**
+
+## Pricing
+
+| Tier | Rate limit | Price |
+|------|-----------|-------|
+| Free | 100 calls/day | $0 |
+| Pro | 10,000 calls/day | $29/mo |
+| Enterprise | Custom | [Contact us](https://nemoflow.ai) |
 
 ## Stack
 
-- FastAPI + PostgreSQL + Redis
-- Hosted on Hetzner Cloud (Nuremberg, DSGVO compliant)
-- Auto-HTTPS via Caddy
+Python 3.12 / FastAPI / PostgreSQL / Redis / Caddy / Docker -- hosted on Hetzner Cloud in Germany.
 
 ## License
 

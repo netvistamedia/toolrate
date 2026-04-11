@@ -5,11 +5,14 @@ Fetches API lists from APIs.guru and other sources, filters out tools
 already in the database, then uses Claude to assess new ones in batches.
 
 Usage:
-    # Dry run — show what would be discovered
+    # Dry run — show what would be discovered (curated list only)
     python scripts/discover-apis.py --dry-run
 
     # Run discovery and import (requires ANTHROPIC_API_KEY env var)
     python scripts/discover-apis.py
+
+    # Include APIs.guru directory (large download, may OOM on small servers)
+    python scripts/discover-apis.py --include-guru
 
     # Limit batch size
     python scripts/discover-apis.py --batch-size 50
@@ -202,6 +205,8 @@ async def main():
     parser = argparse.ArgumentParser(description="Discover and assess new APIs")
     parser.add_argument("--dry-run", action="store_true", help="Show what would be discovered")
     parser.add_argument("--batch-size", type=int, default=30, help="Tools per LLM call")
+    parser.add_argument("--include-guru", action="store_true",
+                        help="Also fetch from APIs.guru directory (large download, may OOM on small servers)")
     parser.add_argument("--anthropic-key", default=None, help="Anthropic API key (or set ANTHROPIC_API_KEY env)")
     args = parser.parse_args()
 
@@ -214,8 +219,11 @@ async def main():
     print("Gathering APIs from sources...")
     candidates = list(KNOWN_APIS)
 
-    guru_apis = await fetch_apis_guru()
-    candidates.extend(guru_apis)
+    if args.include_guru:
+        guru_apis = await fetch_apis_guru()
+        candidates.extend(guru_apis)
+    else:
+        print("  Skipping APIs.guru (use --include-guru to enable)")
 
     print(f"\nTotal candidates: {len(candidates)}")
 
