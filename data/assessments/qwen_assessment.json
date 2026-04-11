@@ -1,0 +1,2642 @@
+[
+  {
+    "identifier": "https://api.openai.com/v1/chat/completions",
+    "display_name": "OpenAI Chat Completions",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 650,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.3
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.15
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.05
+      }
+    ],
+    "pitfalls": [
+      "Strict rate limits on new accounts cause frequent 429s",
+      "Timeouts increase significantly with high concurrency or large context windows"
+    ],
+    "mitigations": [
+      "Implement exponential backoff with jitter for 429 errors",
+      "Use streaming for long responses to detect timeouts earlier"
+    ]
+  },
+  {
+    "identifier": "https://api.anthropic.com/v1/messages",
+    "display_name": "Anthropic Claude API",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 800,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.25
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.05
+      }
+    ],
+    "pitfalls": [
+      "Aggressive token-based rate limiting can be confusing",
+      "Higher latency variance compared to OpenAI"
+    ],
+    "mitigations": [
+      "Monitor token usage closely to anticipate rate limits",
+      "Set generous client-side timeouts (e.g., 60s+)"
+    ]
+  },
+  {
+    "identifier": "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent",
+    "display_name": "Google Gemini API",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.95,
+    "avg_latency_ms": 700,
+    "common_errors": [
+      {
+        "category": "server_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.2
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Occasional 503 Service Unavailable errors during peak times",
+      "Strict content filtering can return vague errors"
+    ],
+    "mitigations": [
+      "Retry 5xx errors with backoff",
+      "Validate input content against safety guidelines before sending"
+    ]
+  },
+  {
+    "identifier": "https://api.mistral.ai/v1/chat/completions",
+    "display_name": "Mistral AI API",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 500,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.3
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.15
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.05
+      }
+    ],
+    "pitfalls": [
+      "Rate limits are tight on free/low tiers",
+      "Occasional instability during model updates"
+    ],
+    "mitigations": [
+      "Upgrade tier for higher throughput if needed",
+      "Cache responses for identical prompts where possible"
+    ]
+  },
+  {
+    "identifier": "https://api.groq.com/openai/v1/chat/completions",
+    "display_name": "Groq API",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 150,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.7
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.1
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.15
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.05
+      }
+    ],
+    "pitfalls": [
+      "Extremely strict rate limits due to high demand and low cost",
+      "Limited model availability compared to major providers"
+    ],
+    "mitigations": [
+      "Implement robust queuing and backoff strategies",
+      "Have fallback models/providers ready"
+    ]
+  },
+  {
+    "identifier": "https://api.together.xyz/v1/chat/completions",
+    "display_name": "Together AI API",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.94,
+    "avg_latency_ms": 600,
+    "common_errors": [
+      {
+        "category": "server_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.2
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Variable reliability depending on the specific open-source model hosted",
+      "Occasional GPU availability issues"
+    ],
+    "mitigations": [
+      "Test reliability of specific models before production use",
+      "Implement retries for 5xx errors"
+    ]
+  },
+  {
+    "identifier": "https://api.cohere.ai/v1/chat",
+    "display_name": "Cohere API",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 550,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.25
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.15
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Strict rate limits on trial keys",
+      "Occasional latency spikes"
+    ],
+    "mitigations": [
+      "Monitor usage dashboards closely",
+      "Use connection pooling"
+    ]
+  },
+  {
+    "identifier": "https://api.deepseek.com/chat/completions",
+    "display_name": "DeepSeek API",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.93,
+    "avg_latency_ms": 900,
+    "common_errors": [
+      {
+        "category": "server_error",
+        "frequency": 0.5
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.15
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.05
+      }
+    ],
+    "pitfalls": [
+      "High variability in response times",
+      "Occasional service degradation during high traffic"
+    ],
+    "mitigations": [
+      "Set long timeouts",
+      "Use fallback providers for critical paths"
+    ]
+  },
+  {
+    "identifier": "https://api.perplexity.ai/chat/completions",
+    "display_name": "Perplexity API",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 1200,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Higher latency due to real-time search integration",
+      "Rate limits can be restrictive"
+    ],
+    "mitigations": [
+      "Optimize prompts to reduce search complexity",
+      "Implement asynchronous processing"
+    ]
+  },
+  {
+    "identifier": "https://api.replicate.com/v1/predictions",
+    "display_name": "Replicate API",
+    "category": "Image/Media Generation",
+    "reliability_estimate": 0.95,
+    "avg_latency_ms": 5000,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Long-running predictions can timeout clients",
+      "GPU availability fluctuations"
+    ],
+    "mitigations": [
+      "Use webhooks for completion notifications instead of polling",
+      "Implement robust retry logic for 5xx errors"
+    ]
+  },
+  {
+    "identifier": "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image",
+    "display_name": "Stability AI API",
+    "category": "Image/Media Generation",
+    "reliability_estimate": 0.94,
+    "avg_latency_ms": 3000,
+    "common_errors": [
+      {
+        "category": "server_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.2
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Occasional generation failures due to content filters",
+      "High latency variance"
+    ],
+    "mitigations": [
+      "Handle 400 errors gracefully for content filter triggers",
+      "Set appropriate timeouts"
+    ]
+  },
+  {
+    "identifier": "https://api.elevenlabs.io/v1/text-to-speech",
+    "display_name": "ElevenLabs API",
+    "category": "Image/Media Generation",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 2000,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.3
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.15
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.05
+      }
+    ],
+    "pitfalls": [
+      "Strict character-based rate limits",
+      "Latency increases with longer text inputs"
+    ],
+    "mitigations": [
+      "Chunk long texts into smaller segments",
+      "Monitor character usage closely"
+    ]
+  },
+  {
+    "identifier": "https://api.tavily.com/search",
+    "display_name": "Tavily Search API",
+    "category": "Search APIs",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 1500,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.3
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Can return stale results for very recent events",
+      "Rate limits on lower tiers"
+    ],
+    "mitigations": [
+      "Use 'advanced' search mode for better freshness",
+      "Implement caching for repeated queries"
+    ]
+  },
+  {
+    "identifier": "https://serpapi.com/search",
+    "display_name": "SerpAPI",
+    "category": "Search APIs",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 2000,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.25
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.15
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Expensive at scale",
+      "Occasional CAPTCHA challenges causing delays"
+    ],
+    "mitigations": [
+      "Monitor credit usage",
+      "Handle 429 errors with backoff"
+    ]
+  },
+  {
+    "identifier": "https://api.bing.microsoft.com/v7.0/search",
+    "display_name": "Bing Search API",
+    "category": "Search APIs",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 800,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.3
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Complex authentication setup",
+      "Strict quota management"
+    ],
+    "mitigations": [
+      "Use managed identities where possible",
+      "Monitor quota usage via Azure portal"
+    ]
+  },
+  {
+    "identifier": "https://customsearch.googleapis.com/customsearch/v1",
+    "display_name": "Google Custom Search JSON API",
+    "category": "Search APIs",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 600,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.25
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.15
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Very low free tier quota (100 requests/day)",
+      "Complex setup requiring Google Cloud Project"
+    ],
+    "mitigations": [
+      "Cache results aggressively",
+      "Consider paid tier for production use"
+    ]
+  },
+  {
+    "identifier": "https://api.search.brave.com/res/v1/web/search",
+    "display_name": "Brave Search API",
+    "category": "Search APIs",
+    "reliability_estimate": 0.95,
+    "avg_latency_ms": 700,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.2
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Smaller index than Google/Bing",
+      "Occasional relevance issues"
+    ],
+    "mitigations": [
+      "Combine with other sources for comprehensive coverage",
+      "Tune query parameters for better relevance"
+    ]
+  },
+  {
+    "identifier": "https://api.exa.ai/search",
+    "display_name": "Exa API",
+    "category": "Search APIs",
+    "reliability_estimate": 0.94,
+    "avg_latency_ms": 1200,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Newer API with occasional stability issues",
+      "Higher latency for complex queries"
+    ],
+    "mitigations": [
+      "Implement robust error handling",
+      "Use simple queries where possible"
+    ]
+  },
+  {
+    "identifier": "https://api.stripe.com/v1/charges",
+    "display_name": "Stripe API",
+    "category": "Payment APIs",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.5
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.15
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.15
+      }
+    ],
+    "pitfalls": [
+      "Idempotency key management is critical",
+      "Strict rate limits on test keys"
+    ],
+    "mitigations": [
+      "Use idempotency keys for all create operations",
+      "Implement exponential backoff for 429s"
+    ]
+  },
+  {
+    "identifier": "https://api.paypal.com/v2/checkout/orders",
+    "display_name": "PayPal API",
+    "category": "Payment APIs",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 500,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.3
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Complex OAuth2 flow",
+      "Verbose error messages can be confusing"
+    ],
+    "mitigations": [
+      "Use official SDKs for authentication",
+      "Log full error responses for debugging"
+    ]
+  },
+  {
+    "identifier": "https://connect.squareup.com/v2/payments",
+    "display_name": "Square API",
+    "category": "Payment APIs",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 400,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Rate limits are strictly enforced",
+      "Idempotency required for payments"
+    ],
+    "mitigations": [
+      "Generate unique idempotency keys",
+      "Monitor rate limit headers"
+    ]
+  },
+  {
+    "identifier": "https://api.lemonsqueezy.com/v1/checkouts",
+    "display_name": "Lemon Squeezy API",
+    "category": "Payment APIs",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 600,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Newer API with occasional documentation gaps",
+      "Webhook delivery can be delayed"
+    ],
+    "mitigations": [
+      "Verify webhooks signatures",
+      "Implement retry logic for failed webhook processing"
+    ]
+  },
+  {
+    "identifier": "https://api.paddle.com/checkout",
+    "display_name": "Paddle API",
+    "category": "Payment APIs",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 550,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Complex product setup",
+      "Webhook signature verification is critical"
+    ],
+    "mitigations": [
+      "Use Paddle's SDKs for signature verification",
+      "Test thoroughly in sandbox environment"
+    ]
+  },
+  {
+    "identifier": "https://api.sendgrid.com/v3/mail/send",
+    "display_name": "SendGrid API",
+    "category": "Email APIs",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 400,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Strict rate limiting based on plan",
+      "Silent drops for invalid recipients if not configured correctly"
+    ],
+    "mitigations": [
+      "Validate email addresses before sending",
+      "Monitor bounce rates and suppressions"
+    ]
+  },
+  {
+    "identifier": "https://api.mailgun.net/v3/{domain}/messages",
+    "display_name": "Mailgun API",
+    "category": "Email APIs",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 450,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Domain verification issues can cause silent failures",
+      "Complex template syntax"
+    ],
+    "mitigations": [
+      "Verify domain DNS records",
+      "Use Mailgun's template validation tools"
+    ]
+  },
+  {
+    "identifier": "https://api.resend.com/emails",
+    "display_name": "Resend API",
+    "category": "Email APIs",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 350,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.5
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.25
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.15
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Newer provider with fewer features than SendGrid/Mailgun",
+      "Strict domain verification"
+    ],
+    "mitigations": [
+      "Ensure DKIM/SPF records are correctly set",
+      "Use React email components for template validation"
+    ]
+  },
+  {
+    "identifier": "https://api.postmarkapp.com/email",
+    "display_name": "Postmark API",
+    "category": "Email APIs",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.5
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.25
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.15
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Strict separation of transactional and broadcast streams",
+      "Higher cost per email"
+    ],
+    "mitigations": [
+      "Use correct server token for stream type",
+      "Monitor bounce/complaint rates closely"
+    ]
+  },
+  {
+    "identifier": "https://email.us-east-1.amazonaws.com",
+    "display_name": "Amazon SES",
+    "category": "Email APIs",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 250,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Sandbox mode restrictions for new accounts",
+      "Complex IAM permissions setup"
+    ],
+    "mitigations": [
+      "Request production access early",
+      "Use IAM roles for EC2/Lambda deployments"
+    ]
+  },
+  {
+    "identifier": "https://slack.com/api/chat.postMessage",
+    "display_name": "Slack API",
+    "category": "Messaging",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.15
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.05
+      }
+    ],
+    "pitfalls": [
+      "Strict rate limits (1 msg/sec/channel)",
+      "Token scope mismatches cause obscure errors"
+    ],
+    "mitigations": [
+      "Implement message queuing and batching",
+      "Use `retry-after` header for 429s"
+    ]
+  },
+  {
+    "identifier": "https://discord.com/api/v10/channels/{channel.id}/messages",
+    "display_name": "Discord API",
+    "category": "Messaging",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 250,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.25
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.15
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Complex rate limit buckets (global vs channel)",
+      "Strict content length limits"
+    ],
+    "mitigations": [
+      "Use Discord.js or similar libraries for rate limit handling",
+      "Truncate messages proactively"
+    ]
+  },
+  {
+    "identifier": "https://api.telegram.org/bot{token}/sendMessage",
+    "display_name": "Telegram Bot API",
+    "category": "Messaging",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 400,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Occasional service disruptions",
+      "Strict flood control limits"
+    ],
+    "mitigations": [
+      "Implement exponential backoff",
+      "Avoid sending identical messages rapidly"
+    ]
+  },
+  {
+    "identifier": "https://api.twilio.com/2010-04-01/Accounts/{AccountSid}/Messages.json",
+    "display_name": "Twilio SMS API",
+    "category": "Messaging",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 500,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Carrier-specific filtering can block messages",
+      "Complex pricing based on destination"
+    ],
+    "mitigations": [
+      "Validate phone numbers with Lookup API first",
+      "Monitor delivery status callbacks"
+    ]
+  },
+  {
+    "identifier": "https://graph.facebook.com/v18.0/{phone-number-id}/messages",
+    "display_name": "WhatsApp Business API",
+    "category": "Messaging",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 600,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Strict template message requirements for initial contact",
+      "Complex webhook setup"
+    ],
+    "mitigations": [
+      "Pre-approve message templates",
+      "Implement robust webhook verification"
+    ]
+  },
+  {
+    "identifier": "https://s3.amazonaws.com/{bucket}/{key}",
+    "display_name": "AWS S3",
+    "category": "Cloud Storage",
+    "reliability_estimate": 0.9999,
+    "avg_latency_ms": 100,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.4
+      },
+      {
+        "category": "permission_denied",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "IAM permission complexity",
+      "Eventual consistency for list operations (legacy)"
+    ],
+    "mitigations": [
+      "Use least-privilege IAM policies",
+      "Use strong consistency reads (default now)"
+    ]
+  },
+  {
+    "identifier": "https://storage.googleapis.com/{bucket}/{object}",
+    "display_name": "Google Cloud Storage",
+    "category": "Cloud Storage",
+    "reliability_estimate": 0.9999,
+    "avg_latency_ms": 120,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.4
+      },
+      {
+        "category": "permission_denied",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Complex IAM conditions",
+      "Bucket name global uniqueness requirement"
+    ],
+    "mitigations": [
+      "Use service account keys securely",
+      "Check bucket name availability early"
+    ]
+  },
+  {
+    "identifier": "https://{account}.blob.core.windows.net/{container}/{blob}",
+    "display_name": "Azure Blob Storage",
+    "category": "Cloud Storage",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 150,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.4
+      },
+      {
+        "category": "permission_denied",
+        "frequency": 0.3
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Complex SAS token generation",
+      "Slower propagation of permission changes"
+    ],
+    "mitigations": [
+      "Use Azure Identity SDK for auth",
+      "Cache SAS tokens securely"
+    ]
+  },
+  {
+    "identifier": "https://{account}.r2.cloudflarestorage.com/{bucket}/{key}",
+    "display_name": "Cloudflare R2",
+    "category": "Cloud Storage",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 110,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.4
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "permission_denied",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Newer service with occasional edge-case bugs",
+      "S3 compatibility isn't 100% perfect"
+    ],
+    "mitigations": [
+      "Test S3 client compatibility thoroughly",
+      "Monitor Cloudflare status page"
+    ]
+  },
+  {
+    "identifier": "https://{supabase-project}.supabase.co/rest/v1/{table}",
+    "display_name": "Supabase REST API",
+    "category": "Databases & BaaS",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 200,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.3
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Row Level Security (RLS) policies can be tricky to debug",
+      "Connection pool exhaustion under high load"
+    ],
+    "mitigations": [
+      "Test RLS policies extensively",
+      "Use connection pooling (PgBouncer)"
+    ]
+  },
+  {
+    "identifier": "https://firestore.googleapis.com/v1/projects/{project}/databases/(default)/documents/{document_path}",
+    "display_name": "Firebase Firestore",
+    "category": "Databases & BaaS",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 150,
+    "common_errors": [
+      {
+        "category": "permission_denied",
+        "frequency": 0.4
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Security rules complexity",
+      "Read/Write cost surprises at scale"
+    ],
+    "mitigations": [
+      "Use Firebase Emulator Suite for testing rules",
+      "Monitor usage in Firebase Console"
+    ]
+  },
+  {
+    "identifier": "https://api.planetscale.com/v1/databases/{database}/branches/{branch}/query",
+    "display_name": "PlanetScale API",
+    "category": "Databases & BaaS",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 50,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.3
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "No foreign key constraints (Vitess limitation)",
+      "Deploy request workflow can be slow"
+    ],
+    "mitigations": [
+      "Enforce referential integrity in application code",
+      "Use non-blocking schema changes"
+    ]
+  },
+  {
+    "identifier": "https://{project}.neon.tech/sql",
+    "display_name": "Neon API",
+    "category": "Databases & BaaS",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 100,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Cold start latency for serverless connections",
+      "Connection string management"
+    ],
+    "mitigations": [
+      "Use connection pooling (PgBouncer)",
+      "Keep connections warm with periodic pings"
+    ]
+  },
+  {
+    "identifier": "https://{project}.turso.io/v1/pipeline",
+    "display_name": "Turso API",
+    "category": "Databases & BaaS",
+    "reliability_estimate": 0.95,
+    "avg_latency_ms": 80,
+    "common_errors": [
+      {
+        "category": "server_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.3
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Newer technology (libSQL) with evolving ecosystem",
+      "Limited tooling compared to PostgreSQL"
+    ],
+    "mitigations": [
+      "Use official libSQL clients",
+      "Monitor Turso status page"
+    ]
+  },
+  {
+    "identifier": "https://api.pinecone.io/vectors/upsert",
+    "display_name": "Pinecone API",
+    "category": "Vector Databases",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 100,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Index creation can take time",
+      "Metadata filtering limitations on certain index types"
+    ],
+    "mitigations": [
+      "Wait for index readiness before querying",
+      "Choose appropriate index type (pod vs serverless)"
+    ]
+  },
+  {
+    "identifier": "https://{cluster}.qdrant.tech/vectors",
+    "display_name": "Qdrant API",
+    "category": "Vector Databases",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 80,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Self-hosted version requires maintenance",
+      "Cloud version has occasional scaling delays"
+    ],
+    "mitigations": [
+      "Monitor resource usage for self-hosted",
+      "Use batch operations for efficiency"
+    ]
+  },
+  {
+    "identifier": "https://{instance}.weaviate.network/v1/objects",
+    "display_name": "Weaviate API",
+    "category": "Vector Databases",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 120,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.2
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Complex schema configuration",
+      "Hybrid search tuning can be difficult"
+    ],
+    "mitigations": [
+      "Validate schema before deployment",
+      "Test hybrid search alpha values"
+    ]
+  },
+  {
+    "identifier": "http://localhost:8000/api/v1/collections",
+    "display_name": "Chroma DB API",
+    "category": "Vector Databases",
+    "reliability_estimate": 0.94,
+    "avg_latency_ms": 50,
+    "common_errors": [
+      {
+        "category": "server_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "connection_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Primarily designed for local/embedded use",
+      "Production hosting requires careful setup"
+    ],
+    "mitigations": [
+      "Use Chroma Cloud or managed alternatives for production",
+      "Implement health checks"
+    ]
+  },
+  {
+    "identifier": "https://{host}:19530/v1/vector/insert",
+    "display_name": "Milvus API",
+    "category": "Vector Databases",
+    "reliability_estimate": 0.95,
+    "avg_latency_ms": 90,
+    "common_errors": [
+      {
+        "category": "server_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "connection_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Complex distributed architecture",
+      "High operational overhead for self-hosted"
+    ],
+    "mitigations": [
+      "Use Zilliz Cloud for managed service",
+      "Monitor cluster health metrics"
+    ]
+  },
+  {
+    "identifier": "https://api.firecrawl.dev/v1/scrape",
+    "display_name": "Firecrawl API",
+    "category": "Web Scraping",
+    "reliability_estimate": 0.95,
+    "avg_latency_ms": 3000,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Can struggle with heavily protected sites",
+      "Latency varies by site complexity"
+    ],
+    "mitigations": [
+      "Use crawl endpoint for large sites",
+      "Implement timeout handling"
+    ]
+  },
+  {
+    "identifier": "https://chrome.browserless.io/content",
+    "display_name": "Browserless API",
+    "category": "Web Scraping",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 2500,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Resource-intensive operations can hit limits",
+      "Session management complexity"
+    ],
+    "mitigations": [
+      "Close sessions explicitly",
+      "Optimize Puppeteer/Playwright scripts"
+    ]
+  },
+  {
+    "identifier": "https://www.scrapingbee.com/api/v1/",
+    "display_name": "ScrapingBee API",
+    "category": "Web Scraping",
+    "reliability_estimate": 0.94,
+    "avg_latency_ms": 4000,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Higher cost for premium proxies",
+      "Occasional CAPTCHA failures"
+    ],
+    "mitigations": [
+      "Use premium proxy option for difficult sites",
+      "Implement retry logic"
+    ]
+  },
+  {
+    "identifier": "https://api.apify.com/v2/acts/{actor-id}/runs",
+    "display_name": "Apify API",
+    "category": "Web Scraping",
+    "reliability_estimate": 0.95,
+    "avg_latency_ms": 5000,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Actor startup time adds latency",
+      "Complex pricing based on compute units"
+    ],
+    "mitigations": [
+      "Use pre-warmed actors if available",
+      "Monitor compute unit usage"
+    ]
+  },
+  {
+    "identifier": "https://api.openai.com/v1/images/generations",
+    "display_name": "DALL-E 3 API",
+    "category": "Image/Media Generation",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 8000,
+    "common_errors": [
+      {
+        "category": "content_filter",
+        "frequency": 0.4
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Strict content policy enforcement",
+      "High latency for image generation"
+    ],
+    "mitigations": [
+      "Sanitize prompts before sending",
+      "Use asynchronous processing patterns"
+    ]
+  },
+  {
+    "identifier": "https://api.github.com/repos/{owner}/{repo}",
+    "display_name": "GitHub REST API",
+    "category": "Developer Tools",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 200,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      },
+      {
+        "category": "not_found",
+        "frequency": 0.15
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.05
+      }
+    ],
+    "pitfalls": [
+      "Strict rate limits (5000 req/hr for authenticated)",
+      "Secondary rate limits for abuse prevention"
+    ],
+    "mitigations": [
+      "Use GraphQL API for complex queries",
+      "Cache responses and use ETags"
+    ]
+  },
+  {
+    "identifier": "https://gitlab.com/api/v4/projects/{project_id}",
+    "display_name": "GitLab API",
+    "category": "Developer Tools",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 250,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.25
+      },
+      {
+        "category": "not_found",
+        "frequency": 0.15
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Complex pagination",
+      "Rate limits vary by instance type"
+    ],
+    "mitigations": [
+      "Use keyset pagination where possible",
+      "Monitor rate limit headers"
+    ]
+  },
+  {
+    "identifier": "https://api.vercel.com/v1/deployments",
+    "display_name": "Vercel API",
+    "category": "Developer Tools",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Deployment limits on hobby plans",
+      "Build timeout constraints"
+    ],
+    "mitigations": [
+      "Optimize build times",
+      "Upgrade plan for higher limits"
+    ]
+  },
+  {
+    "identifier": "https://api.netlify.com/api/v1/sites",
+    "display_name": "Netlify API",
+    "category": "Developer Tools",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 350,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Bandwidth limits on lower tiers",
+      "Function execution time limits"
+    ],
+    "mitigations": [
+      "Monitor bandwidth usage",
+      "Optimize serverless functions"
+    ]
+  },
+  {
+    "identifier": "https://api.hubspot.com/crm/v3/objects/contacts",
+    "display_name": "HubSpot CRM API",
+    "category": "CRM & Productivity",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 400,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.25
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.15
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Complex rate limiting (daily/secondly)",
+      "Property name inconsistencies"
+    ],
+    "mitigations": [
+      "Use HubSpot's rate limit headers",
+      "Batch operations where possible"
+    ]
+  },
+  {
+    "identifier": "https://yourInstance.salesforce.com/services/data/v59.0/sobjects/Account",
+    "display_name": "Salesforce REST API",
+    "category": "CRM & Productivity",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 500,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.4
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Complex OAuth2 flow",
+      "SOQL query governor limits"
+    ],
+    "mitigations": [
+      "Use JWT bearer flow for server-to-server",
+      "Optimize SOQL queries"
+    ]
+  },
+  {
+    "identifier": "https://api.notion.com/v1/pages",
+    "display_name": "Notion API",
+    "category": "CRM & Productivity",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 600,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.25
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.15
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Low rate limits (3 req/sec)",
+      "Complex block structure for pages"
+    ],
+    "mitigations": [
+      "Batch requests where possible",
+      "Cache page structures"
+    ]
+  },
+  {
+    "identifier": "https://api.airtable.com/v0/{base_id}/{table_name}",
+    "display_name": "Airtable API",
+    "category": "CRM & Productivity",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.25
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.15
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Strict rate limits (5 req/sec/base)",
+      "Attachment upload complexity"
+    ],
+    "mitigations": [
+      "Implement request queuing",
+      "Use bulk operations for inserts"
+    ]
+  },
+  {
+    "identifier": "https://api.linear.app/graphql",
+    "display_name": "Linear API",
+    "category": "CRM & Productivity",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 250,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "GraphQL complexity can lead to slow queries",
+      "Rate limits on mutations"
+    ],
+    "mitigations": [
+      "Fetch only necessary fields",
+      "Batch mutations where possible"
+    ]
+  },
+  {
+    "identifier": "https://maps.googleapis.com/maps/api/geocode/json",
+    "display_name": "Google Maps Geocoding API",
+    "category": "Maps & Location",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 200,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.3
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Expensive at scale",
+      "Quota management is critical"
+    ],
+    "mitigations": [
+      "Cache geocoding results",
+      "Set budget alerts in GCP"
+    ]
+  },
+  {
+    "identifier": "https://api.mapbox.com/geocoding/v5/mapbox.places/{query}.json",
+    "display_name": "Mapbox Geocoding API",
+    "category": "Maps & Location",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 180,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.3
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Less comprehensive data than Google in some regions",
+      "Token security"
+    ],
+    "mitigations": [
+      "Restrict tokens by referrer/IP",
+      "Use permanent geocoding for static data"
+    ]
+  },
+  {
+    "identifier": "https://geocode.search.hereapi.com/v1/geocode",
+    "display_name": "HERE Geocoding API",
+    "category": "Maps & Location",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 220,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.3
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Complex pricing tiers",
+      "Documentation can be outdated"
+    ],
+    "mitigations": [
+      "Monitor usage closely",
+      "Use latest SDK versions"
+    ]
+  },
+  {
+    "identifier": "https://dev-12345678.us.auth0.com/oauth/token",
+    "display_name": "Auth0 API",
+    "category": "Auth & Identity",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 150,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.5
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.15
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.05
+      }
+    ],
+    "pitfalls": [
+      "Complex rule/action debugging",
+      "Rate limits on password changes"
+    ],
+    "mitigations": [
+      "Use Auth0 logs for debugging",
+      "Implement client-side rate limiting"
+    ]
+  },
+  {
+    "identifier": "https://api.clerk.com/v1/users",
+    "display_name": "Clerk API",
+    "category": "Auth & Identity",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 120,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.4
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Newer API with evolving features",
+      "Webhook signature verification critical"
+    ],
+    "mitigations": [
+      "Use Clerk SDKs for verification",
+      "Monitor webhook delivery logs"
+    ]
+  },
+  {
+    "identifier": "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword",
+    "display_name": "Firebase Auth API",
+    "category": "Auth & Identity",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 100,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.5
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.15
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.05
+      }
+    ],
+    "pitfalls": [
+      "Client-side SDK reliance can be risky",
+      "Complex multi-tenant setup"
+    ],
+    "mitigations": [
+      "Validate tokens on backend",
+      "Use Admin SDK for server operations"
+    ]
+  },
+  {
+    "identifier": "https://{project}.supabase.co/auth/v1/token",
+    "display_name": "Supabase Auth API",
+    "category": "Auth & Identity",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 130,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.4
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "JWT expiration handling",
+      "Email confirmation delays"
+    ],
+    "mitigations": [
+      "Refresh tokens proactively",
+      "Configure email templates correctly"
+    ]
+  },
+  {
+    "identifier": "https://o123456.ingest.sentry.io/api/{project_id}/envelope/",
+    "display_name": "Sentry API",
+    "category": "Monitoring & Analytics",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 50,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.25
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.15
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Event dropping under high load",
+      "Complex sampling configuration"
+    ],
+    "mitigations": [
+      "Configure sampling rates appropriately",
+      "Monitor quota usage"
+    ]
+  },
+  {
+    "identifier": "https://api.datadoghq.com/api/v2/events",
+    "display_name": "Datadog API",
+    "category": "Monitoring & Analytics",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 100,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.3
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Complex metric naming conventions",
+      "Cost surprises with custom metrics"
+    ],
+    "mitigations": [
+      "Use standard metric namespaces",
+      "Monitor metric count usage"
+    ]
+  },
+  {
+    "identifier": "https://us.i.posthog.com/capture/",
+    "display_name": "PostHog API",
+    "category": "Monitoring & Analytics",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 80,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Event schema evolution issues",
+      "Large payload sizes"
+    ],
+    "mitigations": [
+      "Validate event properties",
+      "Compress payloads if possible"
+    ]
+  },
+  {
+    "identifier": "https://api.mixpanel.com/track",
+    "display_name": "Mixpanel API",
+    "category": "Monitoring & Analytics",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 70,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Complex segmentation queries",
+      "Data processing delays"
+    ],
+    "mitigations": [
+      "Use batch endpoints",
+      "Monitor ingestion logs"
+    ]
+  },
+  {
+    "identifier": "https://{shop}.myshopify.com/admin/api/2024-01/orders.json",
+    "display_name": "Shopify Admin API",
+    "category": "E-commerce",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.25
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.15
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Leaky bucket rate limiting",
+      "GraphQL complexity costs"
+    ],
+    "mitigations": [
+      "Monitor X-Shopify-Shop-Api-Call-Limit header",
+      "Use bulk operations for large datasets"
+    ]
+  },
+  {
+    "identifier": "https://{site}.com/wp-json/wc/v3/orders",
+    "display_name": "WooCommerce REST API",
+    "category": "E-commerce",
+    "reliability_estimate": 0.95,
+    "avg_latency_ms": 400,
+    "common_errors": [
+      {
+        "category": "server_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.3
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.2
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Performance depends on hosting quality",
+      "Authentication complexity (OAuth 1.0a)"
+    ],
+    "mitigations": [
+      "Use Application Passwords for simpler auth",
+      "Optimize WordPress/WooCommerce performance"
+    ]
+  },
+  {
+    "identifier": "https://api.medusajs.com/store/products",
+    "display_name": "Medusa API",
+    "category": "E-commerce",
+    "reliability_estimate": 0.94,
+    "avg_latency_ms": 250,
+    "common_errors": [
+      {
+        "category": "server_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Self-hosted responsibility for reliability",
+      "Evolving API surface"
+    ],
+    "mitigations": [
+      "Implement robust monitoring",
+      "Follow Medusa upgrade guides carefully"
+    ]
+  },
+  {
+    "identifier": "https://connect.browserbase.com/v1/sessions",
+    "display_name": "Browserbase API",
+    "category": "Browser Automation",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 1500,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Session idle timeouts",
+      "Resource contention under load"
+    ],
+    "mitigations": [
+      "Close sessions explicitly",
+      "Monitor session duration"
+    ]
+  },
+  {
+    "identifier": "https://api.steel.dev/v1/browser/session",
+    "display_name": "Steel API",
+    "category": "Browser Automation",
+    "reliability_estimate": 0.95,
+    "avg_latency_ms": 1800,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Newer service with occasional instability",
+      "Limited documentation"
+    ],
+    "mitigations": [
+      "Implement comprehensive error handling",
+      "Contact support for edge cases"
+    ]
+  },
+  {
+    "identifier": "https://api.e2b.dev/v1/sandboxes",
+    "display_name": "E2B API",
+    "category": "Code Execution",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 800,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Sandbox cold starts",
+      "Resource limits per sandbox"
+    ],
+    "mitigations": [
+      "Keep sandboxes warm if possible",
+      "Monitor resource usage"
+    ]
+  },
+  {
+    "identifier": "https://api.modal.com/v1/functions",
+    "display_name": "Modal API",
+    "category": "Code Execution",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 600,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Function cold starts",
+      "Complex dependency management"
+    ],
+    "mitigations": [
+      "Use keep_warm parameter for critical functions",
+      "Optimize image builds"
+    ]
+  },
+  {
+    "identifier": "https://api.replit.com/v1/agents",
+    "display_name": "Replit API",
+    "category": "Code Execution",
+    "reliability_estimate": 0.94,
+    "avg_latency_ms": 1000,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Repl sleep/wake latency",
+      "Resource constraints on free tiers"
+    ],
+    "mitigations": [
+      "Use always-on Repls for production",
+      "Monitor resource usage"
+    ]
+  }
+]

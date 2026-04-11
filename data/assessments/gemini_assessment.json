@@ -1,0 +1,3479 @@
+[
+  {
+    "identifier": "[https://api.openai.com/v1",
+    "display_name": "OpenAI",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 850,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "High latency during major product launches",
+      "Strict rate limits on lower tiers"
+    ],
+    "mitigations": [
+      "Implement exponential backoff",
+      "Cache responses for common queries"
+    ]
+  },
+  {
+    "identifier": "https://api.anthropic.com/v1",
+    "display_name": "Anthropic",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 900,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Overloaded endpoints during peak hours",
+      "Strict context window validation"
+    ],
+    "mitigations": [
+      "Use streaming to reduce perceived latency",
+      "Monitor token limits actively"
+    ]
+  },
+  {
+    "identifier": "https://generativelanguage.googleapis.com/v1beta",
+    "display_name": "Google Gemini",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 700,
+    "common_errors": [
+      {
+        "category": "server_error",
+        "frequency": 0.4
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      }
+    ],
+    "pitfalls": [
+      "Unexpected safety filter blocking",
+      "Quota limits on free tier"
+    ],
+    "mitigations": [
+      "Handle validation_error gracefully for safety blocks",
+      "Upgrade to pay-as-you-go"
+    ]
+  },
+  {
+    "identifier": "https://api.mistral.ai/v1",
+    "display_name": "Mistral",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 600,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.7
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Rate limit hits on sudden traffic bursts"
+    ],
+    "mitigations": [
+      "Implement retry logic with jitter"
+    ]
+  },
+  {
+    "identifier": "https://api.groq.com/openai/v1",
+    "display_name": "Groq",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 250,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.8
+      },
+      {
+        "category": "connection_error",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Extremely tight rate limits for free tier",
+      "Occasional connection drops"
+    ],
+    "mitigations": [
+      "Pool API keys if allowed",
+      "Fallback to slower models"
+    ]
+  },
+  {
+    "identifier": "https://api.together.xyz/v1",
+    "display_name": "Together AI",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.95,
+    "avg_latency_ms": 500,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.5
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Cold starts on less popular models",
+      "Occasional timeouts"
+    ],
+    "mitigations": [
+      "Stick to default models for speed",
+      "Increase client timeout settings"
+    ]
+  },
+  {
+    "identifier": "https://api.cohere.ai/v1",
+    "display_name": "Cohere",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 650,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Embedding endpoint throttling on large batches"
+    ],
+    "mitigations": [
+      "Batch requests within documented limits"
+    ]
+  },
+  {
+    "identifier": "https://api.deepseek.com/v1",
+    "display_name": "DeepSeek",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.94,
+    "avg_latency_ms": 800,
+    "common_errors": [
+      {
+        "category": "server_error",
+        "frequency": 0.6
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Unstable latency",
+      "API downtime during updates"
+    ],
+    "mitigations": [
+      "Always maintain a fallback provider like OpenAI"
+    ]
+  },
+  {
+    "identifier": "https://api.perplexity.ai",
+    "display_name": "Perplexity",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 1200,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.5
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Long response times for complex queries"
+    ],
+    "mitigations": [
+      "Use streaming to avoid connection timeouts"
+    ]
+  },
+  {
+    "identifier": "https://api.fireworks.ai/inference/v1",
+    "display_name": "Fireworks AI",
+    "category": "LLM APIs",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 400,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.7
+      },
+      {
+        "category": "connection_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Account limits scaling issues"
+    ],
+    "mitigations": [
+      "Pre-warm connections if possible"
+    ]
+  },
+  {
+    "identifier": "https://api.tavily.com",
+    "display_name": "Tavily",
+    "category": "Search APIs",
+    "reliability_estimate": 0.95,
+    "avg_latency_ms": 1800,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.6
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Slow response times for deep research mode"
+    ],
+    "mitigations": [
+      "Set client timeout to at least 30 seconds"
+    ]
+  },
+  {
+    "identifier": "https://serpapi.com/search",
+    "display_name": "SerpAPI",
+    "category": "Search APIs",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 2500,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.7
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Google blocking scrapers causing sudden latency spikes"
+    ],
+    "mitigations": [
+      "Use async batch endpoints for large volumes"
+    ]
+  },
+  {
+    "identifier": "https://api.bing.microsoft.com/v7.0/search",
+    "display_name": "Bing Search",
+    "category": "Search APIs",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 600,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.8
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Strict quota enforcement"
+    ],
+    "mitigations": [
+      "Implement rigorous token counting"
+    ]
+  },
+  {
+    "identifier": "https://customsearch.googleapis.com/customsearch/v1",
+    "display_name": "Google Custom Search",
+    "category": "Search APIs",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 400,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.9
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Hard limits of 10k requests per day"
+    ],
+    "mitigations": [
+      "Cache search results aggressively"
+    ]
+  },
+  {
+    "identifier": "https://api.search.brave.com/res/v1/web/search",
+    "display_name": "Brave Search",
+    "category": "Search APIs",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 500,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Occasional indexing lag"
+    ],
+    "mitigations": [
+      "Combine with other engines for freshness"
+    ]
+  },
+  {
+    "identifier": "https://api.exa.ai/search",
+    "display_name": "Exa",
+    "category": "Search APIs",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 900,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.6
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Complex queries can cause timeouts"
+    ],
+    "mitigations": [
+      "Simplify neural search queries"
+    ]
+  },
+  {
+    "identifier": "https://api.you.com/search",
+    "display_name": "You.com API",
+    "category": "Search APIs",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 1100,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.5
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Beta endpoint instability"
+    ],
+    "mitigations": [
+      "Implement automatic retries"
+    ]
+  },
+  {
+    "identifier": "https://google.serper.dev/search",
+    "display_name": "Serper.dev",
+    "category": "Search APIs",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 800,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.6
+      },
+      {
+        "category": "connection_error",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Proxy rotation failures internally"
+    ],
+    "mitigations": [
+      "Retry on 5xx errors"
+    ]
+  },
+  {
+    "identifier": "https://api.dataforseo.com/v3",
+    "display_name": "DataForSEO",
+    "category": "Search APIs",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 1500,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.7
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Complex JSON schema requirements for tasks"
+    ],
+    "mitigations": [
+      "Validate payload strictly before sending"
+    ]
+  },
+  {
+    "identifier": "https://api.search1api.com/search",
+    "display_name": "Search1API",
+    "category": "Search APIs",
+    "reliability_estimate": 0.94,
+    "avg_latency_ms": 1200,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.8
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Small infrastructure leads to throttling"
+    ],
+    "mitigations": [
+      "Use primarily for non-critical background jobs"
+    ]
+  },
+  {
+    "identifier": "https://api.stripe.com/v1",
+    "display_name": "Stripe",
+    "category": "Payment APIs",
+    "reliability_estimate": 0.9999,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.8
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Idempotency key mismanagement",
+      "Webhooks arriving out of order"
+    ],
+    "mitigations": [
+      "Always use idempotency keys",
+      "Check webhook event timestamps"
+    ]
+  },
+  {
+    "identifier": "https://api-m.paypal.com/v1",
+    "display_name": "PayPal",
+    "category": "Payment APIs",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 600,
+    "common_errors": [
+      {
+        "category": "server_error",
+        "frequency": 0.5
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Legacy API endpoints returning opaque errors"
+    ],
+    "mitigations": [
+      "Use v2 REST APIs exclusively"
+    ]
+  },
+  {
+    "identifier": "https://connect.squareup.com/v2",
+    "display_name": "Square",
+    "category": "Payment APIs",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 450,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.6
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Location ID mismatches"
+    ],
+    "mitigations": [
+      "Cache location IDs internally"
+    ]
+  },
+  {
+    "identifier": "https://api.lemonsqueezy.com/v1",
+    "display_name": "Lemon Squeezy",
+    "category": "Payment APIs",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 500,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Strict rate limiting on reporting endpoints"
+    ],
+    "mitigations": [
+      "Offload analytics to internal DB via webhooks"
+    ]
+  },
+  {
+    "identifier": "https://vendors.paddle.com/api/2.0",
+    "display_name": "Paddle",
+    "category": "Payment APIs",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 400,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.7
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Sandbox and Production behavior differences"
+    ],
+    "mitigations": [
+      "Test thoroughly in live mode with test cards"
+    ]
+  },
+  {
+    "identifier": "https://api.braintreegateway.com",
+    "display_name": "Braintree",
+    "category": "Payment APIs",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 350,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.8
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Complex client token generation"
+    ],
+    "mitigations": [
+      "Cache client tokens securely"
+    ]
+  },
+  {
+    "identifier": "https://checkout-test.adyen.com/v70",
+    "display_name": "Adyen",
+    "category": "Payment APIs",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.9
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Extremely rigid schema validation"
+    ],
+    "mitigations": [
+      "Use strongly typed SDKs"
+    ]
+  },
+  {
+    "identifier": "https://api.razorpay.com/v1",
+    "display_name": "Razorpay",
+    "category": "Payment APIs",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 400,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.6
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Timeouts during banking network congestion"
+    ],
+    "mitigations": [
+      "Rely heavily on webhooks for confirmation"
+    ]
+  },
+  {
+    "identifier": "https://api.mollie.com/v2",
+    "display_name": "Mollie",
+    "category": "Payment APIs",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 350,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Strict pagination limits"
+    ],
+    "mitigations": [
+      "Implement cursors properly"
+    ]
+  },
+  {
+    "identifier": "https://api.checkout.com",
+    "display_name": "Checkout.com",
+    "category": "Payment APIs",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.7
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Complex 3D Secure handling"
+    ],
+    "mitigations": [
+      "Use hosted frames for simplified compliance"
+    ]
+  },
+  {
+    "identifier": "https://api.sendgrid.com/v3",
+    "display_name": "SendGrid",
+    "category": "Email APIs",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 250,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Accounts easily suspended for bounce rates"
+    ],
+    "mitigations": [
+      "Implement strict email validation before sending"
+    ]
+  },
+  {
+    "identifier": "https://api.mailgun.net/v3",
+    "display_name": "Mailgun",
+    "category": "Email APIs",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.5
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Domain verification propagation delays"
+    ],
+    "mitigations": [
+      "Pre-warm IP addresses slowly"
+    ]
+  },
+  {
+    "identifier": "https://api.resend.com/emails",
+    "display_name": "Resend",
+    "category": "Email APIs",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 200,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.7
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Strict rate limits on new accounts"
+    ],
+    "mitigations": [
+      "Request quota increase early"
+    ]
+  },
+  {
+    "identifier": "https://api.postmarkapp.com/email",
+    "display_name": "Postmark",
+    "category": "Email APIs",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 150,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.8
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Cannot send marketing emails from transactional streams"
+    ],
+    "mitigations": [
+      "Separate message streams strictly"
+    ]
+  },
+  {
+    "identifier": "https://email.us-east-1.amazonaws.com",
+    "display_name": "Amazon SES",
+    "category": "Email APIs",
+    "reliability_estimate": 0.9999,
+    "avg_latency_ms": 100,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.9
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Sandbox mode limits to 1 email per second"
+    ],
+    "mitigations": [
+      "Apply for production access immediately"
+    ]
+  },
+  {
+    "identifier": "https://api.mailjet.com/v3.1",
+    "display_name": "Mailjet",
+    "category": "Email APIs",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 400,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.5
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Occasional slow dispatch times"
+    ],
+    "mitigations": [
+      "Send non-critical emails asynchronously"
+    ]
+  },
+  {
+    "identifier": "https://api.sparkpost.com/api/v1",
+    "display_name": "SparkPost",
+    "category": "Email APIs",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 250,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.6
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Template variable mismatch causing hard failures"
+    ],
+    "mitigations": [
+      "Validate templates programmatically"
+    ]
+  },
+  {
+    "identifier": "https://api.brevo.com/v3",
+    "display_name": "Brevo",
+    "category": "Email APIs",
+    "reliability_estimate": 0.985,
+    "avg_latency_ms": 350,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.7
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "API schema changes without warnings"
+    ],
+    "mitigations": [
+      "Pin SDK versions carefully"
+    ]
+  },
+  {
+    "identifier": "https://app.loops.so/api/v1",
+    "display_name": "Loops",
+    "category": "Email APIs",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 200,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.8
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Contact syncing limits"
+    ],
+    "mitigations": [
+      "Batch update contacts"
+    ]
+  },
+  {
+    "identifier": "https://api.elasticemail.com/v2",
+    "display_name": "Elastic Email",
+    "category": "Email APIs",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 450,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.6
+      },
+      {
+        "category": "connection_error",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "High latency for large attachment dispatches"
+    ],
+    "mitigations": [
+      "Host files externally and link them"
+    ]
+  },
+  {
+    "identifier": "https://slack.com/api",
+    "display_name": "Slack",
+    "category": "Messaging",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 200,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.9
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Tier 1 rate limits (1 req/sec) easily hit"
+    ],
+    "mitigations": [
+      "Implement Slack's documented backoff headers"
+    ]
+  },
+  {
+    "identifier": "https://discord.com/api/v10",
+    "display_name": "Discord",
+    "category": "Messaging",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 150,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.8
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Global rate limits block entire bots"
+    ],
+    "mitigations": [
+      "Respect X-RateLimit-Reset headers strictly"
+    ]
+  },
+  {
+    "identifier": "https://api.telegram.org/bot",
+    "display_name": "Telegram",
+    "category": "Messaging",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 250,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.7
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Strict 30 messages/second broadcast limit"
+    ],
+    "mitigations": [
+      "Queue and delay broadcast messages"
+    ]
+  },
+  {
+    "identifier": "https://api.twilio.com",
+    "display_name": "Twilio SMS",
+    "category": "Messaging",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.6
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Carrier filtering causes silent drops"
+    ],
+    "mitigations": [
+      "Register A2P 10DLC campaigns"
+    ]
+  },
+  {
+    "identifier": "https://graph.facebook.com/v18.0",
+    "display_name": "WhatsApp Business",
+    "category": "Messaging",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 600,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.5
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Complex template approval required before sending"
+    ],
+    "mitigations": [
+      "Use standard template libraries"
+    ]
+  },
+  {
+    "identifier": "https://rest.nexmo.com",
+    "display_name": "Vonage",
+    "category": "Messaging",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 350,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Webhooks failing on large inbound spikes"
+    ],
+    "mitigations": [
+      "Scale webhook receivers horizontally"
+    ]
+  },
+  {
+    "identifier": "https://api.plivo.com/v1",
+    "display_name": "Plivo",
+    "category": "Messaging",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.7
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Number format validation failures"
+    ],
+    "mitigations": [
+      "Format to E.164 strictly before API calls"
+    ]
+  },
+  {
+    "identifier": "https://rest.messagebird.com",
+    "display_name": "MessageBird",
+    "category": "Messaging",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 250,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.8
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Concurrent connection limits"
+    ],
+    "mitigations": [
+      "Use HTTP connection pooling"
+    ]
+  },
+  {
+    "identifier": "https://matrix-client.matrix.org",
+    "display_name": "Matrix",
+    "category": "Messaging",
+    "reliability_estimate": 0.95,
+    "avg_latency_ms": 800,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.6
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Federation lag causes slow message delivery"
+    ],
+    "mitigations": [
+      "Run a dedicated homeserver for bots"
+    ]
+  },
+  {
+    "identifier": "https://graph.microsoft.com/v1.0/teams",
+    "display_name": "Microsoft Teams",
+    "category": "Messaging",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 500,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.5
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Complex OAuth token refreshing"
+    ],
+    "mitigations": [
+      "Use MSAL libraries for token management"
+    ]
+  },
+  {
+    "identifier": "https://s3.amazonaws.com",
+    "display_name": "AWS S3",
+    "category": "Cloud Storage",
+    "reliability_estimate": 0.9999,
+    "avg_latency_ms": 80,
+    "common_errors": [
+      {
+        "category": "not_found",
+        "frequency": 0.5
+      },
+      {
+        "category": "permission_denied",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "IAM policy misconfigurations leading to 403s"
+    ],
+    "mitigations": [
+      "Use automated policy generators"
+    ]
+  },
+  {
+    "identifier": "https://storage.googleapis.com",
+    "display_name": "Google Cloud Storage",
+    "category": "Cloud Storage",
+    "reliability_estimate": 0.9999,
+    "avg_latency_ms": 70,
+    "common_errors": [
+      {
+        "category": "permission_denied",
+        "frequency": 0.6
+      },
+      {
+        "category": "not_found",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "CORS configuration blocking direct uploads"
+    ],
+    "mitigations": [
+      "Apply correct CORS JSON via gsutil"
+    ]
+  },
+  {
+    "identifier": "https://blob.core.windows.net",
+    "display_name": "Azure Blob",
+    "category": "Cloud Storage",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 90,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.7
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "SAS token expiry causing sudden failures"
+    ],
+    "mitigations": [
+      "Generate long-lived SAS securely or refresh automatically"
+    ]
+  },
+  {
+    "identifier": "https://r2.cloudflarestorage.com",
+    "display_name": "Cloudflare R2",
+    "category": "Cloud Storage",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 60,
+    "common_errors": [
+      {
+        "category": "not_found",
+        "frequency": 0.8
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Eventual consistency edge cases"
+    ],
+    "mitigations": [
+      "Add small delays after upload before fetching"
+    ]
+  },
+  {
+    "identifier": "https://api.backblazeb2.com",
+    "display_name": "Backblaze B2",
+    "category": "Cloud Storage",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 200,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.6
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Auth tokens expire frequently"
+    ],
+    "mitigations": [
+      "Cache auth token and refresh on 401"
+    ]
+  },
+  {
+    "identifier": "[suspicious link removed]",
+    "display_name": "DigitalOcean Spaces",
+    "category": "Cloud Storage",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 150,
+    "common_errors": [
+      {
+        "category": "server_error",
+        "frequency": 0.6
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Rate limits on object creation"
+    ],
+    "mitigations": [
+      "Use S3-compatible SDKs with backoff"
+    ]
+  },
+  {
+    "identifier": "https://s3.wasabisys.com",
+    "display_name": "Wasabi",
+    "category": "Cloud Storage",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 120,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.5
+      },
+      {
+        "category": "connection_error",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Region routing issues causing slow uploads"
+    ],
+    "mitigations": [
+      "Hardcode explicit region endpoints"
+    ]
+  },
+  {
+    "identifier": "https://supabase.co/storage/v1",
+    "display_name": "Supabase Storage",
+    "category": "Cloud Storage",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 100,
+    "common_errors": [
+      {
+        "category": "permission_denied",
+        "frequency": 0.8
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Row Level Security (RLS) policies blocking access"
+    ],
+    "mitigations": [
+      "Test RLS policies thoroughly via dashboard"
+    ]
+  },
+  {
+    "identifier": "https://blob.vercel-storage.com",
+    "display_name": "Vercel Blob",
+    "category": "Cloud Storage",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 80,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      },
+      {
+        "category": "not_found",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "File size limits on standard tiers"
+    ],
+    "mitigations": [
+      "Compress assets before upload"
+    ]
+  },
+  {
+    "identifier": "https://api.pinata.cloud",
+    "display_name": "Pinata (IPFS)",
+    "category": "Cloud Storage",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 500,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.7
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "IPFS pinning can be slow"
+    ],
+    "mitigations": [
+      "Use dedicated gateways for retrieval"
+    ]
+  },
+  {
+    "identifier": "https://supabase.co/rest/v1",
+    "display_name": "Supabase DB",
+    "category": "Databases & BaaS",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 50,
+    "common_errors": [
+      {
+        "category": "permission_denied",
+        "frequency": 0.6
+      },
+      {
+        "category": "connection_error",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "PostgREST max connections limit hit quickly"
+    ],
+    "mitigations": [
+      "Use PgBouncer connection pooling"
+    ]
+  },
+  {
+    "identifier": "https://firestore.googleapis.com",
+    "display_name": "Firebase Firestore",
+    "category": "Databases & BaaS",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 100,
+    "common_errors": [
+      {
+        "category": "permission_denied",
+        "frequency": 0.7
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Missing compound indexes failing queries silently"
+    ],
+    "mitigations": [
+      "Watch logs for index creation links"
+    ]
+  },
+  {
+    "identifier": "https://api.planetscale.com",
+    "display_name": "PlanetScale",
+    "category": "Databases & BaaS",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 40,
+    "common_errors": [
+      {
+        "category": "connection_error",
+        "frequency": 0.8
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Foreign key constraints unsupported (historically)"
+    ],
+    "mitigations": [
+      "Manage relations at the application layer"
+    ]
+  },
+  {
+    "identifier": "https://console.neon.tech/api/v2",
+    "display_name": "Neon",
+    "category": "Databases & BaaS",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 60,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.6
+      },
+      {
+        "category": "connection_error",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Cold starts on serverless branches"
+    ],
+    "mitigations": [
+      "Use an active ping to keep endpoints warm"
+    ]
+  },
+  {
+    "identifier": "https://api.turso.tech/v1",
+    "display_name": "Turso",
+    "category": "Databases & BaaS",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 30,
+    "common_errors": [
+      {
+        "category": "connection_error",
+        "frequency": 0.7
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "SQLite edge cases with types"
+    ],
+    "mitigations": [
+      "Strictly type schemas in ORM"
+    ]
+  },
+  {
+    "identifier": "https://cloud.mongodb.com/api",
+    "display_name": "MongoDB Atlas",
+    "category": "Databases & BaaS",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 50,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.5
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "IP allowlisting blocking Vercel/serverless deployments"
+    ],
+    "mitigations": [
+      "Allow IP 0.0.0.0/0 securely with strong auth"
+    ]
+  },
+  {
+    "identifier": "https://dynamodb.us-east-1.amazonaws.com",
+    "display_name": "DynamoDB",
+    "category": "Databases & BaaS",
+    "reliability_estimate": 0.9999,
+    "avg_latency_ms": 15,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.9
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Provisioned throughput exceeded"
+    ],
+    "mitigations": [
+      "Use on-demand billing for unpredictable AI workloads"
+    ]
+  },
+  {
+    "identifier": "https://us1-redis.upstash.io",
+    "display_name": "Upstash Redis",
+    "category": "Databases & BaaS",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 25,
+    "common_errors": [
+      {
+        "category": "connection_error",
+        "frequency": 0.6
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Daily request limits on free tier"
+    ],
+    "mitigations": [
+      "Monitor usage dashboard frequently"
+    ]
+  },
+  {
+    "identifier": "https://api.xata.io",
+    "display_name": "Xata",
+    "category": "Databases & BaaS",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 80,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.7
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Schema mismatches failing REST inserts"
+    ],
+    "mitigations": [
+      "Regenerate Xata client upon every schema change"
+    ]
+  },
+  {
+    "identifier": "https://cockroachlabs.cloud/api",
+    "display_name": "CockroachDB",
+    "category": "Databases & BaaS",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 70,
+    "common_errors": [
+      {
+        "category": "connection_error",
+        "frequency": 0.8
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Transaction retries required heavily"
+    ],
+    "mitigations": [
+      "Implement robust transaction retry loops"
+    ]
+  },
+  {
+    "identifier": "https://pinecone.io",
+    "display_name": "Pinecone",
+    "category": "Vector Databases",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 40,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Cold starts on serverless indexes"
+    ],
+    "mitigations": [
+      "Query index periodically to keep warm"
+    ]
+  },
+  {
+    "identifier": "https://qdrant.tech",
+    "display_name": "Qdrant Cloud",
+    "category": "Vector Databases",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 45,
+    "common_errors": [
+      {
+        "category": "connection_error",
+        "frequency": 0.5
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Memory saturation on large inserts"
+    ],
+    "mitigations": [
+      "Batch insert vectors in smaller chunks"
+    ]
+  },
+  {
+    "identifier": "https://weaviate.network",
+    "display_name": "Weaviate Cloud",
+    "category": "Vector Databases",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 50,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.7
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Schema drift causing indexing failures"
+    ],
+    "mitigations": [
+      "Define explicit properties in schema"
+    ]
+  },
+  {
+    "identifier": "https://api.chroma.com",
+    "display_name": "Chroma Cloud",
+    "category": "Vector Databases",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 60,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.6
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Slow querying on massive unindexed datasets"
+    ],
+    "mitigations": [
+      "Optimize HNSW parameters"
+    ]
+  },
+  {
+    "identifier": "https://zillizcloud.com",
+    "display_name": "Milvus (Zilliz)",
+    "category": "Vector Databases",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 35,
+    "common_errors": [
+      {
+        "category": "connection_error",
+        "frequency": 0.7
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Complex connection pooling requirements"
+    ],
+    "mitigations": [
+      "Use official robust SDKs"
+    ]
+  },
+  {
+    "identifier": "https://api.zep.com",
+    "display_name": "Zep",
+    "category": "Vector Databases",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 80,
+    "common_errors": [
+      {
+        "category": "server_error",
+        "frequency": 0.5
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Heavy summarization tasks blocking DB"
+    ],
+    "mitigations": [
+      "Run async background workers"
+    ]
+  },
+  {
+    "identifier": "https://astra.datastax.com",
+    "display_name": "Astra DB",
+    "category": "Vector Databases",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 40,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.8
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Strict partition key rules"
+    ],
+    "mitigations": [
+      "Design data models around access patterns"
+    ]
+  },
+  {
+    "identifier": "https://vector.upstash.com",
+    "display_name": "Upstash Vector",
+    "category": "Vector Databases",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 30,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.7
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Dimension mismatch on embeddings"
+    ],
+    "mitigations": [
+      "Strictly validate embedding size before insert"
+    ]
+  },
+  {
+    "identifier": "https://api.singlestore.com",
+    "display_name": "SingleStore",
+    "category": "Vector Databases",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 25,
+    "common_errors": [
+      {
+        "category": "connection_error",
+        "frequency": 0.6
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "High memory consumption for vector indexes"
+    ],
+    "mitigations": [
+      "Scale compute correctly"
+    ]
+  },
+  {
+    "identifier": "https://ai.googleapis.com/v1",
+    "display_name": "Vertex Vector Search",
+    "category": "Vector Databases",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 45,
+    "common_errors": [
+      {
+        "category": "permission_denied",
+        "frequency": 0.6
+      },
+      {
+        "category": "not_found",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Complex IAM setup required"
+    ],
+    "mitigations": [
+      "Use service accounts with precise roles"
+    ]
+  },
+  {
+    "identifier": "https://api.firecrawl.dev/v1",
+    "display_name": "Firecrawl",
+    "category": "Web Scraping",
+    "reliability_estimate": 0.92,
+    "avg_latency_ms": 5000,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.7
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Heavy JS sites causing long timeouts"
+    ],
+    "mitigations": [
+      "Increase timeout caps to 30s+"
+    ]
+  },
+  {
+    "identifier": "https://chrome.browserless.io",
+    "display_name": "Browserless",
+    "category": "Web Scraping",
+    "reliability_estimate": 0.95,
+    "avg_latency_ms": 3000,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.6
+      },
+      {
+        "category": "connection_error",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Zombie processes eating concurrent limits"
+    ],
+    "mitigations": [
+      "Always send browser.close() in code"
+    ]
+  },
+  {
+    "identifier": "https://app.scrapingbee.com",
+    "display_name": "ScrapingBee",
+    "category": "Web Scraping",
+    "reliability_estimate": 0.94,
+    "avg_latency_ms": 4500,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.8
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Anti-bot protections still occasionally blocking"
+    ],
+    "mitigations": [
+      "Use premium proxies for strict targets"
+    ]
+  },
+  {
+    "identifier": "https://api.apify.com/v2",
+    "display_name": "Apify",
+    "category": "Web Scraping",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 2000,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Actor runs crashing silently out of memory"
+    ],
+    "mitigations": [
+      "Provision actors with higher RAM"
+    ]
+  },
+  {
+    "identifier": "https://api.zenrows.com/v1",
+    "display_name": "ZenRows",
+    "category": "Web Scraping",
+    "reliability_estimate": 0.93,
+    "avg_latency_ms": 6000,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.7
+      },
+      {
+        "category": "connection_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Cloudflare bypass taking too long"
+    ],
+    "mitigations": [
+      "Enable async webhooks for results"
+    ]
+  },
+  {
+    "identifier": "https://api.scraperapi.com",
+    "display_name": "ScraperAPI",
+    "category": "Web Scraping",
+    "reliability_estimate": 0.92,
+    "avg_latency_ms": 5500,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.8
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Shared proxy pools getting banned"
+    ],
+    "mitigations": [
+      "Pay for residential proxies addon"
+    ]
+  },
+  {
+    "identifier": "https://api.brightdata.com",
+    "display_name": "BrightData",
+    "category": "Web Scraping",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 1500,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.6
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Complex zone configuration"
+    ],
+    "mitigations": [
+      "Test zones meticulously before production"
+    ]
+  },
+  {
+    "identifier": "https://api.crawlbase.com",
+    "display_name": "Crawlbase",
+    "category": "Web Scraping",
+    "reliability_estimate": 0.91,
+    "avg_latency_ms": 4000,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.6
+      },
+      {
+        "category": "not_found",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Occasional empty HTML bodies returned"
+    ],
+    "mitigations": [
+      "Verify response length and retry"
+    ]
+  },
+  {
+    "identifier": "https://api.scrapingant.com",
+    "display_name": "ScrapingAnt",
+    "category": "Web Scraping",
+    "reliability_estimate": 0.93,
+    "avg_latency_ms": 5000,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.7
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "High latency with JS rendering enabled"
+    ],
+    "mitigations": [
+      "Disable JS if target is static HTML"
+    ]
+  },
+  {
+    "identifier": "https://api.zyte.com/v1",
+    "display_name": "Zyte",
+    "category": "Web Scraping",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 3000,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.5
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Smart Proxy Manager limits blocking bursts"
+    ],
+    "mitigations": [
+      "Throttle concurrency gracefully"
+    ]
+  },
+  {
+    "identifier": "https://api.openai.com/v1/images",
+    "display_name": "DALL-E",
+    "category": "Image/Media Generation",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 8000,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Safety filter rejecting benign prompts"
+    ],
+    "mitigations": [
+      "Sanitize prompts for controversial keywords"
+    ]
+  },
+  {
+    "identifier": "https://api.stability.ai",
+    "display_name": "Stability AI",
+    "category": "Image/Media Generation",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 5000,
+    "common_errors": [
+      {
+        "category": "server_error",
+        "frequency": 0.5
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Timeouts during model swaps"
+    ],
+    "mitigations": [
+      "Use newer SD3 endpoints for stability"
+    ]
+  },
+  "identifier",
+  "https://api.replicate.com/v1",
+  "display_name",
+  "Replicate",
+  "category",
+  "Image/Media Generation",
+  "reliability_estimate",
+  0.95,
+  "avg_latency_ms",
+  12000,
+  "common_errors",
+  [
+    {
+      "category": "timeout",
+      "frequency": 0.7
+    },
+    {
+      "category": "server_error",
+      "frequency": 0.3
+    }
+  ],
+  "pitfalls",
+  3,
+  "mitigations",
+  [
+    "Poll with webhooks instead of waiting"
+  ],
+  {
+    "identifier": "https://api.userapi.ai",
+    "display_name": "Midjourney API (Wrapper)",
+    "category": "Image/Media Generation",
+    "reliability_estimate": 0.85,
+    "avg_latency_ms": 45000,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.8
+      },
+      {
+        "category": "connection_error",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Discord accounts getting banned, breaking API"
+    ],
+    "mitigations": [
+      "Extremely high risk, use fallback generators"
+    ]
+  },
+  {
+    "identifier": "https://api.elevenlabs.io",
+    "display_name": "ElevenLabs",
+    "category": "Image/Media Generation",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 1500,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.7
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Running out of character quota silently"
+    ],
+    "mitigations": [
+      "Monitor quota API programmatically"
+    ]
+  },
+  {
+    "identifier": "https://fal.run",
+    "display_name": "Fal.ai",
+    "category": "Image/Media Generation",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 3000,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.6
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Queue build-ups during viral model usage"
+    ],
+    "mitigations": [
+      "Implement robust queue polling"
+    ]
+  },
+  {
+    "identifier": "https://cloud.leonardo.ai",
+    "display_name": "Leonardo.ai",
+    "category": "Image/Media Generation",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 7000,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.5
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Job IDs expiring if not polled"
+    ],
+    "mitigations": [
+      "Poll immediately and continuously"
+    ]
+  },
+  "identifier",
+  "https://api.runwayml.com",
+  "display_name",
+  "RunwayML",
+  "category",
+  "Image/Media Generation",
+  "reliability_estimate",
+  0.95,
+  "avg_latency_ms",
+  20000,
+  "common_errors",
+  [
+    {
+      "category": "timeout",
+      "frequency": 0.8
+    },
+    {
+      "category": "server_error",
+      "frequency": 0.2
+    }
+  ],
+  "pitfalls",
+  1,
+  "mitigations",
+  [
+    "Always use async webhooks"
+  ],
+  {
+    "identifier": "https://api.lumalabs.ai",
+    "display_name": "Luma AI",
+    "category": "Image/Media Generation",
+    "reliability_estimate": 0.94,
+    "avg_latency_ms": 35000,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.9
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "High queue times on Dream Machine"
+    ],
+    "mitigations": [
+      "Handle 202 Accepted appropriately"
+    ]
+  },
+  {
+    "identifier": "https://api.heygen.com",
+    "display_name": "HeyGen",
+    "category": "Image/Media Generation",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 15000,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Avatar lip-sync failing on complex characters"
+    ],
+    "mitigations": [
+      "Pre-process text for pronunciation"
+    ]
+  },
+  {
+    "identifier": "https://api.github.com",
+    "display_name": "GitHub API",
+    "category": "Developer Tools",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.8
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Unauthenticated requests limited to 60/hr"
+    ],
+    "mitigations": [
+      "Always pass a PAT (Personal Access Token)"
+    ]
+  },
+  {
+    "identifier": "https://gitlab.com/api/v4",
+    "display_name": "GitLab API",
+    "category": "Developer Tools",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 400,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.7
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Heavy GraphQL queries timing out"
+    ],
+    "mitigations": [
+      "Paginate aggressively"
+    ]
+  },
+  {
+    "identifier": "https://api.vercel.com",
+    "display_name": "Vercel API",
+    "category": "Developer Tools",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 200,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Deployments getting stuck pending"
+    ],
+    "mitigations": [
+      "Check Vercel status page programmatically"
+    ]
+  },
+  {
+    "identifier": "https://api.netlify.com",
+    "display_name": "Netlify API",
+    "category": "Developer Tools",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 250,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Build trigger rate limits"
+    ],
+    "mitigations": [
+      "Batch deploy changes"
+    ]
+  },
+  {
+    "identifier": "https://backboard.railway.app",
+    "display_name": "Railway API",
+    "category": "Developer Tools",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 350,
+    "common_errors": [
+      {
+        "category": "server_error",
+        "frequency": 0.6
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "GraphQL schema updates breaking clients"
+    ],
+    "mitigations": [
+      "Use stable queries and test them"
+    ]
+  },
+  {
+    "identifier": "https://api.render.com",
+    "display_name": "Render API",
+    "category": "Developer Tools",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 400,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.7
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Service scale endpoints slow to respond"
+    ],
+    "mitigations": [
+      "Do not block main thread on scale calls"
+    ]
+  },
+  {
+    "identifier": "https://api.machines.dev",
+    "display_name": "Fly.io API",
+    "category": "Developer Tools",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 500,
+    "common_errors": [
+      {
+        "category": "connection_error",
+        "frequency": 0.6
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Machine starts failing internally"
+    ],
+    "mitigations": [
+      "Retry machine start with backoff"
+    ]
+  },
+  {
+    "identifier": "https://api.bitbucket.org",
+    "display_name": "Bitbucket API",
+    "category": "Developer Tools",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 450,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Workspace permission complexities"
+    ],
+    "mitigations": [
+      "Ensure App Passwords have strict correct scopes"
+    ]
+  },
+  {
+    "identifier": "[suspicious link removed]",
+    "display_name": "CircleCI API",
+    "category": "Developer Tools",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "not_found",
+        "frequency": 0.6
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Pipeline IDs mismatching job IDs"
+    ],
+    "mitigations": [
+      "Follow relational hierarchy carefully"
+    ]
+  },
+  {
+    "identifier": "https://api.heroku.com",
+    "display_name": "Heroku API",
+    "category": "Developer Tools",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 350,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.6
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "API tokens expiring globally"
+    ],
+    "mitigations": [
+      "Implement OAuth correctly for long-term access"
+    ]
+  },
+  {
+    "identifier": "https://api.hubapi.com",
+    "display_name": "HubSpot API",
+    "category": "CRM & Productivity",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 400,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.7
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "100 requests per 10 seconds limit"
+    ],
+    "mitigations": [
+      "Implement a strict queue system"
+    ]
+  },
+  {
+    "identifier": "https://YOUR_INSTANCE.salesforce.com/services",
+    "display_name": "Salesforce API",
+    "category": "CRM & Productivity",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 600,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.5
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Complex SOQL syntax errors"
+    ],
+    "mitigations": [
+      "Test SOQL queries in dev console first"
+    ]
+  },
+  {
+    "identifier": "https://api.notion.com/v1",
+    "display_name": "Notion API",
+    "category": "CRM & Productivity",
+    "reliability_estimate": 0.985,
+    "avg_latency_ms": 800,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Deeply nested block creation fails",
+      "Slow block appending"
+    ],
+    "mitigations": [
+      "Batch blocks carefully",
+      "Retry on 502s"
+    ]
+  },
+  {
+    "identifier": "https://api.airtable.com/v0",
+    "display_name": "Airtable API",
+    "category": "CRM & Productivity",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.8
+      },
+      {
+        "category": "not_found",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "5 requests per second hard limit per base"
+    ],
+    "mitigations": [
+      "Throttle all calls globally across workers"
+    ]
+  },
+  {
+    "identifier": "https://api.linear.app/graphql",
+    "display_name": "Linear API",
+    "category": "CRM & Productivity",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 250,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Query complexity limits hit quickly"
+    ],
+    "mitigations": [
+      "Fetch only required fields"
+    ]
+  },
+  {
+    "identifier": "https://app.asana.com/api",
+    "display_name": "Asana API",
+    "category": "CRM & Productivity",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 400,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.7
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Pagination tokens expiring"
+    ],
+    "mitigations": [
+      "Consume pages immediately"
+    ]
+  },
+  {
+    "identifier": "https://api.trello.com/1",
+    "display_name": "Trello API",
+    "category": "CRM & Productivity",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.5
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Using old token formats"
+    ],
+    "mitigations": [
+      "Upgrade to OAuth 2.0"
+    ]
+  },
+  {
+    "identifier": "https://YOUR_DOMAIN.atlassian.net",
+    "display_name": "Jira API",
+    "category": "CRM & Productivity",
+    "reliability_estimate": 0.985,
+    "avg_latency_ms": 700,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Extremely bloated JSON responses causing parsing lag"
+    ],
+    "mitigations": [
+      "Use strict field filtering in query strings"
+    ]
+  },
+  {
+    "identifier": "https://api.monday.com/v2",
+    "display_name": "Monday.com API",
+    "category": "CRM & Productivity",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 500,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.6
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "GraphQL column values mutations are complex strings"
+    ],
+    "mitigations": [
+      "Escape JSON inside GraphQL correctly"
+    ]
+  },
+  {
+    "identifier": "https://api.clickup.com/api/v2",
+    "display_name": "ClickUp API",
+    "category": "CRM & Productivity",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 600,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.7
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Task hierarchy confusion leading to 404s"
+    ],
+    "mitigations": [
+      "Validate List IDs before creating tasks"
+    ]
+  },
+  {
+    "identifier": "https://maps.googleapis.com",
+    "display_name": "Google Maps API",
+    "category": "Maps & Location",
+    "reliability_estimate": 0.9999,
+    "avg_latency_ms": 150,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "permission_denied",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Unrestricted API keys getting leaked and maxing quota"
+    ],
+    "mitigations": [
+      "Restrict keys by IP or HTTP referrer immediately"
+    ]
+  },
+  {
+    "identifier": "https://api.mapbox.com",
+    "display_name": "Mapbox API",
+    "category": "Maps & Location",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 120,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.6
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Tokens lacking specific scope for tiles/routing"
+    ],
+    "mitigations": [
+      "Create scoped tokens in dashboard"
+    ]
+  },
+  {
+    "identifier": "https://router.hereapi.com",
+    "display_name": "HERE Maps",
+    "category": "Maps & Location",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 200,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.7
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Complex waypoint string formatting"
+    ],
+    "mitigations": [
+      "Use SDKs rather than raw REST calls"
+    ]
+  },
+  {
+    "identifier": "https://api.radar.io/v1",
+    "display_name": "Radar",
+    "category": "Maps & Location",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 180,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Geofence sync lag"
+    ],
+    "mitigations": [
+      "Allow 5 mins for geofences to propagate"
+    ]
+  },
+  {
+    "identifier": "https://api.foursquare.com",
+    "display_name": "Foursquare API",
+    "category": "Maps & Location",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 250,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.8
+      },
+      {
+        "category": "not_found",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Place IDs deprecating over time"
+    ],
+    "mitigations": [
+      "Refresh place IDs periodically"
+    ]
+  },
+  {
+    "identifier": "https://api.tomtom.com",
+    "display_name": "TomTom API",
+    "category": "Maps & Location",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 220,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Strict coordinate precision rules"
+    ],
+    "mitigations": [
+      "Round to 6 decimal places max"
+    ]
+  },
+  {
+    "identifier": "https://api.opencagedata.com",
+    "display_name": "OpenCage Geocoder",
+    "category": "Maps & Location",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.7
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Free tier limit of 2500 req/day"
+    ],
+    "mitigations": [
+      "Cache geocoding results locally"
+    ]
+  },
+  {
+    "identifier": "https://graph.mapillary.com",
+    "display_name": "Mapillary API",
+    "category": "Maps & Location",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 400,
+    "common_errors": [
+      {
+        "category": "not_found",
+        "frequency": 0.6
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Image keys missing if deleted"
+    ],
+    "mitigations": [
+      "Check status before fetching image blob"
+    ]
+  },
+  {
+    "identifier": "https://api.stadiamaps.com",
+    "display_name": "Stadia Maps",
+    "category": "Maps & Location",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 150,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.7
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "CORS headers missing on free plans"
+    ],
+    "mitigations": [
+      "Whitelist domains correctly"
+    ]
+  },
+  {
+    "identifier": "https://us1.locationiq.com",
+    "display_name": "LocationIQ",
+    "category": "Maps & Location",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 350,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.6
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Rate limit 2 req/sec on free tier"
+    ],
+    "mitigations": [
+      "Queue and delay requests"
+    ]
+  },
+  {
+    "identifier": "https://YOUR_https://www.google.com/search?q=DOMAIN.auth0.com",
+    "display_name": "Auth0 API",
+    "category": "Auth & Identity",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 150,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.7
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Management API tokens expiring mid-operation"
+    ],
+    "mitigations": [
+      "Auto-refresh management tokens safely"
+    ]
+  },
+  {
+    "identifier": "https://api.clerk.com/v1",
+    "display_name": "Clerk API",
+    "category": "Auth & Identity",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 100,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.6
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Clock skew causing JWT validation failures"
+    ],
+    "mitigations": [
+      "Allow 5s clock tolerance on server"
+    ]
+  },
+  {
+    "identifier": "https://identitytoolkit.googleapis.com",
+    "display_name": "Firebase Auth API",
+    "category": "Auth & Identity",
+    "reliability_estimate": 0.9999,
+    "avg_latency_ms": 80,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.8
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Anonymous user account bloat"
+    ],
+    "mitigations": [
+      "Run cron jobs to clean inactive anonymous users"
+    ]
+  },
+  {
+    "identifier": "https://YOUR_PROJECT.supabase.co/auth",
+    "display_name": "Supabase Auth",
+    "category": "Auth & Identity",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 120,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.5
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Email link expiry too fast"
+    ],
+    "mitigations": [
+      "Increase expiry time in dashboard settings"
+    ]
+  },
+  {
+    "identifier": "https://test.stytch.com",
+    "display_name": "Stytch API",
+    "category": "Auth & Identity",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 110,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.7
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Magic link testing limitations"
+    ],
+    "mitigations": [
+      "Use sandbox specific emails"
+    ]
+  },
+  {
+    "identifier": "https://YOUR_https://www.google.com/search?q=DOMAIN.kinde.com",
+    "display_name": "Kinde API",
+    "category": "Auth & Identity",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 150,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.6
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Strict redirect URI matching"
+    ],
+    "mitigations": [
+      "Ensure trailing slashes match exactly"
+    ]
+  },
+  {
+    "identifier": "https://cognito-idp.us-east-1.amazonaws.com",
+    "display_name": "AWS Cognito",
+    "category": "Auth & Identity",
+    "reliability_estimate": 0.9999,
+    "avg_latency_ms": 100,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.7
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Impossibly complex user pool migration"
+    ],
+    "mitigations": [
+      "Design schema perfectly on day 1"
+    ]
+  },
+  {
+    "identifier": "https://YOUR_https://www.google.com/search?q=DOMAIN.okta.com",
+    "display_name": "Okta API",
+    "category": "Auth & Identity",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 200,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.9
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.1
+      }
+    ],
+    "pitfalls": [
+      "Strict concurrent session limits"
+    ],
+    "mitigations": [
+      "Handle 429s by logging user out elsewhere"
+    ]
+  },
+  {
+    "identifier": "https://api.workos.com",
+    "display_name": "WorkOS API",
+    "category": "Auth & Identity",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 180,
+    "common_errors": [
+      {
+        "category": "auth_failure",
+        "frequency": 0.5
+      },
+      {
+        "category": "validation_error",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "SAML connection setup errors from customers"
+    ],
+    "mitigations": [
+      "Use Admin Portal links"
+    ]
+  },
+  {
+    "identifier": "https://api.magic.link",
+    "display_name": "Magic.link API",
+    "category": "Auth & Identity",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.6
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Blockchain network congestion causing delays"
+    ],
+    "mitigations": [
+      "Use dedicated nodes if using Web3 magic"
+    ]
+  },
+  {
+    "identifier": "https://sentry.io/api/0",
+    "display_name": "Sentry API",
+    "category": "Monitoring & Analytics",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 100,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.8
+      },
+      {
+        "category": "auth_failure",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Event quota maxing out causing dropped errors"
+    ],
+    "mitigations": [
+      "Implement aggressive sampling rates"
+    ]
+  },
+  {
+    "identifier": "https://api.datadoghq.com",
+    "display_name": "Datadog API",
+    "category": "Monitoring & Analytics",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 150,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.7
+      },
+      {
+        "category": "timeout",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "High cardinality tags exploding costs"
+    ],
+    "mitigations": [
+      "Avoid dynamic values like user_ids in metric tags"
+    ]
+  },
+  {
+    "identifier": "https://app.posthog.com",
+    "display_name": "PostHog API",
+    "category": "Monitoring & Analytics",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 120,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.6
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Batch ingestion failures on huge arrays"
+    ],
+    "mitigations": [
+      "Batch events to 100 max per payload"
+    ]
+  },
+  {
+    "identifier": "https://api.mixpanel.com",
+    "display_name": "Mixpanel API",
+    "category": "Monitoring & Analytics",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 100,
+    "common_errors": [
+      {
+        "category": "validation_error",
+        "frequency": 0.8
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.2
+      }
+    ],
+    "pitfalls": [
+      "Time formatting rejecting events"
+    ],
+    "mitigations": [
+      "Send timestamps strictly in UTC or ISO-8601"
+    ]
+  },
+  {
+    "identifier": "https://api.logsnag.com",
+    "display_name": "LogSnag API",
+    "category": "Monitoring & Analytics",
+    "reliability_estimate": 0.99,
+    "avg_latency_ms": 80,
+    "common_errors": [
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Limits on free tier quickly reached during bugs"
+    ],
+    "mitigations": [
+      "Wrap loggers to suppress duplicate messages"
+    ]
+  },
+  {
+    "identifier": "https://connect.browserless.io",
+    "display_name": "Playwright Cloud",
+    "category": "Browser Automation",
+    "reliability_estimate": 0.95,
+    "avg_latency_ms": 2500,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.7
+      },
+      {
+        "category": "connection_error",
+        "frequency": 0.3
+      }
+    ],
+    "pitfalls": [
+      "Disconnected websockets terminating tests"
+    ],
+    "mitigations": [
+      "Add auto-reconnect logic to CDPs"
+    ]
+  },
+  {
+    "identifier": "https://api.steel.dev",
+    "display_name": "Steel.dev API",
+    "category": "Browser Automation",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 2000,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.6
+      },
+      {
+        "category": "server_error",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Heavy sessions hitting RAM limits"
+    ],
+    "mitigations": [
+      "Block images/fonts in browser config"
+    ]
+  },
+  {
+    "identifier": "https://api.e2b.dev",
+    "display_name": "E2B Code Exec",
+    "category": "Code Execution",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 1500,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.5
+      },
+      {
+        "category": "connection_error",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Sandbox boot times slowing down agents"
+    ],
+    "mitigations": [
+      "Keep sandbox alive between turns"
+    ]
+  },
+  {
+    "identifier": "https://api.modal.com",
+    "display_name": "Modal API",
+    "category": "Code Execution",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 800,
+    "common_errors": [
+      {
+        "category": "timeout",
+        "frequency": 0.6
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.4
+      }
+    ],
+    "pitfalls": [
+      "Large image pulls causing cold start lag"
+    ],
+    "mitigations": [
+      "Use pre-built base images"
+    ]
+  },
+  {
+    "identifier": "https://replit.com/api",
+    "display_name": "Replit API",
+    "category": "Code Execution",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 2000,
+    "common_errors": [
+      {
+        "category": "server_error",
+        "frequency": 0.5
+      },
+      {
+        "category": "rate_limit",
+        "frequency": 0.5
+      }
+    ],
+    "pitfalls": [
+      "Repls sleeping due to inactivity"
+    ],
+    "mitigations": [
+      "Hit ping endpoint continuously for Always On"
+    ]
+  }
+]

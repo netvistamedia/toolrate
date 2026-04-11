@@ -1,0 +1,380 @@
+[
+  {
+    "identifier": "https://api.openai.com/v1",
+    "display_name": "OpenAI API",
+    "category": "llm",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 900,
+    "common_errors": [
+      {"category": "rate_limit", "frequency": 0.4},
+      {"category": "server_error", "frequency": 0.3},
+      {"category": "timeout", "frequency": 0.2},
+      {"category": "auth_failure", "frequency": 0.1}
+    ],
+    "pitfalls": ["Aggressive rate limits on bursts", "Occasional model overload spikes"],
+    "mitigations": ["Implement retries with backoff", "Use batching and caching"]
+  },
+  {
+    "identifier": "https://api.anthropic.com/v1",
+    "display_name": "Anthropic Claude API",
+    "category": "llm",
+    "reliability_estimate": 0.95,
+    "avg_latency_ms": 1100,
+    "common_errors": [
+      {"category": "rate_limit", "frequency": 0.35},
+      {"category": "timeout", "frequency": 0.3},
+      {"category": "server_error", "frequency": 0.25},
+      {"category": "auth_failure", "frequency": 0.1}
+    ],
+    "pitfalls": ["Long tail latency on large prompts", "Strict token limits"],
+    "mitigations": ["Chunk inputs", "Add timeout guards"]
+  },
+  {
+    "identifier": "https://generativelanguage.googleapis.com/v1",
+    "display_name": "Google Gemini API",
+    "category": "llm",
+    "reliability_estimate": 0.93,
+    "avg_latency_ms": 800,
+    "common_errors": [
+      {"category": "server_error", "frequency": 0.3},
+      {"category": "rate_limit", "frequency": 0.3},
+      {"category": "timeout", "frequency": 0.25},
+      {"category": "auth_failure", "frequency": 0.15}
+    ],
+    "pitfalls": ["Quota fragmentation across projects", "Inconsistent response formats"],
+    "mitigations": ["Centralize quota usage", "Add schema validation"]
+  },
+  {
+    "identifier": "https://api.mistral.ai/v1",
+    "display_name": "Mistral API",
+    "category": "llm",
+    "reliability_estimate": 0.9,
+    "avg_latency_ms": 700,
+    "common_errors": [
+      {"category": "server_error", "frequency": 0.35},
+      {"category": "timeout", "frequency": 0.3},
+      {"category": "rate_limit", "frequency": 0.25},
+      {"category": "auth_failure", "frequency": 0.1}
+    ],
+    "pitfalls": ["Occasional degraded performance", "Sparse error messaging"],
+    "mitigations": ["Retry with jitter", "Add logging wrappers"]
+  },
+  {
+    "identifier": "https://api.groq.com/openai/v1",
+    "display_name": "Groq API",
+    "category": "llm",
+    "reliability_estimate": 0.92,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {"category": "rate_limit", "frequency": 0.4},
+      {"category": "server_error", "frequency": 0.3},
+      {"category": "timeout", "frequency": 0.2},
+      {"category": "auth_failure", "frequency": 0.1}
+    ],
+    "pitfalls": ["Throughput caps despite low latency", "Burst throttling"],
+    "mitigations": ["Queue requests", "Use fallback providers"]
+  },
+  {
+    "identifier": "https://api.together.xyz/v1",
+    "display_name": "Together AI",
+    "category": "llm",
+    "reliability_estimate": 0.89,
+    "avg_latency_ms": 950,
+    "common_errors": [
+      {"category": "server_error", "frequency": 0.4},
+      {"category": "timeout", "frequency": 0.3},
+      {"category": "rate_limit", "frequency": 0.2},
+      {"category": "auth_failure", "frequency": 0.1}
+    ],
+    "pitfalls": ["Frequent transient errors", "Model cold starts"],
+    "mitigations": ["Retry aggressively", "Warm up models"]
+  },
+  {
+    "identifier": "https://api.cohere.ai/v1",
+    "display_name": "Cohere API",
+    "category": "llm",
+    "reliability_estimate": 0.91,
+    "avg_latency_ms": 850,
+    "common_errors": [
+      {"category": "rate_limit", "frequency": 0.35},
+      {"category": "server_error", "frequency": 0.3},
+      {"category": "timeout", "frequency": 0.25},
+      {"category": "auth_failure", "frequency": 0.1}
+    ],
+    "pitfalls": ["Token limit confusion", "Occasional outages"],
+    "mitigations": ["Pre-validate inputs", "Retry on 5xx"]
+  },
+
+  {
+    "identifier": "https://api.stripe.com/v1",
+    "display_name": "Stripe API",
+    "category": "payment",
+    "reliability_estimate": 0.995,
+    "avg_latency_ms": 250,
+    "common_errors": [
+      {"category": "validation_error", "frequency": 0.4},
+      {"category": "auth_failure", "frequency": 0.2},
+      {"category": "rate_limit", "frequency": 0.2},
+      {"category": "server_error", "frequency": 0.2}
+    ],
+    "pitfalls": ["Strict validation rules", "Webhook retries complexity"],
+    "mitigations": ["Validate client-side", "Idempotency keys"]
+  },
+  {
+    "identifier": "https://api.paypal.com/v1",
+    "display_name": "PayPal API",
+    "category": "payment",
+    "reliability_estimate": 0.9,
+    "avg_latency_ms": 600,
+    "common_errors": [
+      {"category": "server_error", "frequency": 0.35},
+      {"category": "timeout", "frequency": 0.25},
+      {"category": "auth_failure", "frequency": 0.2},
+      {"category": "rate_limit", "frequency": 0.2}
+    ],
+    "pitfalls": ["Inconsistent sandbox vs prod", "Opaque errors"],
+    "mitigations": ["Extensive retries", "Use logs for debugging"]
+  },
+
+  {
+    "identifier": "https://api.sendgrid.com/v3",
+    "display_name": "SendGrid API",
+    "category": "email",
+    "reliability_estimate": 0.94,
+    "avg_latency_ms": 400,
+    "common_errors": [
+      {"category": "rate_limit", "frequency": 0.4},
+      {"category": "server_error", "frequency": 0.3},
+      {"category": "validation_error", "frequency": 0.2},
+      {"category": "auth_failure", "frequency": 0.1}
+    ],
+    "pitfalls": ["IP reputation issues", "Silent drops"],
+    "mitigations": ["Monitor delivery stats", "Use dedicated IPs"]
+  },
+
+  {
+    "identifier": "https://api.slack.com",
+    "display_name": "Slack API",
+    "category": "messaging",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {"category": "rate_limit", "frequency": 0.5},
+      {"category": "validation_error", "frequency": 0.2},
+      {"category": "server_error", "frequency": 0.2},
+      {"category": "auth_failure", "frequency": 0.1}
+    ],
+    "pitfalls": ["Strict rate limiting per method", "Token scopes confusion"],
+    "mitigations": ["Respect retry headers", "Use granular tokens"]
+  },
+
+  {
+    "identifier": "https://s3.amazonaws.com",
+    "display_name": "AWS S3",
+    "category": "storage",
+    "reliability_estimate": 0.999,
+    "avg_latency_ms": 120,
+    "common_errors": [
+      {"category": "timeout", "frequency": 0.3},
+      {"category": "permission_denied", "frequency": 0.3},
+      {"category": "server_error", "frequency": 0.2},
+      {"category": "connection_error", "frequency": 0.2}
+    ],
+    "pitfalls": ["IAM misconfigurations", "Eventual consistency edge cases"],
+    "mitigations": ["Retry reads", "Audit IAM policies"]
+  },
+
+  {
+    "identifier": "https://api.supabase.com",
+    "display_name": "Supabase API",
+    "category": "database",
+    "reliability_estimate": 0.92,
+    "avg_latency_ms": 350,
+    "common_errors": [
+      {"category": "timeout", "frequency": 0.35},
+      {"category": "server_error", "frequency": 0.3},
+      {"category": "auth_failure", "frequency": 0.2},
+      {"category": "rate_limit", "frequency": 0.15}
+    ],
+    "pitfalls": ["Cold starts", "Connection pooling issues"],
+    "mitigations": ["Use pooling", "Retry queries"]
+  },
+
+  {
+    "identifier": "https://api.pinecone.io",
+    "display_name": "Pinecone",
+    "category": "vector_db",
+    "reliability_estimate": 0.93,
+    "avg_latency_ms": 200,
+    "common_errors": [
+      {"category": "timeout", "frequency": 0.35},
+      {"category": "rate_limit", "frequency": 0.3},
+      {"category": "server_error", "frequency": 0.25},
+      {"category": "auth_failure", "frequency": 0.1}
+    ],
+    "pitfalls": ["Index warmup delays", "Dimension mismatches"],
+    "mitigations": ["Validate embeddings", "Retry queries"]
+  },
+
+  {
+    "identifier": "https://api.browserless.io",
+    "display_name": "Browserless",
+    "category": "scraping",
+    "reliability_estimate": 0.88,
+    "avg_latency_ms": 1800,
+    "common_errors": [
+      {"category": "timeout", "frequency": 0.45},
+      {"category": "server_error", "frequency": 0.25},
+      {"category": "rate_limit", "frequency": 0.2},
+      {"category": "connection_error", "frequency": 0.1}
+    ],
+    "pitfalls": ["Heavy pages timeout", "Session instability"],
+    "mitigations": ["Increase timeout", "Retry with fresh sessions"]
+  },
+
+  {
+    "identifier": "https://api.replicate.com/v1",
+    "display_name": "Replicate",
+    "category": "media",
+    "reliability_estimate": 0.87,
+    "avg_latency_ms": 2200,
+    "common_errors": [
+      {"category": "timeout", "frequency": 0.4},
+      {"category": "server_error", "frequency": 0.3},
+      {"category": "rate_limit", "frequency": 0.2},
+      {"category": "connection_error", "frequency": 0.1}
+    ],
+    "pitfalls": ["Cold starts", "Queue delays"],
+    "mitigations": ["Async polling", "Retry jobs"]
+  },
+
+  {
+    "identifier": "https://api.github.com",
+    "display_name": "GitHub API",
+    "category": "developer",
+    "reliability_estimate": 0.97,
+    "avg_latency_ms": 200,
+    "common_errors": [
+      {"category": "rate_limit", "frequency": 0.6},
+      {"category": "auth_failure", "frequency": 0.15},
+      {"category": "server_error", "frequency": 0.15},
+      {"category": "not_found", "frequency": 0.1}
+    ],
+    "pitfalls": ["Strict rate limits", "Secondary throttling"],
+    "mitigations": ["Use tokens", "Cache responses"]
+  },
+
+  {
+    "identifier": "https://api.notion.com/v1",
+    "display_name": "Notion API",
+    "category": "productivity",
+    "reliability_estimate": 0.91,
+    "avg_latency_ms": 500,
+    "common_errors": [
+      {"category": "rate_limit", "frequency": 0.4},
+      {"category": "validation_error", "frequency": 0.25},
+      {"category": "server_error", "frequency": 0.2},
+      {"category": "auth_failure", "frequency": 0.15}
+    ],
+    "pitfalls": ["Schema rigidity", "Slow queries"],
+    "mitigations": ["Cache data", "Batch writes"]
+  },
+
+  {
+    "identifier": "https://maps.googleapis.com/maps/api",
+    "display_name": "Google Maps API",
+    "category": "maps",
+    "reliability_estimate": 0.98,
+    "avg_latency_ms": 180,
+    "common_errors": [
+      {"category": "rate_limit", "frequency": 0.4},
+      {"category": "auth_failure", "frequency": 0.25},
+      {"category": "validation_error", "frequency": 0.2},
+      {"category": "server_error", "frequency": 0.15}
+    ],
+    "pitfalls": ["Billing misconfig", "Quota limits"],
+    "mitigations": ["Set budgets", "Use caching"]
+  },
+
+  {
+    "identifier": "https://auth0.com/api/v2",
+    "display_name": "Auth0",
+    "category": "auth",
+    "reliability_estimate": 0.96,
+    "avg_latency_ms": 300,
+    "common_errors": [
+      {"category": "auth_failure", "frequency": 0.4},
+      {"category": "rate_limit", "frequency": 0.3},
+      {"category": "server_error", "frequency": 0.2},
+      {"category": "timeout", "frequency": 0.1}
+    ],
+    "pitfalls": ["Token expiration confusion", "Complex rules"],
+    "mitigations": ["Refresh tokens", "Simplify flows"]
+  },
+
+  {
+    "identifier": "https://api.datadoghq.com/api",
+    "display_name": "Datadog API",
+    "category": "monitoring",
+    "reliability_estimate": 0.95,
+    "avg_latency_ms": 400,
+    "common_errors": [
+      {"category": "rate_limit", "frequency": 0.35},
+      {"category": "server_error", "frequency": 0.3},
+      {"category": "timeout", "frequency": 0.2},
+      {"category": "auth_failure", "frequency": 0.15}
+    ],
+    "pitfalls": ["High ingestion latency", "Complex metrics model"],
+    "mitigations": ["Batch metrics", "Retry ingestion"]
+  },
+
+  {
+    "identifier": "https://api.shopify.com",
+    "display_name": "Shopify API",
+    "category": "ecommerce",
+    "reliability_estimate": 0.95,
+    "avg_latency_ms": 350,
+    "common_errors": [
+      {"category": "rate_limit", "frequency": 0.5},
+      {"category": "server_error", "frequency": 0.2},
+      {"category": "validation_error", "frequency": 0.2},
+      {"category": "auth_failure", "frequency": 0.1}
+    ],
+    "pitfalls": ["Leaky bucket rate limit", "API versioning"],
+    "mitigations": ["Throttle requests", "Pin API version"]
+  },
+
+  {
+    "identifier": "https://api.browserbase.com",
+    "display_name": "Browserbase",
+    "category": "automation",
+    "reliability_estimate": 0.86,
+    "avg_latency_ms": 1600,
+    "common_errors": [
+      {"category": "timeout", "frequency": 0.45},
+      {"category": "server_error", "frequency": 0.3},
+      {"category": "connection_error", "frequency": 0.15},
+      {"category": "rate_limit", "frequency": 0.1}
+    ],
+    "pitfalls": ["Session crashes", "Slow startups"],
+    "mitigations": ["Retry sessions", "Use pooling"]
+  },
+
+  {
+    "identifier": "https://api.e2b.dev",
+    "display_name": "E2B Code Execution",
+    "category": "execution",
+    "reliability_estimate": 0.88,
+    "avg_latency_ms": 1200,
+    "common_errors": [
+      {"category": "timeout", "frequency": 0.4},
+      {"category": "server_error", "frequency": 0.3},
+      {"category": "connection_error", "frequency": 0.2},
+      {"category": "rate_limit", "frequency": 0.1}
+    ],
+    "pitfalls": ["Sandbox instability", "Execution delays"],
+    "mitigations": ["Retry execution", "Short-lived tasks"]
+  }
+
+  
+]
