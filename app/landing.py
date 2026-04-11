@@ -622,7 +622,7 @@ body::after {
 <!-- Top bar -->
 <header class="topbar">
   <div class="topbar-left">
-    <span class="topbar-name">NemoFlow</span>
+    <img src="https://nemoflow.ai/nemoflow-logo.webp" alt="NemoFlow" style="height:32px">
     <span class="topbar-tag">v0.1</span>
   </div>
   <nav class="topbar-links">
