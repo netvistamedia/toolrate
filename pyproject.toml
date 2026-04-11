@@ -2,7 +2,7 @@
 name = "nemoflow"
 version = "0.1.0"
 description = "Reliability oracle for AI agents"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.34.0",
