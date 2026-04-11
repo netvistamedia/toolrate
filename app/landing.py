@@ -629,7 +629,7 @@ body::after {
     <a href="/docs">Docs</a>
     <a href="/redoc">API Reference</a>
     <a href="https://github.com/netvistamedia/nemoflow">GitHub</a>
-    <a href="/docs#/Auth/register_v1_auth_register_post" class="btn btn-primary" style="padding:0.4rem 1rem;font-size:0.78rem;color:#fff">Get API Key</a>
+    <a href="/register" class="btn btn-primary" style="padding:0.4rem 1rem;font-size:0.78rem;color:#fff">Get API Key</a>
   </nav>
 </header>
 
@@ -800,7 +800,7 @@ curl -X POST https://api.nemoflow.ai/v1/report \
         <li>Community data pool</li>
         <li>Python &amp; TypeScript SDKs</li>
       </ul>
-      <a href="/docs#/Auth/register_v1_auth_register_post" class="btn btn-ghost" style="width:100%;justify-content:center">Create Free Key</a>
+      <a href="/register" class="btn btn-ghost" style="width:100%;justify-content:center">Create Free Key</a>
     </div>
     <div class="pricing-card featured">
       <div class="pricing-tier">Pro</div>
