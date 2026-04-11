@@ -1,0 +1,26 @@
+{
+  "name": "nemoflow",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for the NemoFlow API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "nemoflow",
+    "api",
+    "sdk"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.2"
+  }
+}
