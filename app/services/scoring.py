@@ -188,6 +188,7 @@ def _cold_start_response(now: datetime) -> AssessResponse:
 
 
 async def _get_alternatives(db: AsyncSession, tool_id) -> list[AlternativeTool]:
+    # 1. Check stored alternatives first
     result = await db.execute(
         select(Alternative, Tool)
         .join(Tool, Alternative.alternative_tool_id == Tool.id)
@@ -204,4 +205,37 @@ async def _get_alternatives(db: AsyncSession, tool_id) -> list[AlternativeTool]:
                 reason="Alternative provider",
             )
         )
+
+    if alternatives:
+        return alternatives
+
+    # 2. Fallback: find top-rated tools in the same category
+    tool_result = await db.execute(select(Tool).where(Tool.id == tool_id))
+    tool = tool_result.scalar_one_or_none()
+    if not tool or not tool.category:
+        return []
+
+    result = await db.execute(
+        select(Tool)
+        .where(
+            Tool.category == tool.category,
+            Tool.id != tool_id,
+            Tool.report_count >= 10,
+        )
+        .order_by(Tool.report_count.desc())
+        .limit(3)
+    )
+    category_peers = result.scalars().all()
+
+    for peer in category_peers:
+        # Estimate score from report count (higher report count = more established)
+        estimated_score = min(95.0, 80.0 + (peer.report_count / 20))
+        alternatives.append(
+            AlternativeTool(
+                tool=peer.identifier,
+                score=round(estimated_score, 1),
+                reason=f"Top-rated in {tool.category}",
+            )
+        )
+
     return alternatives
