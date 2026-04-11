@@ -1,0 +1,26 @@
+[project]
+name = "nemoflow"
+version = "0.1.0"
+description = "Reliability oracle for AI agents"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.34.0",
+    "sqlalchemy[asyncio]>=2.0.36",
+    "asyncpg>=0.30.0",
+    "redis>=5.2.0",
+    "pydantic-settings>=2.6.0",
+    "alembic>=1.14.0",
+    "httpx>=0.28.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "fakeredis>=2.26.0",
+]
+
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
