@@ -82,6 +82,11 @@ async def register(
     db.add(api_key)
     await db.commit()
 
+    # Send welcome email (fire-and-forget, don't block registration)
+    import asyncio
+    from app.services.email import send_welcome_email
+    asyncio.create_task(send_welcome_email(body.email, key_prefix))
+
     return RegisterResponse(
         api_key=full_key,
         tier="free",
