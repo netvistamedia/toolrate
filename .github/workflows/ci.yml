@@ -23,21 +23,3 @@ jobs:
 
       - name: Run tests
         run: python -m pytest tests/ -v
-
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-
-    steps:
-      - name: Deploy to production
-        uses: appleboy/ssh-action@v1
-        with:
-          host: 178.104.171.216
-          username: nemoflow
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            cd ~/nemoflow
-            git pull
-            docker compose up -d --build
-            docker compose exec -T app alembic upgrade head
