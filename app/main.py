@@ -81,6 +81,7 @@ app = FastAPI(
         {"name": "Discovery", "description": "Discover hidden gem tools and fallback chains based on real agent journeys"},
         {"name": "Stats", "description": "Platform and personal usage statistics"},
         {"name": "Webhooks", "description": "Register webhooks for real-time score change alerts"},
+        {"name": "Billing", "description": "Upgrade to Pro tier via Stripe"},
     ],
 )
 
@@ -246,6 +247,30 @@ result = <span class="fn">guard</span>(client, <span class="str">"https://api.op
 </div>
 </body>
 </html>"""
+
+
+@app.get("/billing/success", include_in_schema=False, response_class=HTMLResponse)
+async def billing_success():
+    return """<!DOCTYPE html><html><head><meta charset="utf-8"><title>NemoFlow — Payment Successful</title>
+<style>body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#e0e0e0;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0}
+.card{text-align:center;max-width:480px;padding:3rem;background:#111;border:1px solid #222;border-radius:16px}
+h1{color:#00d4ff;margin-bottom:1rem}p{color:#aaa;line-height:1.6}
+a{color:#7b61ff;text-decoration:none}</style></head>
+<body><div class="card"><h1>Welcome to Pro!</h1>
+<p>Your API key has been upgraded to 10,000 daily calls. The change is effective immediately.</p>
+<p style="margin-top:1.5rem"><a href="/docs">Go to API docs</a></p></div></body></html>"""
+
+
+@app.get("/billing/cancel", include_in_schema=False, response_class=HTMLResponse)
+async def billing_cancel():
+    return """<!DOCTYPE html><html><head><meta charset="utf-8"><title>NemoFlow — Checkout Cancelled</title>
+<style>body{font-family:-apple-system,sans-serif;background:#0a0a0a;color:#e0e0e0;display:flex;justify-content:center;align-items:center;min-height:100vh;margin:0}
+.card{text-align:center;max-width:480px;padding:3rem;background:#111;border:1px solid #222;border-radius:16px}
+h1{color:#ff6b9d;margin-bottom:1rem}p{color:#aaa;line-height:1.6}
+a{color:#7b61ff;text-decoration:none}</style></head>
+<body><div class="card"><h1>Checkout Cancelled</h1>
+<p>No charges were made. You can upgrade anytime via the API.</p>
+<p style="margin-top:1.5rem"><a href="/docs">Back to API docs</a></p></div></body></html>"""
 
 
 @app.get("/health")

@@ -28,5 +28,10 @@ class Settings(BaseSettings):
     # Anti-gaming
     max_reports_per_fingerprint_per_tool_per_day: int = 100
 
+    # Stripe billing
+    stripe_secret_key: str = ""
+    stripe_webhook_secret: str = ""
+    stripe_pro_price_id: str = "price_1TL1NeIXqsfJNwTofPK44WYh"
+
 
 settings = Settings()

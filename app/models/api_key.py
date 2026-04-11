@@ -16,6 +16,8 @@ class ApiKey(Base):
     tier: Mapped[str] = mapped_column(String(32), default="free")
     daily_limit: Mapped[int] = mapped_column(Integer, default=100)
     data_pool: Mapped[str | None] = mapped_column(String(128))
+    stripe_customer_id: Mapped[str | None] = mapped_column(String(64))
+    stripe_subscription_id: Mapped[str | None] = mapped_column(String(64))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
