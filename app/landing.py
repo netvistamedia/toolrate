@@ -125,11 +125,11 @@ body::after {
 .topbar-links a {
   font-size: 0.8rem;
   font-weight: 400;
-  color: var(--text-dim);
+  color: var(--text-bright);
   text-decoration: none;
   transition: color 0.2s;
 }
-.topbar-links a:hover { color: var(--text-bright); }
+.topbar-links a:hover { color: var(--orange); }
 
 /* ── Buttons ── */
 .btn {
@@ -182,7 +182,6 @@ body::after {
 .hero-mascot {
   flex-shrink: 0;
   width: 260px;
-  animation: float 4s ease-in-out infinite;
   filter: drop-shadow(0 20px 40px rgba(240, 112, 25, 0.15));
 }
 
@@ -622,7 +621,6 @@ body::after {
 <!-- Top bar -->
 <header class="topbar">
   <div class="topbar-left">
-    <img src="https://nemoflow.ai/nemoflow-logo.webp" alt="NemoFlow" class="topbar-logo">
     <span class="topbar-name">NemoFlow</span>
     <span class="topbar-tag">v0.1</span>
   </div>
@@ -630,7 +628,7 @@ body::after {
     <a href="/docs">Docs</a>
     <a href="/redoc">API Reference</a>
     <a href="https://github.com/netvistamedia/nemoflow">GitHub</a>
-    <a href="/docs#/Auth/register_v1_auth_register_post" class="btn btn-primary" style="padding:0.4rem 1rem;font-size:0.78rem">Get API Key</a>
+    <a href="/docs#/Auth/register_v1_auth_register_post" class="btn btn-primary" style="padding:0.4rem 1rem;font-size:0.78rem;color:#fff">Get API Key</a>
   </nav>
 </header>
 
