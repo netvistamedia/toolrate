@@ -651,7 +651,7 @@ body::after {
       <a href="https://github.com/netvistamedia/nemoflow" class="btn btn-ghost">View on GitHub</a>
     </div>
   </div>
-  <img src="https://nemoflow.ai/nemoflow-mascot.webp" alt="NemoFlow AI Robot" class="hero-mascot">
+  <img src="https://nemoflow.com/nemo-tool-rating.webp" alt="NemoFlow AI Robot" class="hero-mascot">
 </section>
 
 <!-- Readout -->
