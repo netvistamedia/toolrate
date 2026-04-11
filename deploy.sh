@@ -15,6 +15,7 @@ cd ~/nemoflow
 git pull
 docker compose up -d --build
 docker compose exec -T app alembic upgrade head
+docker compose exec -T app python scripts/manage-partitions.py || echo "Partition management skipped (may not be partitioned yet)"
 echo "Deployed successfully!"
 docker compose ps
 REMOTE

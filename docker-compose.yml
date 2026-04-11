@@ -37,5 +37,29 @@ services:
       timeout: 5s
       retries: 5
 
+  backup:
+    image: postgres:16-alpine
+    volumes:
+      - ./scripts/backup-db.sh:/usr/local/bin/backup-db.sh:ro
+      - pgbackups:/backups
+    environment:
+      PGPASSWORD: nemo
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        echo "Backup service started. Running daily at 03:00 UTC."
+        while true; do
+          # Sleep until next 03:00 UTC
+          now=$$(date +%s)
+          target=$$(date -d "tomorrow 03:00" +%s 2>/dev/null || date -v+1d -v3H -v0M -v0S +%s)
+          sleep $$((target - now))
+          /usr/local/bin/backup-db.sh
+        done
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   pgdata:
+  pgbackups:
