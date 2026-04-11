@@ -8,6 +8,8 @@ import asyncio
 import random
 from datetime import datetime, timedelta, timezone
 
+from sqlalchemy import select
+
 from app.db.session import async_session
 from app.models.tool import Tool
 from app.models.report import ExecutionReport
@@ -130,14 +132,22 @@ async def seed():
     tool_map: dict[str, Tool] = {}
 
     async with async_session() as db:
-        # Create tools
+        # Create or update tools
         for identifier, display_name, category, _, _ in SEED_TOOLS:
-            tool = Tool(
-                identifier=identifier,
-                display_name=display_name,
-                category=category,
+            result = await db.execute(
+                select(Tool).where(Tool.identifier == identifier)
             )
-            db.add(tool)
+            tool = result.scalar_one_or_none()
+            if tool:
+                tool.display_name = display_name
+                tool.category = category
+            else:
+                tool = Tool(
+                    identifier=identifier,
+                    display_name=display_name,
+                    category=category,
+                )
+                db.add(tool)
             tool_map[identifier] = tool
 
         await db.flush()
