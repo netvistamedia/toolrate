@@ -80,7 +80,7 @@ async def _cold_start(body: AssessRequest, db: Db, redis: RedisClient, ctx_hash:
 
     # Try on-demand LLM assessment for an intelligent first response
     if settings.anthropic_api_key:
-        assessment = await assess_tool_with_llm(body.tool_identifier)
+        assessment = await assess_tool_with_llm(body.tool_identifier, context=body.context)
         if assessment:
             await create_tool_from_assessment(db, tool, assessment)
             # Now compute a real score from the generated reports
