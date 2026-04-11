@@ -50,6 +50,11 @@ alembic revision -m "description"
 | POST | /v1/report | Yes | Report execution result |
 | GET | /v1/discover/hidden-gems | Yes | Tools with high fallback success |
 | GET | /v1/discover/fallback-chain | Yes | Best alternatives when tool fails |
+| GET | /v1/tools | Yes | Search/browse tools (filter by category, search by name) |
+| GET | /v1/tools/categories | Yes | List all tool categories with counts |
+| POST | /v1/webhooks | Yes | Register a score change webhook |
+| GET | /v1/webhooks | Yes | List your webhooks |
+| DELETE | /v1/webhooks/{id} | Yes | Delete a webhook |
 | GET | /v1/stats | Yes | Platform metrics |
 | GET | /v1/stats/me | Yes | Personal usage stats |
 | GET | /health | No | Health check |

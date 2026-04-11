@@ -65,9 +65,30 @@ async def ingest_report(
 
     await db.commit()
 
-    # Invalidate cache
+    # Invalidate cache and check for webhook-worthy score changes
     tool_id_str = str(tool.id)
+    global_cache_key = f"score:{tool_id_str}:__global__:{data_pool or ''}"
+
+    # Read old score before invalidating
+    old_score_raw = await redis.get(global_cache_key)
+    old_score = None
+    if old_score_raw:
+        import json
+        try:
+            old_score = json.loads(old_score_raw).get("reliability_score")
+        except (json.JSONDecodeError, AttributeError):
+            pass
+
     await redis.delete(f"score:{tool_id_str}:{ctx_hash}:{data_pool or ''}")
-    await redis.delete(f"score:{tool_id_str}:__global__:{data_pool or ''}")
+    await redis.delete(global_cache_key)
+
+    # Dispatch webhooks if score changed significantly
+    if old_score is not None:
+        from app.services.scoring import compute_score
+        new_response = await compute_score(db, tool, "__global__", data_pool)
+        new_score = new_response.reliability_score
+        if abs(new_score - old_score) >= 1:
+            from app.services.webhook_dispatch import dispatch_score_change
+            await dispatch_score_change(db, tool_identifier, old_score, new_score)
 
     return tool, report

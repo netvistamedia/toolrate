@@ -80,6 +80,7 @@ app = FastAPI(
         {"name": "Reporting", "description": "Report execution results to build the data moat"},
         {"name": "Discovery", "description": "Discover hidden gem tools and fallback chains based on real agent journeys"},
         {"name": "Stats", "description": "Platform and personal usage statistics"},
+        {"name": "Webhooks", "description": "Register webhooks for real-time score change alerts"},
     ],
 )
 

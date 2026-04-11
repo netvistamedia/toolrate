@@ -21,6 +21,9 @@ dev = [
     "fakeredis>=2.26.0",
     "aiosqlite>=0.20.0",
 ]
+mcp = [
+    "mcp>=1.0.0",
+]
 
 [tool.setuptools.packages.find]
 include = ["app*"]
