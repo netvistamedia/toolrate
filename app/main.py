@@ -142,6 +142,16 @@ async def root():
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NemoFlow — Pick the Right Tool from the Start</title>
 <meta name="description" content="NemoFlow rates AI tools so that you or your agents pick the right tool from the start. Save time, tokens, energy, and money.">
+<meta property="og:title" content="NemoFlow — Pick the Right Tool from the Start">
+<meta property="og:description" content="AI picks a tool, it fails, swaps for another — costing time and tokens. NemoFlow rates 600+ tools so agents pick the right one from the start.">
+<meta property="og:image" content="https://nemoflow.ai/nemoflow-logo.webp">
+<meta property="og:url" content="https://api.nemoflow.ai">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="NemoFlow — Reliability Oracle for AI Agents">
+<meta name="twitter:description" content="Rate 600+ AI tools. One line of code. Auto-fallback. Built by agents, for agents.">
+<meta name="twitter:image" content="https://nemoflow.ai/nemoflow-logo.webp">
+<link rel="icon" href="https://nemoflow.ai/nemoflow-logo.webp" type="image/webp">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0a0a0a;color:#e0e0e0;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:2rem}
