@@ -9,7 +9,7 @@ from typing import Sequence, Union
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import UUID
 
 
 # revision identifiers, used by Alembic.
@@ -67,7 +67,7 @@ def upgrade() -> None:
         sa.Column('reports_7d', sa.Integer, nullable=False),
         sa.Column('avg_latency_ms', sa.Float, nullable=True),
         sa.Column('p95_latency_ms', sa.Float, nullable=True),
-        sa.Column('common_failure_categories', JSONB, nullable=True),
+        sa.Column('common_failure_categories', sa.JSON, nullable=True),
         sa.Column('computed_at', sa.DateTime(timezone=True), server_default=sa.text('now()')),
         sa.UniqueConstraint('tool_id', 'context_hash', 'data_pool', name='uq_snapshot_tool_context_pool'),
     )

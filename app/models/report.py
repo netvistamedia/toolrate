@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Integer, String, DateTime, ForeignKey, BigInteger
+from sqlalchemy import Boolean, Integer, String, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models import Base
@@ -10,7 +10,7 @@ from app.models import Base
 class ExecutionReport(Base):
     __tablename__ = "execution_reports"
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     tool_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tools.id"), nullable=False, index=True)
     success: Mapped[bool] = mapped_column(Boolean, nullable=False)
     error_category: Mapped[str | None] = mapped_column(String(128))

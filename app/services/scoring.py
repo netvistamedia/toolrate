@@ -85,7 +85,10 @@ async def compute_score(
     reports_24h = 0
 
     for report in reports:
-        age_days = (now - report.created_at).total_seconds() / 86400
+        created = report.created_at
+        if created.tzinfo is None:
+            created = created.replace(tzinfo=timezone.utc)
+        age_days = (now - created).total_seconds() / 86400
         weight = math.exp(-decay_lambda * age_days)
 
         if report.success:
@@ -100,12 +103,12 @@ async def compute_score(
         if report.latency_ms is not None:
             latencies.append(report.latency_ms)
 
-        if report.created_at >= cutoff_7d:
+        if created >= cutoff_7d:
             reports_7d += 1
             if report.success:
                 successes_7d += 1
 
-        if report.created_at >= cutoff_24h:
+        if created >= cutoff_24h:
             reports_24h += 1
             if report.success:
                 successes_24h += 1
