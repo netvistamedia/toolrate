@@ -31,6 +31,9 @@ async def submit_report(
         context=body.context,
         reporter_fingerprint=fingerprint,
         data_pool=api_key.data_pool,
+        session_id=body.session_id,
+        attempt_number=body.attempt_number,
+        previous_tool=body.previous_tool,
     )
 
     return ReportResponse(tool_id=str(tool.id))

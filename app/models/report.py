@@ -18,6 +18,9 @@ class ExecutionReport(Base):
     context_hash: Mapped[str] = mapped_column(String(64), default="__global__")
     reporter_fingerprint: Mapped[str] = mapped_column(String(64))
     data_pool: Mapped[str | None] = mapped_column(String(128))
+    session_id: Mapped[str | None] = mapped_column(String(64), index=True)
+    attempt_number: Mapped[int | None] = mapped_column(Integer)
+    previous_tool: Mapped[str | None] = mapped_column(String(512))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

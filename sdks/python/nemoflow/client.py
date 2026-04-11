@@ -52,8 +52,16 @@ class NemoFlowClient:
         error_category: Optional[str] = None,
         latency_ms: Optional[int] = None,
         context: str = "",
+        session_id: Optional[str] = None,
+        attempt_number: Optional[int] = None,
+        previous_tool: Optional[str] = None,
     ) -> dict[str, Any]:
-        """Report a tool execution outcome."""
+        """Report a tool execution outcome.
+
+        For journey tracking, include session_id, attempt_number, and
+        previous_tool when retrying after a failure. This data powers
+        the hidden gems and fallback chain features.
+        """
         body: dict[str, Any] = {
             "tool_identifier": tool_identifier,
             "success": success,
@@ -63,8 +71,36 @@ class NemoFlowClient:
             body["error_category"] = error_category
         if latency_ms is not None:
             body["latency_ms"] = latency_ms
+        if session_id is not None:
+            body["session_id"] = session_id
+        if attempt_number is not None:
+            body["attempt_number"] = attempt_number
+        if previous_tool is not None:
+            body["previous_tool"] = previous_tool
 
         resp = self._client.post("/v1/report", json=body)
+        resp.raise_for_status()
+        return resp.json()
+
+    def discover_hidden_gems(
+        self, category: Optional[str] = None, limit: int = 10
+    ) -> dict[str, Any]:
+        """Find hidden gem tools that shine as fallbacks."""
+        params: dict[str, Any] = {"limit": limit}
+        if category:
+            params["category"] = category
+        resp = self._client.get("/v1/discover/hidden-gems", params=params)
+        resp.raise_for_status()
+        return resp.json()
+
+    def discover_fallback_chain(
+        self, tool_identifier: str, limit: int = 5
+    ) -> dict[str, Any]:
+        """Get the best fallback tools when this tool fails."""
+        resp = self._client.get(
+            "/v1/discover/fallback-chain",
+            params={"tool_identifier": tool_identifier, "limit": limit},
+        )
         resp.raise_for_status()
         return resp.json()
 
@@ -124,6 +160,9 @@ class AsyncNemoFlowClient:
         error_category: Optional[str] = None,
         latency_ms: Optional[int] = None,
         context: str = "",
+        session_id: Optional[str] = None,
+        attempt_number: Optional[int] = None,
+        previous_tool: Optional[str] = None,
     ) -> dict[str, Any]:
         """Report a tool execution outcome."""
         body: dict[str, Any] = {
@@ -135,8 +174,36 @@ class AsyncNemoFlowClient:
             body["error_category"] = error_category
         if latency_ms is not None:
             body["latency_ms"] = latency_ms
+        if session_id is not None:
+            body["session_id"] = session_id
+        if attempt_number is not None:
+            body["attempt_number"] = attempt_number
+        if previous_tool is not None:
+            body["previous_tool"] = previous_tool
 
         resp = await self._client.post("/v1/report", json=body)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def discover_hidden_gems(
+        self, category: Optional[str] = None, limit: int = 10
+    ) -> dict[str, Any]:
+        """Find hidden gem tools that shine as fallbacks."""
+        params: dict[str, Any] = {"limit": limit}
+        if category:
+            params["category"] = category
+        resp = await self._client.get("/v1/discover/hidden-gems", params=params)
+        resp.raise_for_status()
+        return resp.json()
+
+    async def discover_fallback_chain(
+        self, tool_identifier: str, limit: int = 5
+    ) -> dict[str, Any]:
+        """Get the best fallback tools when this tool fails."""
+        resp = await self._client.get(
+            "/v1/discover/fallback-chain",
+            params={"tool_identifier": tool_identifier, "limit": limit},
+        )
         resp.raise_for_status()
         return resp.json()
 

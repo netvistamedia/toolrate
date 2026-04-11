@@ -37,6 +37,9 @@ async def ingest_report(
     context: str,
     reporter_fingerprint: str,
     data_pool: str | None = None,
+    session_id: str | None = None,
+    attempt_number: int | None = None,
+    previous_tool: str | None = None,
 ) -> tuple[Tool, ExecutionReport]:
     tool = await upsert_tool(db, tool_identifier)
     ctx_hash = _context_hash(context)
@@ -49,6 +52,9 @@ async def ingest_report(
         context_hash=ctx_hash,
         reporter_fingerprint=reporter_fingerprint,
         data_pool=data_pool,
+        session_id=session_id,
+        attempt_number=attempt_number,
+        previous_tool=previous_tool,
     )
     db.add(report)
 
