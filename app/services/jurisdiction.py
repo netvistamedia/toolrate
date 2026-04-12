@@ -246,6 +246,15 @@ async def _resolve_from_whois(hostname: str) -> dict[str, Any] | None:
         return None
 
     code = chosen.upper()
+
+    # .ai ccTLD domains are commonly registered through an Iceland-based
+    # privacy proxy, so WHOIS reports country=IS for the *proxy*, not the
+    # actual company. Skip WHOIS for .ai if it returned Iceland — the IP
+    # fallback will usually give a more honest answer.
+    if root_domain.endswith(".ai") and code == "IS":
+        logger.debug("Ignoring Iceland WHOIS for .ai domain %s (likely privacy proxy)", root_domain)
+        return None
+
     org = _first_whois_value(record, "org") or _first_whois_value(record, "registrant_organization")
 
     return {

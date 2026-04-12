@@ -61,6 +61,11 @@ _US_NON_EU: dict[str, SeedEntry] = {
         "provider": "Together Computer Inc.",
         "notes": "Together AI (Delaware). HQ San Francisco.",
     },
+    "api.together.ai": {
+        "country": "US", "category": "Non-EU", "region": "San Francisco, CA",
+        "provider": "Together Computer Inc.",
+        "notes": "Together AI (Delaware). HQ San Francisco. WHOIS of .ai domains routes through an Iceland proxy — don't trust that signal.",
+    },
     "api.fireworks.ai": {
         "country": "US", "category": "Non-EU", "region": "Redwood City, CA",
         "provider": "Fireworks AI Inc.",
