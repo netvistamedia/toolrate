@@ -1083,9 +1083,9 @@ body::after {
   <p class="jurisdiction-lead">
     ToolRate is the only reliability layer that knows exactly <em>where</em> every tool
     actually runs &mdash; and surfaces data residency, privacy, and compliance risk in
-    every assessment. Every listing ships with a verified hosting jurisdiction, GDPR
-    posture, and confidence score &mdash; so data residency, privacy, and compliance are
-    decided at assessment time, not in a post-incident review.
+    every assessment.
+    From EU-hosted tools to high-risk jurisdictions, you get clear risk scoring and
+    smart alternatives in one call.
   </p>
 
   <div class="jurisdiction-tiers">
