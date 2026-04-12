@@ -11,6 +11,11 @@ from app.models.api_key import ApiKey
 
 logger = logging.getLogger("nemoflow.payg")
 
+# Retain daily assessment counters long enough for the customer dashboard
+# (`/v1/me/dashboard`) to read a 30-day history. 35 days gives a small
+# buffer for calendar alignment.
+ASSESS_DAILY_TTL_SECONDS = 35 * 24 * 3600
+
 
 async def record_assessment(redis: Redis, api_key: ApiKey) -> dict:
     """Called once per billable /v1/assess call. Returns an info dict used by
@@ -27,7 +32,7 @@ async def record_assessment(redis: Redis, api_key: ApiKey) -> dict:
     count = await redis.eval(
         "local c = redis.call('INCR', KEYS[1]); "
         "if c == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end; return c",
-        1, daily_key, 90000,
+        1, daily_key, ASSESS_DAILY_TTL_SECONDS,
     )
 
     info = {"assess_today": int(count), "billable": False}

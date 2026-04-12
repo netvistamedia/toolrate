@@ -284,6 +284,12 @@ async def dashboard_page():
     return DASHBOARD_HTML
 
 
+@app.get("/me", include_in_schema=False, response_class=HTMLResponse)
+async def me_page():
+    from app.me_page import ME_PAGE_HTML
+    return ME_PAGE_HTML
+
+
 @app.get("/upgrade", include_in_schema=False, response_class=HTMLResponse)
 async def upgrade_page(plan: str = "payg"):
     if plan not in ("payg", "pro"):
