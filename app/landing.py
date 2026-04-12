@@ -231,47 +231,67 @@ body::after {
 
 /* ── Hero ── */
 .hero {
-  padding: 5rem 0 3.5rem;
-  display: flex;
-  align-items: center;
-  gap: 3rem;
+  padding: 6.5rem 0 4.5rem;
   position: relative;
+  text-align: center;
   animation: fadeUp 0.7s ease-out 0.1s both;
 }
 
-.hero-content { flex: 1; }
+.hero-content {
+  position: relative;
+  z-index: 1;
+  max-width: 780px;
+  margin: 0 auto;
+}
 
 .hero-eyebrow {
+  display: inline-block;
   font-family: var(--mono);
   font-size: 0.7rem;
   font-weight: 500;
   color: var(--brand);
   text-transform: uppercase;
-  letter-spacing: 0.12em;
-  margin-bottom: 1rem;
+  letter-spacing: 0.14em;
+  padding: 0.35rem 0.9rem;
+  border: 1px solid var(--brand-mid);
+  border-radius: 999px;
+  background: var(--brand-dim);
+  margin-bottom: 1.75rem;
 }
 
 .hero h1 {
-  font-size: clamp(2.2rem, 4.5vw, 3.2rem);
+  font-size: clamp(2.4rem, 5.2vw, 3.6rem);
   font-weight: 700;
   color: var(--text-bright);
-  line-height: 1.2;
+  line-height: 1.15;
   letter-spacing: -0.02em;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.5rem;
+  text-wrap: balance;
 }
 
-.hero h1 span { color: var(--brand); }
+.hero h1 span {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 
 .hero-sub {
-  font-size: 1rem;
+  font-size: 1.1rem;
   font-weight: 300;
   color: var(--text-dim);
-  max-width: 480px;
+  max-width: 620px;
+  margin: 0 auto 2.25rem;
   line-height: 1.7;
-  margin-bottom: 2rem;
+  text-wrap: balance;
 }
 
-.hero-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+.hero-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
 
 /* ── Readout ── */
 .readout {
@@ -833,9 +853,7 @@ body::after {
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
-  .hero { flex-direction: column; text-align: center; padding: 3rem 0 2.5rem; }
-  .hero-sub { margin-left: auto; margin-right: auto; }
-  .hero-actions { justify-content: center; }
+  .hero { padding: 4rem 0 3rem; }
   .readout { grid-template-columns: repeat(2, 1fr); }
   .narrative { grid-template-columns: 1fr; }
   .jurisdiction { padding: 2rem 1.5rem; }
