@@ -122,6 +122,12 @@ td.tool .id{color:var(--text-mute);font-size:0.68rem;font-family:'Fira Code',mon
 .billing .tile{padding:1.1rem 1.25rem}
 .billing .tile .value{font-size:1.4rem}
 
+/* ── Synthetic disclosure banner ── */
+.disclosure{padding:0.7rem 1rem;background:rgba(240,197,59,0.05);border:1px solid rgba(240,197,59,0.2);border-radius:10px;font-size:0.76rem;color:var(--text);margin-bottom:1.75rem;display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap}
+.disclosure .dim{color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;font-size:0.64rem;font-weight:600}
+.disclosure strong{color:var(--yellow);font-family:'Fira Code',monospace;font-weight:600}
+.disclosure .hint{color:var(--text-mute);font-size:0.72rem;font-weight:300}
+
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 
 @media (max-width:1080px){
@@ -188,6 +194,13 @@ td.tool .id{color:var(--text-mute);font-size:0.68rem;font-family:'Fira Code',mon
     <div class="value" id="t-reporters">&mdash;</div>
     <div class="sub" id="t-reporters-sub">unique agents today</div>
   </div>
+</div>
+
+<!-- Disclosure: synthetic bootstrap activity -->
+<div class="disclosure" id="synth-banner" style="display:none">
+  <span class="dim">Background:</span>
+  <strong id="synth-count">—</strong> synthetic bootstrap reports today
+  <span class="hint">(LLM-generated priors for newly discovered tools — excluded from the numbers above)</span>
 </div>
 
 <!-- Trends -->
@@ -413,6 +426,16 @@ function render(d) {
   document.getElementById('t-reporters').textContent = fmtNum(t.unique_reporters);
   document.getElementById('t-reporters-sub').textContent =
     fmtNum(t.tools_touched) + ' tools assessed';
+
+  // Synthetic bootstrap disclosure
+  var synth = t.synthetic_bootstrap_reports || 0;
+  var banner = document.getElementById('synth-banner');
+  if (synth > 0) {
+    document.getElementById('synth-count').textContent = fmtNum(synth);
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+  }
 
   // Sparklines
   drawSpark('spark-24h', d.trend.hourly_24h, 24);

@@ -10,12 +10,29 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter
 from sqlalchemy import and_, case, func, select
 
+from app.core.security import make_fingerprint
 from app.dependencies import AdminKey, Db, RedisClient
 from app.models.api_key import ApiKey
 from app.models.report import ExecutionReport
 from app.models.tool import Tool
 
 router = APIRouter()
+
+
+# Synthetic fingerprints produced by the bootstrap/seed paths. These aren't
+# real agent traffic — they're used to prime the scoring model for newly
+# discovered tools — so the dashboard excludes them from every real-traffic
+# counter and surfaces them separately in a "synthetic activity" tile.
+SYNTHETIC_FINGERPRINTS: tuple[str, ...] = (
+    make_fingerprint("seed", "seed"),
+    make_fingerprint("llm_ondemand", "llm_ondemand"),
+    make_fingerprint("llm_consensus", "llm_consensus"),
+)
+
+
+def _only_real():
+    """SQLAlchemy predicate that excludes synthetic reports."""
+    return ExecutionReport.reporter_fingerprint.notin_(SYNTHETIC_FINGERPRINTS)
 
 
 def _bucket_rows_by_hour(rows: list[tuple[datetime, bool]]) -> list[dict]:
@@ -79,7 +96,7 @@ async def admin_dashboard(db: Db, redis: RedisClient, api_key: AdminKey):
     prev_24h = now - timedelta(hours=48)
     last_30d = now - timedelta(days=30)
 
-    # ── Today's counters ─────────────────────────────────────────────
+    # ── Today's counters (real traffic only) ────────────────────────
     reports_today = (await db.execute(
         select(
             func.count(),
@@ -87,13 +104,27 @@ async def admin_dashboard(db: Db, redis: RedisClient, api_key: AdminKey):
             func.sum(case((ExecutionReport.success == False, 1), else_=0)),  # noqa: E712
             func.count(func.distinct(ExecutionReport.reporter_fingerprint)),
             func.count(func.distinct(ExecutionReport.tool_id)),
-        ).where(ExecutionReport.created_at >= today_start)
+        ).where(
+            ExecutionReport.created_at >= today_start,
+            _only_real(),
+        )
     )).one()
 
     total_today, success_today, fail_today, unique_reporters_today, tools_touched_today = reports_today
+    total_today = int(total_today or 0)
     success_today = int(success_today or 0)
     fail_today = int(fail_today or 0)
     success_rate_today = (success_today / total_today * 100) if total_today else None
+
+    # Synthetic bootstrap counter (for transparency — shows whether the LLM
+    # bootstrap is actively priming new tools today)
+    synthetic_today = (await db.execute(
+        select(func.count()).select_from(ExecutionReport)
+        .where(
+            ExecutionReport.created_at >= today_start,
+            ExecutionReport.reporter_fingerprint.in_(SYNTHETIC_FINGERPRINTS),
+        )
+    )).scalar() or 0
 
     # New signups today (API keys created since midnight UTC)
     signups_today = (await db.execute(
@@ -107,7 +138,7 @@ async def admin_dashboard(db: Db, redis: RedisClient, api_key: AdminKey):
     # the time window.
     hourly_rows = (await db.execute(
         select(ExecutionReport.created_at, ExecutionReport.success)
-        .where(ExecutionReport.created_at >= last_24h)
+        .where(ExecutionReport.created_at >= last_24h, _only_real())
     )).all()
     hourly_trend = _bucket_rows_by_hour(
         [(r.created_at if r.created_at.tzinfo else r.created_at.replace(tzinfo=timezone.utc),
@@ -116,21 +147,21 @@ async def admin_dashboard(db: Db, redis: RedisClient, api_key: AdminKey):
 
     daily_rows_raw = (await db.execute(
         select(ExecutionReport.created_at, ExecutionReport.success)
-        .where(ExecutionReport.created_at >= last_30d)
+        .where(ExecutionReport.created_at >= last_30d, _only_real())
     )).all()
     daily_trend = _bucket_rows_by_day(
         [(r.created_at if r.created_at.tzinfo else r.created_at.replace(tzinfo=timezone.utc),
           r.success) for r in daily_rows_raw]
     )
 
-    # ── Reliability histogram across tools with ≥5 reports ──────────
+    # ── Reliability histogram across tools with ≥5 REAL reports ─────
     per_tool_rows = (await db.execute(
         select(
             ExecutionReport.tool_id,
             func.count().label("n"),
             func.avg(case((ExecutionReport.success == True, 1.0), else_=0.0)).label("rate"),  # noqa: E712
         )
-        .where(ExecutionReport.created_at >= last_30d)
+        .where(ExecutionReport.created_at >= last_30d, _only_real())
         .group_by(ExecutionReport.tool_id)
         .having(func.count() >= 5)
     )).all()
@@ -151,7 +182,7 @@ async def admin_dashboard(db: Db, redis: RedisClient, api_key: AdminKey):
                 break
     avg_reliability = (sum(rates) / len(rates)) if rates else None
 
-    # ── Top 10 busiest tools in last 24h ─────────────────────────────
+    # ── Top 10 busiest tools in last 24h (real traffic) ──────────────
     busiest_rows = (await db.execute(
         select(
             Tool.identifier,
@@ -160,7 +191,7 @@ async def admin_dashboard(db: Db, redis: RedisClient, api_key: AdminKey):
             func.avg(case((ExecutionReport.success == True, 1.0), else_=0.0)).label("rate"),  # noqa: E712
         )
         .join(ExecutionReport, ExecutionReport.tool_id == Tool.id)
-        .where(ExecutionReport.created_at >= last_24h)
+        .where(ExecutionReport.created_at >= last_24h, _only_real())
         .group_by(Tool.id, Tool.identifier, Tool.display_name)
         .order_by(func.count().desc())
         .limit(10)
@@ -175,7 +206,7 @@ async def admin_dashboard(db: Db, redis: RedisClient, api_key: AdminKey):
         for r in busiest_rows
     ]
 
-    # ── Top 10 most-failing tools in last 24h (min 5 reports) ────────
+    # ── Top 10 most-failing tools in last 24h (real traffic, min 5) ──
     failing_rows = (await db.execute(
         select(
             Tool.identifier,
@@ -184,7 +215,7 @@ async def admin_dashboard(db: Db, redis: RedisClient, api_key: AdminKey):
             func.avg(case((ExecutionReport.success == True, 1.0), else_=0.0)).label("rate"),  # noqa: E712
         )
         .join(ExecutionReport, ExecutionReport.tool_id == Tool.id)
-        .where(ExecutionReport.created_at >= last_24h)
+        .where(ExecutionReport.created_at >= last_24h, _only_real())
         .group_by(Tool.id, Tool.identifier, Tool.display_name)
         .having(func.count() >= 5)
         .order_by(func.avg(case((ExecutionReport.success == True, 1.0), else_=0.0)).asc())  # noqa: E712
@@ -200,13 +231,14 @@ async def admin_dashboard(db: Db, redis: RedisClient, api_key: AdminKey):
         for r in failing_rows
     ]
 
-    # ── Error category breakdown today ──────────────────────────────
+    # ── Error category breakdown today (real traffic) ───────────────
     error_rows = (await db.execute(
         select(ExecutionReport.error_category, func.count())
         .where(and_(
             ExecutionReport.created_at >= today_start,
             ExecutionReport.success == False,  # noqa: E712
             ExecutionReport.error_category.isnot(None),
+            _only_real(),
         ))
         .group_by(ExecutionReport.error_category)
         .order_by(func.count().desc())
@@ -247,13 +279,14 @@ async def admin_dashboard(db: Db, redis: RedisClient, api_key: AdminKey):
     return {
         "generated_at": now.isoformat(),
         "today": {
-            "reports_total": int(total_today or 0),
+            "reports_total": total_today,
             "reports_successful": success_today,
             "reports_failed": fail_today,
             "success_rate_pct": round(success_rate_today, 1) if success_rate_today is not None else None,
             "unique_reporters": int(unique_reporters_today or 0),
             "tools_touched": int(tools_touched_today or 0),
             "new_signups": int(signups_today),
+            "synthetic_bootstrap_reports": int(synthetic_today),
         },
         "trend": {
             "hourly_24h": hourly_trend,

@@ -8,7 +8,7 @@ import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
-from app.core.security import generate_api_key
+from app.core.security import generate_api_key, make_fingerprint
 from app.dependencies import get_db
 from app.main import app
 from app.models.api_key import ApiKey
@@ -102,6 +102,15 @@ async def test_dashboard_returns_expected_shape(client_and_db):
             reporter_fingerprint="fp-b",
             created_at=now - timedelta(minutes=10),
         ))
+
+        # ── Synthetic reports that MUST be excluded from real counters ──
+        synth_fp = make_fingerprint("llm_ondemand", "llm_ondemand")
+        for _ in range(50):
+            db.add(ExecutionReport(
+                tool_id=tool.id, success=True, latency_ms=120,
+                context_hash="__global__", reporter_fingerprint=synth_fp,
+                created_at=now - timedelta(minutes=30),
+            ))
         await db.commit()
 
     r = await ac.get("/v1/admin/dashboard", headers={"X-Api-Key": admin_key})
@@ -113,13 +122,14 @@ async def test_dashboard_returns_expected_shape(client_and_db):
                     "errors_today", "totals", "billing"):
         assert section in data, f"missing section {section}"
 
-    # Today tiles match the seeded data
+    # Today tiles match the seeded REAL data (synthetic 50 excluded)
     assert data["today"]["reports_total"] == 5
     assert data["today"]["reports_successful"] == 4
     assert data["today"]["reports_failed"] == 1
     assert data["today"]["success_rate_pct"] == 80.0
     assert data["today"]["unique_reporters"] == 2  # fp-a + fp-b
     assert data["today"]["tools_touched"] == 1
+    assert data["today"]["synthetic_bootstrap_reports"] == 50
 
     # Trend buckets populated
     assert len(data["trend"]["hourly_24h"]) >= 1
