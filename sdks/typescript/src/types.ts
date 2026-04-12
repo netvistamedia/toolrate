@@ -195,8 +195,21 @@ export interface GuardOptions<T> {
   context?: string;
   /** Minimum reliability score to proceed (0-100). Default 0 = always try. */
   minScore?: number;
-  /** Fallback tools to try on failure, in order. */
-  fallbacks?: Array<{ toolIdentifier: string; fn: () => Promise<T> }>;
+  /**
+   * Fallback tools to try on failure, in order.
+   * Pass an explicit array, or `"auto"` to have NemoFlow pick fallbacks
+   * dynamically from the primary tool's top alternatives and fallback-chain
+   * data. `"auto"` requires `resolvers`.
+   */
+  fallbacks?: Array<{ toolIdentifier: string; fn: () => Promise<T> }> | "auto";
+  /**
+   * Mapping of tool identifier → runner. When `fallbacks="auto"`, NemoFlow
+   * matches candidate alternatives against these keys and only tries tools
+   * the caller has pre-registered a runner for.
+   */
+  resolvers?: Record<string, () => Promise<T>>;
+  /** Max number of auto fallbacks to include (default 3). */
+  maxFallbacks?: number;
 }
 
 // ── Errors ──────────────────────────────────────────────────────────

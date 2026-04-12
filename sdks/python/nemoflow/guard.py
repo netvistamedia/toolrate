@@ -5,17 +5,28 @@ Usage:
 
     client = NemoFlowClient("nf_live_...")
 
-    # Wrap any tool call — assess before, report after, auto-fallback
+    # Wrap any tool call — assess before, report after
     result = guard(client, "https://api.openai.com/v1/chat/completions",
                    lambda: openai.chat.completions.create(...))
 
-    # With fallbacks — tries alternatives if primary scores too low
+    # Explicit fallbacks — tries each in order on failure
     result = guard(client, "https://api.openai.com/v1/chat/completions",
                    lambda: openai.chat.completions.create(...),
                    fallbacks=[
                        ("https://api.anthropic.com/v1/messages",
                         lambda: anthropic.messages.create(...)),
                    ])
+
+    # Dynamic (auto) fallbacks — NemoFlow picks from real agent journey data
+    result = guard(client, "https://api.openai.com/v1/chat/completions",
+                   lambda: openai.chat.completions.create(...),
+                   fallbacks="auto",
+                   resolvers={
+                       "https://api.anthropic.com/v1/messages":
+                           lambda: anthropic.messages.create(...),
+                       "https://api.groq.com/openai/v1/chat/completions":
+                           lambda: groq_client.chat.completions.create(...),
+                   })
 
     # As a decorator
     @nemoflow_guard(client, "https://api.stripe.com/v1/charges")
@@ -28,11 +39,13 @@ from __future__ import annotations
 import time
 import uuid
 from functools import wraps
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, Literal, TypeVar, Union
 
 from nemoflow.client import NemoFlowClient
 
 T = TypeVar("T")
+
+Fallbacks = Union[list[tuple[str, Callable[[], T]]], Literal["auto"], None]
 
 
 def guard(
@@ -42,7 +55,9 @@ def guard(
     *,
     context: str = "",
     min_score: float = 0.0,
-    fallbacks: list[tuple[str, Callable[[], T]]] | None = None,
+    fallbacks: Fallbacks = None,
+    resolvers: dict[str, Callable[[], T]] | None = None,
+    max_fallbacks: int = 3,
 ) -> T:
     """Execute a tool call with NemoFlow reliability guard.
 
@@ -58,7 +73,13 @@ def guard(
         fn: The actual tool call to execute (as a callable)
         context: Workflow context for context-bucketed scoring
         min_score: Minimum reliability score to proceed (0-100). Default 0 = always try.
-        fallbacks: List of (tool_identifier, callable) pairs to try on failure
+        fallbacks: Either a list of (tool_identifier, callable) pairs, or the string
+            "auto" to have NemoFlow pick fallbacks dynamically from the primary tool's
+            top alternatives and real fallback-chain data. "auto" requires `resolvers`.
+        resolvers: Mapping of tool identifier → callable. When `fallbacks="auto"`,
+            NemoFlow matches candidate alternatives against these keys and only tries
+            tools the caller has pre-registered a runner for.
+        max_fallbacks: Max number of auto fallbacks to include (default 3).
 
     Returns:
         The result of the successful tool call
@@ -67,26 +88,46 @@ def guard(
         The exception from the last failed tool call if all options are exhausted
     """
     session_id = uuid.uuid4().hex[:16]
-    all_tools = [(tool_identifier, fn)] + (fallbacks or [])
 
-    last_error = None
+    if fallbacks == "auto":
+        explicit_fallbacks: list[tuple[str, Callable[[], T]]] = []
+        auto_mode = True
+    else:
+        explicit_fallbacks = list(fallbacks or [])
+        auto_mode = False
 
-    for attempt, (ident, call) in enumerate(all_tools, start=1):
+    all_tools: list[tuple[str, Callable[[], T]]] = [(tool_identifier, fn)] + explicit_fallbacks
+
+    last_error: Exception | None = None
+    i = 0
+    while i < len(all_tools):
+        attempt = i + 1
+        ident, call = all_tools[i]
+
         # Assess
+        assessment: dict[str, Any] | None = None
         try:
             assessment = client.assess(ident, context=context)
             score = assessment.get("reliability_score", 100)
         except Exception:
             score = 100  # If assess fails, don't block the tool call
 
+        # Resolve auto fallbacks once, using the primary tool's assessment (no extra API call if it has alternatives)
+        if auto_mode and i == 0:
+            auto_tools = _resolve_auto_fallbacks(
+                client, ident, assessment, resolvers or {}, max_fallbacks
+            )
+            all_tools.extend(auto_tools)
+            auto_mode = False
+
         # Skip if score too low and we have more options
         if score < min_score and attempt < len(all_tools):
-            client.report(
-                ident, success=False, error_category="skipped_low_score",
-                context=context, session_id=session_id,
-                attempt_number=attempt,
-                previous_tool=all_tools[attempt - 2][0] if attempt > 1 else None,
+            _safe_report(
+                client, ident, success=False, error_category="skipped_low_score",
+                context=context, session_id=session_id, attempt_number=attempt,
+                previous_tool=all_tools[i - 1][0] if i > 0 else None,
             )
+            i += 1
             continue
 
         # Execute
@@ -95,12 +136,10 @@ def guard(
             result = call()
             latency_ms = int((time.perf_counter() - start) * 1000)
 
-            # Report success
-            client.report(
-                ident, success=True, latency_ms=latency_ms,
-                context=context, session_id=session_id,
-                attempt_number=attempt,
-                previous_tool=all_tools[attempt - 2][0] if attempt > 1 else None,
+            _safe_report(
+                client, ident, success=True, latency_ms=latency_ms,
+                context=context, session_id=session_id, attempt_number=attempt,
+                previous_tool=all_tools[i - 1][0] if i > 0 else None,
             )
             return result
 
@@ -108,23 +147,18 @@ def guard(
             latency_ms = int((time.perf_counter() - start) * 1000)
             last_error = e
 
-            # Classify error
-            error_category = _classify_error(e)
-
-            # Report failure
-            client.report(
-                ident, success=False, error_category=error_category,
-                latency_ms=latency_ms, context=context,
-                session_id=session_id, attempt_number=attempt,
-                previous_tool=all_tools[attempt - 2][0] if attempt > 1 else None,
+            _safe_report(
+                client, ident, success=False, error_category=_classify_error(e),
+                latency_ms=latency_ms, context=context, session_id=session_id,
+                attempt_number=attempt,
+                previous_tool=all_tools[i - 1][0] if i > 0 else None,
             )
 
-            # If no more fallbacks, raise
             if attempt >= len(all_tools):
                 raise
+            i += 1
 
-    # Should not reach here, but just in case
-    raise last_error  # type: ignore
+    raise last_error  # type: ignore[misc]
 
 
 def nemoflow_guard(
@@ -133,6 +167,9 @@ def nemoflow_guard(
     *,
     context: str = "",
     min_score: float = 0.0,
+    fallbacks: Fallbacks = None,
+    resolvers: dict[str, Callable[[], Any]] | None = None,
+    max_fallbacks: int = 3,
 ):
     """Decorator version of guard.
 
@@ -148,9 +185,64 @@ def nemoflow_guard(
                 client, tool_identifier,
                 lambda: fn(*args, **kwargs),
                 context=context, min_score=min_score,
+                fallbacks=fallbacks, resolvers=resolvers,
+                max_fallbacks=max_fallbacks,
             )
         return wrapper
     return decorator
+
+
+def _resolve_auto_fallbacks(
+    client: NemoFlowClient,
+    primary_identifier: str,
+    primary_assessment: dict[str, Any] | None,
+    resolvers: dict[str, Callable[[], Any]],
+    max_n: int,
+) -> list[tuple[str, Callable[[], Any]]]:
+    """Pick fallback callables by matching NemoFlow's alternatives against user resolvers."""
+    if not resolvers or max_n <= 0:
+        return []
+
+    candidates: list[str] = []
+
+    # 1. Reuse top_alternatives from the assessment we already fetched (no extra API call)
+    if primary_assessment:
+        for alt in primary_assessment.get("top_alternatives") or []:
+            if isinstance(alt, dict) and alt.get("tool"):
+                candidates.append(alt["tool"])
+
+    # 2. If no alternatives in assess response, query fallback-chain endpoint
+    if not candidates:
+        try:
+            chain_resp = client.discover_fallback_chain(primary_identifier)
+            for item in chain_resp.get("fallback_chain") or []:
+                if isinstance(item, dict) and item.get("fallback_tool"):
+                    candidates.append(item["fallback_tool"])
+        except Exception:
+            pass
+
+    out: list[tuple[str, Callable[[], Any]]] = []
+    seen: set[str] = {primary_identifier}
+    for ident in candidates:
+        if ident in seen:
+            continue
+        runner = resolvers.get(ident)
+        if runner is None:
+            continue
+        out.append((ident, runner))
+        seen.add(ident)
+        if len(out) >= max_n:
+            break
+
+    return out
+
+
+def _safe_report(client: NemoFlowClient, tool_identifier: str, **kwargs: Any) -> None:
+    """Fire-and-forget reporting. Never fail the user's tool call because reporting failed."""
+    try:
+        client.report(tool_identifier, **kwargs)
+    except Exception:
+        pass
 
 
 def _classify_error(error: Exception) -> str:

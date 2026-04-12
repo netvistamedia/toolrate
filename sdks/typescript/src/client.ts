@@ -277,6 +277,10 @@ export class NemoFlow {
    * 3. Executes the tool call
    * 4. Reports success/failure back to NemoFlow
    * 5. On failure with fallbacks, tries the next option
+   *
+   * Pass `fallbacks: "auto"` plus a `resolvers` map to let NemoFlow pick the
+   * fallback chain dynamically from real agent journey data — only tools the
+   * caller has pre-registered a runner for will be invoked.
    */
   async guard<T>(
     toolIdentifier: string,
@@ -285,13 +289,19 @@ export class NemoFlow {
   ): Promise<T> {
     const context = options?.context ?? "";
     const minScore = options?.minScore ?? 0;
+    const maxFallbacks = options?.maxFallbacks ?? 3;
     const sessionId = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+
+    const autoMode = options?.fallbacks === "auto";
+    const explicitFallbacks: Array<{ toolIdentifier: string; fn: () => Promise<T> }> =
+      !options?.fallbacks || options.fallbacks === "auto" ? [] : options.fallbacks;
 
     const allTools: Array<{ toolIdentifier: string; fn: () => Promise<T> }> = [
       { toolIdentifier, fn },
-      ...(options?.fallbacks ?? []),
+      ...explicitFallbacks,
     ];
 
+    let resolvedAuto = !autoMode;
     let lastError: Error | undefined;
 
     for (let i = 0; i < allTools.length; i++) {
@@ -301,14 +311,27 @@ export class NemoFlow {
 
       // Assess
       let score = 100;
+      let assessment: AssessResponse | undefined;
       try {
-        const assessment = await this.assess({
+        assessment = await this.assess({
           toolIdentifier: tool.toolIdentifier,
           context,
         });
         score = assessment.reliabilityScore;
       } catch {
         // If assess fails, don't block the tool call
+      }
+
+      // Resolve auto fallbacks once, using the primary assessment we already fetched
+      if (!resolvedAuto && i === 0) {
+        const autoTools = await this.resolveAutoFallbacks<T>(
+          tool.toolIdentifier,
+          assessment,
+          options?.resolvers ?? {},
+          maxFallbacks,
+        );
+        allTools.push(...autoTools);
+        resolvedAuto = true;
       }
 
       // Skip if score too low and we have more options
@@ -379,6 +402,50 @@ export class NemoFlow {
     }
 
     throw lastError;
+  }
+
+  /** Pick fallback callables by matching NemoFlow's alternatives against user resolvers. */
+  private async resolveAutoFallbacks<T>(
+    primaryIdentifier: string,
+    primaryAssessment: AssessResponse | undefined,
+    resolvers: Record<string, () => Promise<T>>,
+    maxN: number,
+  ): Promise<Array<{ toolIdentifier: string; fn: () => Promise<T> }>> {
+    if (Object.keys(resolvers).length === 0 || maxN <= 0) return [];
+
+    const candidates: string[] = [];
+
+    // 1. Reuse top_alternatives from the assessment we already fetched
+    if (primaryAssessment) {
+      for (const alt of primaryAssessment.topAlternatives ?? []) {
+        if (alt?.tool) candidates.push(alt.tool);
+      }
+    }
+
+    // 2. If no alternatives in assess response, query the fallback-chain endpoint
+    if (candidates.length === 0) {
+      try {
+        const chain = await this.discoverFallbackChain(primaryIdentifier);
+        for (const item of chain.fallbackChain ?? []) {
+          if (item?.fallbackTool) candidates.push(item.fallbackTool);
+        }
+      } catch {
+        // Best-effort — keep candidates empty and return []
+      }
+    }
+
+    const out: Array<{ toolIdentifier: string; fn: () => Promise<T> }> = [];
+    const seen = new Set<string>([primaryIdentifier]);
+    for (const ident of candidates) {
+      if (seen.has(ident)) continue;
+      const runner = resolvers[ident];
+      if (!runner) continue;
+      out.push({ toolIdentifier: ident, fn: runner });
+      seen.add(ident);
+      if (out.length >= maxN) break;
+    }
+
+    return out;
   }
 
   // ── Internals ──────────────────────────────────────────────────
