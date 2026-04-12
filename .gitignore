@@ -13,6 +13,9 @@ venv/
 # Secrets — never commit
 api_key.py
 *.token
+npm-token.txt
+npmj-codes.txt
+*-codes.txt
 .pypirc
 
 # IDE
