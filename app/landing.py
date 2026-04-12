@@ -229,9 +229,40 @@ body::after {
   color: var(--text-bright);
 }
 
+/* Hero-scoped CTA override — larger tap targets and stronger contrast */
+.hero .btn {
+  padding: 0.95rem 1.85rem;
+  font-size: 0.92rem;
+  border-radius: 10px;
+}
+.hero .btn-primary {
+  font-weight: 700;
+  box-shadow:
+    inset 0 0 0 1px rgba(47, 207, 250, 0.35),
+    0 12px 32px rgba(10, 149, 253, 0.28);
+}
+.hero .btn-primary:hover {
+  filter: brightness(1.08);
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 0 0 1px rgba(47, 207, 250, 0.55),
+    0 18px 48px rgba(10, 149, 253, 0.4),
+    0 0 60px var(--brand-glow);
+}
+.hero .btn-ghost {
+  color: var(--text-bright);
+  border: 1px solid var(--border-bright);
+  background: rgba(255, 255, 255, 0.02);
+}
+.hero .btn-ghost:hover {
+  border-color: var(--brand);
+  color: var(--brand-light);
+  background: var(--brand-dim);
+}
+
 /* ── Hero ── */
 .hero {
-  padding: 6.5rem 0 4.5rem;
+  padding: 7rem 0 3rem;
   position: relative;
   text-align: center;
   animation: fadeUp 0.7s ease-out 0.1s both;
@@ -240,32 +271,27 @@ body::after {
 .hero-content {
   position: relative;
   z-index: 1;
-  max-width: 780px;
+  max-width: 820px;
   margin: 0 auto;
 }
 
-.hero-eyebrow {
-  display: inline-block;
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  font-weight: 500;
-  color: var(--brand);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  padding: 0.35rem 0.9rem;
-  border: 1px solid var(--brand-mid);
-  border-radius: 999px;
-  background: var(--brand-dim);
-  margin-bottom: 1.75rem;
+.hero-brand {
+  display: block;
+  width: 260px;
+  max-width: 72%;
+  height: auto;
+  margin: 0 auto 2.75rem;
+  filter: drop-shadow(0 12px 40px rgba(10, 149, 253, 0.3));
+  animation: fadeUp 0.6s ease-out both;
 }
 
 .hero h1 {
-  font-size: clamp(2.4rem, 5.2vw, 3.6rem);
+  font-size: clamp(2.3rem, 5vw, 3.4rem);
   font-weight: 700;
   color: var(--text-bright);
   line-height: 1.15;
-  letter-spacing: -0.02em;
-  margin-bottom: 1.5rem;
+  letter-spacing: -0.025em;
+  margin-bottom: 1.75rem;
   text-wrap: balance;
 }
 
@@ -317,15 +343,17 @@ body::after {
   gap: 1px;
   background: var(--border);
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 12px;
   overflow: hidden;
+  margin-top: -0.5rem;
   margin-bottom: 5rem;
+  box-shadow: 0 20px 60px rgba(10, 149, 253, 0.08);
   animation: fadeUp 0.7s ease-out 0.25s both;
 }
 
 .readout-cell {
   background: var(--surface);
-  padding: 1.5rem;
+  padding: 1.75rem 1.5rem;
   text-align: center;
   transition: background 0.3s;
 }
@@ -333,9 +361,13 @@ body::after {
 
 .readout-value {
   font-family: var(--mono);
-  font-size: 1.5rem;
-  font-weight: 500;
-  color: var(--brand);
+  font-size: 1.65rem;
+  font-weight: 600;
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: -0.01em;
 }
 
 .readout-label {
@@ -419,14 +451,15 @@ body::after {
 .jurisdiction {
   position: relative;
   margin-bottom: 5rem;
-  padding: 2.75rem 2.5rem;
-  border-radius: 16px;
+  padding: 3rem 2.75rem;
+  border-radius: 18px;
   background:
-    radial-gradient(circle at 0% 0%, rgba(52, 211, 153, 0.06) 0%, transparent 55%),
-    radial-gradient(circle at 100% 100%, rgba(10, 149, 253, 0.10) 0%, transparent 55%),
+    radial-gradient(circle at 0% 0%, rgba(52, 211, 153, 0.08) 0%, transparent 55%),
+    radial-gradient(circle at 100% 100%, rgba(10, 149, 253, 0.12) 0%, transparent 55%),
     var(--surface);
   border: 1px solid var(--border-bright);
   overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.35);
   animation: fadeUp 0.7s ease-out 0.4s both;
 }
 
@@ -910,12 +943,13 @@ body::after {
 <section class="hero">
   <div class="hero-glow"></div>
   <div class="hero-content">
-    <div class="hero-eyebrow">Reliability Oracle for AI Agents</div>
-    <h1>Real advice for every tool your <span>agent considers</span></h1>
+    <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" class="hero-brand">
+    <h1>Real advice for every tool your <span>agent considers</span>.</h1>
     <p class="hero-sub">
-      Your agent shouldn&rsquo;t have to guess which tools are reliable.
-      ToolRate delivers <strong>live, crowdsourced reliability ratings</strong> from thousands
-      of real agent executions &mdash; so your agents choose correctly the first time.
+      AI agents waste tokens and time retrying flaky, slow, or non-compliant tools.
+      ToolRate gives your agents <strong>objective reliability ratings and smart
+      recommendations</strong> based on thousands of real agent executions &mdash; so they
+      pick the right tool the first time.
     </p>
     <p class="hero-kicker"><strong>Know before you call.</strong></p>
     <div class="hero-actions">
