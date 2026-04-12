@@ -182,9 +182,9 @@ __SITE_HEADER_CSS__
 </head>
 <body>
 
-<div class="page">
-
 __SITE_HEADER_HTML__
+
+<div class="page">
 
 <section class="hero">
   <span class="eyebrow">Pricing</span>
