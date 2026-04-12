@@ -1,6 +1,6 @@
 {
   "name": "nemoflow",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Reliability oracle for AI agents — pick the right tool from the start",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
