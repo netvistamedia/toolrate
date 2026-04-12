@@ -826,6 +826,23 @@ body::after {
   border-radius: 4px;
 }
 
+.feature-code {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-bright);
+  background: #0a0b10;
+  border: 1px solid var(--border-bright);
+  border-radius: 8px;
+  padding: 0.7rem 0.85rem;
+  margin: 0 0 0.9rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.5;
+}
+.feature-code .kw { color: var(--brand-light); font-weight: 500; }
+.feature-code .fn { color: #c792ea; }
+.feature-code .str { color: #ecc48d; }
+
 /* ── Pricing ── */
 .pricing {
   margin-bottom: 5rem;
@@ -1010,11 +1027,10 @@ body::after {
     <h1>Real advice for every tool your <span>agent considers</span>.</h1>
     <p class="hero-sub">
       AI agents burn tokens retrying flaky, slow, or non-compliant tools.
-      ToolRate delivers <strong>objective, crowdsourced reliability ratings</strong> and
-      actionable intelligence &mdash; drawn from thousands of real agent executions in
-      production.
+      ToolRate delivers objective reliability ratings and actionable intelligence
+      drawn from thousands of real agent executions in production.
     </p>
-    <p class="hero-kicker"><strong>Know before you call. Choose correctly the first time.</strong></p>
+    <p class="hero-kicker"><strong>Know before you call.</strong></p>
     <div class="hero-actions">
       <a href="/docs" class="btn btn-primary">Get Started Free</a>
       <a href="https://github.com/netvistamedia/toolrate" class="btn btn-ghost">View on GitHub</a>
@@ -1052,7 +1068,7 @@ body::after {
   <div class="narrative-card narrative-solution">
     <div class="narrative-badge"><span class="narrative-dot"></span> The Solution</div>
     <h3>One assessment before every call</h3>
-    <p>ToolRate scores every tool in real time from the collective experience of thousands of production agents. Pick the best option first, fall back intelligently, and log every decision with a confidence score attached.</p>
+    <p>ToolRate scores every tool in real time from the collective experience of thousands of production agents. Pick the best option first, fall back intelligently. Every decision is logged with a confidence score attached.</p>
   </div>
 </div>
 
@@ -1065,10 +1081,11 @@ body::after {
     <span class="jurisdiction-badge">Exclusive to ToolRate</span>
   </div>
   <p class="jurisdiction-lead">
-    The only reliability API that knows <em>where</em> every tool actually runs. Every
-    listing ships with a verified hosting jurisdiction, GDPR posture, and confidence
-    score &mdash; so data residency, privacy, and compliance are decided at assessment
-    time, not in a post-incident review.
+    ToolRate is the only reliability layer that knows exactly <em>where</em> every tool
+    actually runs &mdash; and surfaces data residency, privacy, and compliance risk in
+    every assessment. Every listing ships with a verified hosting jurisdiction, GDPR
+    posture, and confidence score &mdash; so data residency, privacy, and compliance are
+    decided at assessment time, not in a post-incident review.
   </p>
 
   <div class="jurisdiction-tiers">
@@ -1166,12 +1183,13 @@ curl -X POST https://api.toolrate.ai/v1/report \
     <div class="feature">
       <div class="feature-num">01</div>
       <h3>Reliability Scoring</h3>
-      <p>Bayesian-smoothed scores weighted toward the last 7 days. Every assessment ships with a confidence interval and a per-error-category breakdown &mdash; so agents know how much to trust the number, and auditors know how it was reached.</p>
+      <p>Real-world success rates, common failure modes, and recommended mitigations &mdash; so agents know exactly how much to trust the tool, and auditors know precisely how the score was calculated.</p>
     </div>
     <div class="feature">
       <div class="feature-num">02</div>
       <h3>One-Line Guard</h3>
-      <p>One call to <code>guard()</code> wraps any tool call with assess-before, run, and automatic fallback to the next best alternative. Zero branching logic. Zero retry boilerplate. Production-ready in a single line.</p>
+      <pre class="feature-code"><span class="kw">result</span> = toolrate.<span class="fn">guard</span>(tool=<span class="str">"stripe/charges"</span>, context=plan)</pre>
+      <p>Zero branching logic. Zero retry boilerplate. Production-ready in one line.</p>
     </div>
     <div class="feature">
       <div class="feature-num">03</div>
