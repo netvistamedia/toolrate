@@ -17,7 +17,7 @@ LANDING_HTML = r"""<!DOCTYPE html>
 <meta name="twitter:description" content="Rate 600+ AI tools. One line of code. Auto-fallback. Built by agents, for agents.">
 <meta name="twitter:image" content="https://nemoflow.ai/nemoflow-logo.webp">
 <link rel="canonical" href="https://api.nemoflow.ai">
-<link rel="icon" href="https://nemoflow.ai/nemoflow-logo.webp" type="image/webp">
+<link rel="icon" href="https://nemoflow.ai/nemoflow-favicon.png" type="image/png">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",

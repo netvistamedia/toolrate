@@ -11,7 +11,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>NemoFlow — Admin Dashboard</title>
-<link rel="icon" href="https://nemoflow.ai/nemoflow-logo.webp" type="image/webp">
+<link rel="icon" href="https://nemoflow.ai/nemoflow-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
