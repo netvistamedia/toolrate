@@ -329,6 +329,10 @@ async def _get_eu_alternatives(
 ) -> list[AlternativeTool]:
     """Find alternative tools hosted in EU (or GDPR-adequate) jurisdictions.
 
+    **Only trusts high/medium confidence verdicts** — low-confidence EU
+    classifications almost always come from IP geolocation hitting a CDN
+    edge, so they would mislead callers asking for GDPR-safe alternatives.
+
     Uses report_count as a cheap proxy for reliability so we don't recompute
     the full score for each candidate.
     """
@@ -337,6 +341,7 @@ async def _get_eu_alternatives(
         select(Tool)
         .where(
             Tool.jurisdiction_category.in_(allowed),
+            Tool.jurisdiction_confidence.in_(("high", "medium")),
             Tool.id != tool.id,
             Tool.report_count >= 5,
         )
@@ -349,11 +354,12 @@ async def _get_eu_alternatives(
     out: list[AlternativeTool] = []
     for peer in results:
         estimated_score = min(95.0, 80.0 + (peer.report_count / 20))
+        source_label = peer.jurisdiction_source or "unknown"
         out.append(
             AlternativeTool(
                 tool=peer.identifier,
                 score=round(estimated_score, 1),
-                reason=f"{peer.jurisdiction_category} alternative in {tool.category or 'same category'}",
+                reason=f"{peer.jurisdiction_category} ({source_label}) in {tool.category or 'same category'}",
             )
         )
     return out

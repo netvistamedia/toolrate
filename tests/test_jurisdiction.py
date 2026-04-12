@@ -254,6 +254,7 @@ class TestEuAlternatives:
             identifier="https://eu-llm-1.example",
             category="LLM APIs",
             jurisdiction_category="EU",
+            jurisdiction_confidence="high",
             hosting_country="DE",
             report_count=80,
         )
@@ -262,6 +263,7 @@ class TestEuAlternatives:
             identifier="https://eu-llm-2.example",
             category="LLM APIs",
             jurisdiction_category="EU",
+            jurisdiction_confidence="medium",
             hosting_country="FR",
             report_count=60,
         )
@@ -271,6 +273,7 @@ class TestEuAlternatives:
             identifier="https://uk-llm.example",
             category="LLM APIs",
             jurisdiction_category="GDPR-adequate",
+            jurisdiction_confidence="high",
             hosting_country="GB",
             report_count=70,
         )
@@ -280,6 +283,7 @@ class TestEuAlternatives:
             identifier="https://eu-payments.example",
             category="Payment APIs",
             jurisdiction_category="EU",
+            jurisdiction_confidence="high",
             hosting_country="NL",
             report_count=90,
         )
@@ -309,6 +313,7 @@ class TestEuAlternatives:
             identifier="https://uk-email.example",
             category="Email APIs",
             jurisdiction_category="GDPR-adequate",
+            jurisdiction_confidence="high",
             hosting_country="GB",
             report_count=50,
         )
@@ -317,6 +322,46 @@ class TestEuAlternatives:
 
         alts = await _get_eu_alternatives(db, primary, gdpr_required=True)
         assert any(a.tool == "https://uk-email.example" for a in alts)
+
+    @pytest.mark.asyncio
+    async def test_low_confidence_peers_excluded(self, db):
+        """A CDN-inferred 'EU' tool should not appear in eu_alternatives — confidence filter."""
+        primary = Tool(
+            id=uuid.uuid4(),
+            identifier="https://primary.example",
+            category="LLM APIs",
+            jurisdiction_category="Non-EU",
+            hosting_country="US",
+            report_count=100,
+        )
+        cdn_edge = Tool(
+            id=uuid.uuid4(),
+            identifier="https://fake-eu-via-cdn.example",
+            category="LLM APIs",
+            jurisdiction_category="EU",
+            jurisdiction_source="cdn_detected",
+            jurisdiction_confidence="low",
+            hosting_country="DE",
+            hosting_provider="Cloudflare, Inc.",
+            report_count=80,
+        )
+        real_eu = Tool(
+            id=uuid.uuid4(),
+            identifier="https://real-eu.example",
+            category="LLM APIs",
+            jurisdiction_category="EU",
+            jurisdiction_source="manual",
+            jurisdiction_confidence="high",
+            hosting_country="FR",
+            report_count=50,
+        )
+        db.add_all([primary, cdn_edge, real_eu])
+        await db.commit()
+
+        alts = await _get_eu_alternatives(db, primary, gdpr_required=False)
+        idents = [a.tool for a in alts]
+        assert "https://real-eu.example" in idents
+        assert "https://fake-eu-via-cdn.example" not in idents
 
     @pytest.mark.asyncio
     async def test_excludes_low_report_count(self, db):
@@ -357,6 +402,7 @@ class TestEuAlternatives:
             identifier="https://eu-peer.example",
             category="LLM APIs",
             jurisdiction_category="EU",
+            jurisdiction_confidence="high",
             hosting_country="DE",
             report_count=80,
         )
