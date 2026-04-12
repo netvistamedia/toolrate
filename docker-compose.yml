@@ -1,3 +1,9 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "20m"
+    max-file: "5"
+
 services:
   app:
     build: .
@@ -10,6 +16,7 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+    logging: *default-logging
 
   postgres:
     image: postgres:16-alpine
@@ -26,6 +33,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging: *default-logging
 
   redis:
     image: redis:7-alpine
@@ -36,6 +44,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    logging: *default-logging
 
   backup:
     image: postgres:16-alpine
@@ -49,16 +58,25 @@ services:
       - |
         echo "Backup service started. Running daily at 03:00 UTC."
         while true; do
-          # Sleep until next 03:00 UTC
-          now=$$(date +%s)
-          target=$$(date -d "tomorrow 03:00" +%s 2>/dev/null || date -v+1d -v3H -v0M -v0S +%s)
-          sleep $$((target - now))
+          # Compute seconds until next 03:00 UTC using portable shell math
+          # (BusyBox date has no -d "tomorrow", BSD has no -d at all).
+          H=$$(date -u +%H); M=$$(date -u +%M); S=$$(date -u +%S)
+          cur=$$(( 10#$$H * 3600 + 10#$$M * 60 + 10#$$S ))
+          target=$$(( 3 * 3600 ))
+          if [ "$$cur" -lt "$$target" ]; then
+            delta=$$(( target - cur ))
+          else
+            delta=$$(( 86400 - cur + target ))
+          fi
+          echo "Next backup in $$delta seconds."
+          sleep "$$delta"
           /usr/local/bin/backup-db.sh
         done
     depends_on:
       postgres:
         condition: service_healthy
     restart: unless-stopped
+    logging: *default-logging
 
 volumes:
   pgdata:
