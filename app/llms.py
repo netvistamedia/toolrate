@@ -2,9 +2,9 @@
 
 LLMS_TXT = """# ToolRate
 
-> Reliability oracle for AI agents. Rates 600+ tools and APIs so agents pick the right one from the start.
+> Real advice for every tool your agent considers. Objective, crowdsourced reliability ratings and actionable intelligence for 600+ tools and APIs, based on thousands of real agent executions across production workloads.
 
-ToolRate provides real-time reliability scores for external tools and APIs, based on the collective experience of thousands of AI agents. Before your agent calls a tool, check ToolRate to get a reliability score, failure risk, common pitfalls, and alternatives.
+ToolRate delivers real-time reliability scores, failure risk, jurisdiction intelligence, common pitfalls, and smart alternatives for every external tool your agent calls. Know before you call. Choose correctly the first time.
 
 ## Docs
 
@@ -42,9 +42,9 @@ All API endpoints require an API key via the `X-Api-Key` header.
 
 LLMS_FULL_TXT = """# ToolRate — Full Documentation for LLMs
 
-> Reliability oracle for AI agents. Rates 600+ tools and APIs so agents pick the right one from the start.
+> Real advice for every tool your agent considers. Objective, crowdsourced reliability ratings and actionable intelligence for 600+ tools and APIs, based on thousands of real agent executions across production workloads.
 
-ToolRate provides real-time reliability scores for external tools and APIs, based on the collective experience of thousands of AI agents. Before your agent calls a tool, check ToolRate to get a reliability score, failure risk, common pitfalls, and alternatives. The data moat grows with every report, making scores more accurate for everyone.
+ToolRate delivers real-time reliability scores, failure risk, jurisdiction intelligence, common pitfalls, and smart alternatives for every external tool your agent calls. Each assessment is timestamped and ships with a confidence interval and per-error-category breakdown, so agents, developers, and enterprise compliance teams all get the same objective view. Know before you call. Choose correctly the first time. The data pool grows with every report, making the intelligence sharper for everyone.
 
 ## API Base URL
 

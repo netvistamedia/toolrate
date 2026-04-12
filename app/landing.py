@@ -5,16 +5,16 @@ LANDING_HTML = r"""<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>ToolRate — Reliability Oracle for AI Agents</title>
-<meta name="description" content="ToolRate rates AI tools so that you or your agents pick the right tool from the start. Save time, tokens, energy, and money.">
-<meta property="og:title" content="ToolRate — Pick the Right Tool from the Start">
-<meta property="og:description" content="AI picks a tool, it fails, swaps for another — costing time and tokens. ToolRate rates 600+ tools so agents pick the right one from the start.">
+<title>ToolRate — Real advice for every tool your agent considers</title>
+<meta name="description" content="ToolRate delivers objective, crowdsourced reliability ratings and actionable intelligence from thousands of real agent executions. Know before you call. Choose correctly the first time.">
+<meta property="og:title" content="ToolRate — Real advice for every tool your agent considers">
+<meta property="og:description" content="Objective, crowdsourced reliability ratings and actionable intelligence for AI agents — based on thousands of real agent executions across production workloads. Know before you call.">
 <meta property="og:image" content="https://toolrate.ai/toolrate-logo.webp">
 <meta property="og:url" content="https://toolrate.ai">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="ToolRate — Reliability Oracle for AI Agents">
-<meta name="twitter:description" content="Rate 600+ AI tools. One line of code. Auto-fallback. Built by agents, for agents.">
+<meta name="twitter:title" content="ToolRate — Real advice for every tool your agent considers">
+<meta name="twitter:description" content="Objective, crowdsourced reliability ratings and actionable intelligence from thousands of real agent executions. Know before you call.">
 <meta name="twitter:image" content="https://toolrate.ai/toolrate-logo.webp">
 <link rel="canonical" href="https://toolrate.ai">
 <link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
@@ -24,7 +24,7 @@ LANDING_HTML = r"""<!DOCTYPE html>
   "@type": "SoftwareApplication",
   "name": "ToolRate",
   "url": "https://toolrate.ai",
-  "description": "Reliability oracle for AI agents. Rates 600+ tools and APIs so agents pick the right one from the start. Real-time reliability scores, failure risk assessment, auto-fallback, and hidden gem discovery.",
+  "description": "Reliability oracle for AI agents. Objective, crowdsourced reliability ratings and actionable intelligence for every tool your agent considers — based on thousands of real agent executions across production workloads. Real-time reliability scores, failure risk, confidence intervals, jurisdiction intelligence, and auto-fallback in one API call.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Any",
   "offers": [
@@ -286,13 +286,29 @@ body::after {
 }
 
 .hero h1 {
-  font-size: clamp(2.3rem, 5vw, 3.4rem);
+  font-size: clamp(2.35rem, 5.2vw, 3.5rem);
   font-weight: 700;
   color: var(--text-bright);
-  line-height: 1.15;
-  letter-spacing: -0.025em;
-  margin-bottom: 1.75rem;
+  line-height: 1.12;
+  letter-spacing: -0.028em;
+  margin-bottom: 1.25rem;
   text-wrap: balance;
+  position: relative;
+  display: inline-block;
+  padding-bottom: 0.9rem;
+}
+
+.hero h1::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 72px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--brand-gradient);
+  box-shadow: 0 0 20px rgba(47, 207, 250, 0.45);
 }
 
 .hero h1 span {
@@ -733,60 +749,81 @@ body::after {
 
 .features-header {
   text-align: center;
-  margin-bottom: 2.5rem;
+  margin-bottom: 3.25rem;
 }
 
 .features-header h2 {
-  font-size: 1.7rem;
-  font-weight: 600;
+  font-size: clamp(1.65rem, 2.6vw, 2.1rem);
+  font-weight: 700;
   color: var(--text-bright);
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.015em;
 }
 
 .features-header p {
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: var(--text-dim);
   font-weight: 300;
+  max-width: 580px;
+  margin: 0 auto;
+  line-height: 1.65;
 }
 
 .features-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
+  gap: 1rem;
 }
 
 .feature {
   background: var(--surface);
-  padding: 1.75rem;
-  transition: background 0.3s;
+  padding: 2rem 1.9rem;
+  border: 1px solid var(--border-bright);
+  border-radius: 14px;
+  transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+  position: relative;
 }
-.feature:hover { background: var(--surface-2); }
+.feature:hover {
+  background: var(--surface-2);
+  border-color: var(--brand-mid);
+  transform: translateY(-2px);
+  box-shadow: 0 14px 36px rgba(10, 149, 253, 0.12);
+}
 
 .feature-num {
   font-family: var(--mono);
-  font-size: 0.65rem;
-  font-weight: 500;
-  color: var(--brand);
-  letter-spacing: 0.08em;
-  margin-bottom: 0.75rem;
+  font-size: 0.68rem;
+  font-weight: 600;
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 0.12em;
+  margin-bottom: 1rem;
 }
 
 .feature h3 {
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text-bright);
-  margin-bottom: 0.4rem;
+  margin-bottom: 0.55rem;
+  letter-spacing: -0.005em;
 }
 
 .feature p {
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   font-weight: 300;
   color: var(--text-dim);
-  line-height: 1.65;
+  line-height: 1.7;
+}
+
+.feature p code {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--brand-light);
+  background: var(--brand-dim);
+  padding: 0.08rem 0.35rem;
+  border-radius: 4px;
 }
 
 /* ── Pricing ── */
@@ -972,9 +1009,9 @@ body::after {
     <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" class="hero-brand">
     <h1>Real advice for every tool your <span>agent considers</span>.</h1>
     <p class="hero-sub">
-      AI agents waste tokens and time on unreliable, slow, or non-compliant tools.
+      AI agents waste tokens and time retrying flaky, slow, or non-compliant tools.
       ToolRate delivers <strong>objective, crowdsourced reliability ratings</strong> and
-      actionable advice &mdash; based on thousands of real agent executions across
+      actionable intelligence &mdash; based on thousands of real agent executions across
       production workloads.
     </p>
     <p class="hero-kicker"><strong>Know before you call. Choose correctly the first time.</strong></p>

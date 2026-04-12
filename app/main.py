@@ -37,16 +37,18 @@ async def lifespan(app: FastAPI):
 
 
 DESCRIPTION = """
-**The reliability oracle for AI agents.**
+**Real advice for every tool your agent considers.**
 
-ToolRate provides real-time reliability scores for external tools and APIs,
-based on the collective experience of thousands of AI agents.
+ToolRate delivers objective, crowdsourced reliability ratings and actionable
+intelligence for 600+ external tools and APIs &mdash; based on thousands of real
+agent executions across production workloads. Know before you call. Choose
+correctly the first time.
 
 ## How it works
 
-1. **Assess** before calling a tool — get a reliability score, failure risk, common pitfalls, and alternatives
-2. **Report** after calling a tool — contribute success/failure data back to the community
-3. The data moat grows with every report, making scores more accurate for everyone
+1. **Assess** before calling a tool — reliability score, failure risk, confidence interval, jurisdiction posture, common pitfalls, and ranked alternatives on every response.
+2. **Report** after calling a tool — every success/failure strengthens the data pool for the next agent making the same decision.
+3. **Guard** for one-line production use — `guard()` wraps any call, auto-fallback runs on failure, journey data flows back automatically.
 
 ## Authentication
 
