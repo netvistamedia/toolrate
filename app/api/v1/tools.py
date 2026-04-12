@@ -1,8 +1,14 @@
-from fastapi import APIRouter, Query
-from sqlalchemy import select, func
+from datetime import datetime, timedelta, timezone
 
-from app.dependencies import Db, AuthenticatedKey
+from fastapi import APIRouter, HTTPException, Query, status
+from sqlalchemy import case, func, select
+
+from app.core.security import context_hash as _context_hash
+from app.dependencies import Db, RedisClient, AuthenticatedKey
+from app.models.report import ExecutionReport
 from app.models.tool import Tool
+from app.services.cache import get_cached_score, set_cached_score
+from app.services.scoring import compute_score
 
 router = APIRouter()
 
@@ -74,4 +80,71 @@ async def list_categories(
     return {
         "categories": [{"name": row[0], "tool_count": row[1]} for row in rows],
         "total": len(rows),
+    }
+
+
+@router.get("/tools/{identifier:path}", tags=["Discovery"],
+            summary="Get tool detail",
+            description="Returns full metadata and the current reliability assessment for a single tool. "
+                        "The identifier should be URL-encoded when it contains slashes (e.g. a full API URL). "
+                        "Responds with 404 if the tool is unknown.")
+async def get_tool_detail(
+    identifier: str,
+    db: Db,
+    redis: RedisClient,
+    api_key: AuthenticatedKey,
+):
+    result = await db.execute(select(Tool).where(Tool.identifier == identifier))
+    tool = result.scalar_one_or_none()
+    if not tool:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Tool not found: {identifier}",
+        )
+
+    ctx_hash = _context_hash("")
+    data_pool = api_key.data_pool
+
+    cached = await get_cached_score(redis, str(tool.id), ctx_hash, data_pool)
+    if cached:
+        assessment = cached
+    else:
+        assessment = await compute_score(db, tool, ctx_hash, data_pool)
+        from app.config import settings
+        ttl = (
+            settings.cache_ttl_hot
+            if tool.report_count >= settings.hot_threshold_reports_7d
+            else settings.cache_ttl_cold
+        )
+        await set_cached_score(redis, str(tool.id), ctx_hash, data_pool, assessment, ttl)
+
+    now = datetime.now(timezone.utc)
+    cutoff_30d = now - timedelta(days=30)
+    cutoff_7d = now - timedelta(days=7)
+    cutoff_24h = now - timedelta(hours=24)
+
+    counts_stmt = (
+        select(
+            func.count().label("total"),
+            func.sum(case((ExecutionReport.created_at >= cutoff_30d, 1), else_=0)).label("r_30d"),
+            func.sum(case((ExecutionReport.created_at >= cutoff_7d, 1), else_=0)).label("r_7d"),
+            func.sum(case((ExecutionReport.created_at >= cutoff_24h, 1), else_=0)).label("r_24h"),
+        )
+        .where(ExecutionReport.tool_id == tool.id)
+    )
+    row = (await db.execute(counts_stmt)).one()
+
+    return {
+        "identifier": tool.identifier,
+        "display_name": tool.display_name,
+        "category": tool.category,
+        "first_seen_at": tool.first_seen_at.isoformat() if tool.first_seen_at else None,
+        "report_count": tool.report_count,
+        "activity": {
+            "reports_total": int(row.total or 0),
+            "reports_30d": int(row.r_30d or 0),
+            "reports_7d": int(row.r_7d or 0),
+            "reports_24h": int(row.r_24h or 0),
+        },
+        "assessment": assessment,
     }

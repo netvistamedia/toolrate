@@ -435,5 +435,39 @@ async def sitemap_xml():
 
 
 @app.get("/health")
-async def health():
+async def health(request: Request):
+    """Liveness check — always 200 so the restart cron doesn't thrash on DB hiccups.
+    Use /health/ready for readiness (503 if a dependency is down)."""
     return {"status": "ok"}
+
+
+@app.get("/health/ready")
+async def health_ready(request: Request):
+    checks: dict[str, str] = {}
+    ok = True
+
+    try:
+        from sqlalchemy import text
+        from app.db.session import async_session
+        async with async_session() as session:
+            await session.execute(text("SELECT 1"))
+        checks["database"] = "ok"
+    except Exception as exc:
+        logger.warning("Readiness DB failure: %s", exc)
+        checks["database"] = "error"
+        ok = False
+
+    try:
+        pong = await request.app.state.redis.ping()
+        checks["redis"] = "ok" if pong else "error"
+        if not pong:
+            ok = False
+    except Exception as exc:
+        logger.warning("Readiness Redis failure: %s", exc)
+        checks["redis"] = "error"
+        ok = False
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK if ok else status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"status": "ok" if ok else "degraded", "checks": checks},
+    )
