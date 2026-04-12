@@ -1,6 +1,9 @@
 import logging
+import mimetypes
 import time
 from contextlib import asynccontextmanager
+
+mimetypes.add_type("image/webp", ".webp")
 
 import redis.asyncio as aioredis
 from fastapi import FastAPI, Request, status
