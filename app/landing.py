@@ -482,6 +482,21 @@ body::after {
   background: linear-gradient(90deg, var(--green), var(--brand) 50%, var(--red));
 }
 
+.jurisdiction-eyebrow {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 600;
+  color: var(--brand-light);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--brand-mid);
+  border-radius: 999px;
+  background: var(--brand-dim);
+  margin-bottom: 1.25rem;
+}
+
 .jurisdiction-head {
   display: flex;
   align-items: center;
@@ -957,11 +972,12 @@ body::after {
     <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" class="hero-brand">
     <h1>Real advice for every tool your <span>agent considers</span>.</h1>
     <p class="hero-sub">
-      AI agents waste tokens and time retrying flaky, slow, or non-compliant tools.
-      ToolRate gives your agents <strong>objective reliability ratings and smart
-      recommendations</strong> &mdash; based on thousands of real agent executions.
+      AI agents waste tokens and time on unreliable, slow, or non-compliant tools.
+      ToolRate delivers <strong>objective, crowdsourced reliability ratings</strong> and
+      actionable advice &mdash; based on thousands of real agent executions across
+      production workloads.
     </p>
-    <p class="hero-kicker"><strong>Know before you call.</strong></p>
+    <p class="hero-kicker"><strong>Know before you call. Choose correctly the first time.</strong></p>
     <div class="hero-actions">
       <a href="/docs" class="btn btn-primary">Get Started Free</a>
       <a href="https://github.com/netvistamedia/toolrate" class="btn btn-ghost">View on GitHub</a>
@@ -993,18 +1009,19 @@ body::after {
 <div class="narrative">
   <div class="narrative-card narrative-problem">
     <div class="narrative-badge"><span class="narrative-dot"></span> The Problem</div>
-    <h3>Agents waste cycles on failing tools</h3>
-    <p>Your agent picks Stripe, it times out. Falls back to LemonSqueezy, auth fails. Tries PayPal, finally works. Three attempts, wasted tokens, frustrated users.</p>
+    <h3>Agents burn cycles on failing tools</h3>
+    <p>Your agent picks Stripe, it times out. Falls back to LemonSqueezy, auth fails. Tries PayPal, finally works. Three attempts, wasted tokens, degraded user experience, and no record of why any of it happened.</p>
   </div>
   <div class="narrative-card narrative-solution">
     <div class="narrative-badge"><span class="narrative-dot"></span> The Solution</div>
-    <h3>One call before every tool call</h3>
-    <p>ToolRate scores every tool in real time based on the collective experience of thousands of agents. Check the score, pick the best option first, fall back intelligently.</p>
+    <h3>One assessment before every call</h3>
+    <p>ToolRate scores every tool in real time from the collective experience of thousands of production agents. Check the score, pick the best option first, fall back intelligently &mdash; and log every decision with a confidence level attached.</p>
   </div>
 </div>
 
 <!-- Jurisdiction Intelligence -->
 <section class="jurisdiction">
+  <div class="jurisdiction-eyebrow">Enterprise Compliance Layer</div>
   <div class="jurisdiction-head">
     <div class="jurisdiction-icon">🌍</div>
     <h2>Jurisdiction Intelligence</h2>
@@ -1012,35 +1029,36 @@ body::after {
   </div>
   <p class="jurisdiction-lead">
     The only reliability API that tells you <em>where</em> every tool actually runs. Every
-    listing is tagged with its true hosting jurisdiction, GDPR posture, and a confidence
-    score &mdash; so your agent never makes a compliance bet it can&rsquo;t back up.
+    listing carries a verified hosting jurisdiction, GDPR posture, and confidence score &mdash;
+    so compliance, security, and data residency are decided at assessment time, not during
+    post-incident review.
   </p>
 
   <div class="jurisdiction-tiers">
     <div class="tier tier-eu">
       <div class="tier-label"><span class="tier-dot"></span>EU-hosted</div>
-      <p>Verified GDPR-compliant with low residency risk. Safe for sensitive workloads.</p>
+      <p>Verified GDPR-compliant with low residency risk. Safe for regulated workloads and customer PII.</p>
     </div>
     <div class="tier tier-mid">
       <div class="tier-label"><span class="tier-dot"></span>US &amp; Other Regions</div>
-      <p>Exact risk level exposed so your agent weighs it in real time against the alternatives.</p>
+      <p>Exact jurisdiction and transfer-risk level exposed so your agent weighs it against the alternatives in real time.</p>
     </div>
     <div class="tier tier-high">
       <div class="tier-label"><span class="tier-dot"></span>High-risk Jurisdictions</div>
-      <p>Explicitly flagged. Never silently routed through a regulated pipeline.</p>
+      <p>Explicitly flagged. Never silently routed through a regulated pipeline or privileged workflow.</p>
     </div>
   </div>
 
   <div class="jurisdiction-benefits-title">Built into every response</div>
   <ul class="jurisdiction-benefits">
-    <li><strong>EU-first routing</strong> &mdash; sensitive calls land in GDPR territory, automatically.</li>
-    <li><strong>Policy enforcement</strong> &mdash; block non-compliant tools before the request ever leaves your agent.</li>
-    <li><strong>Smart fallbacks</strong> &mdash; when a high-risk tool is the only option, get a cleaner alternative in the same call.</li>
-    <li><strong>Audit-ready sovereignty</strong> &mdash; prove where every customer byte lives with a single query.</li>
+    <li><strong>EU-first routing</strong> &mdash; sensitive calls land in GDPR territory automatically, without policy code in your agent.</li>
+    <li><strong>Assess-time enforcement</strong> &mdash; block non-compliant tools before the request ever leaves the process.</li>
+    <li><strong>Compliant fallbacks</strong> &mdash; when a high-risk tool is the only option, a cleaner alternative comes back in the same response.</li>
+    <li><strong>Audit-ready sovereignty</strong> &mdash; every assessment is timestamped, confidence-scored, and exportable for compliance review.</li>
   </ul>
 
   <p class="jurisdiction-punch">
-    Your agent no longer guesses whether Stripe, OpenAI, Tavily, or Supabase is safe for a regulated workflow &mdash; it <strong>knows</strong>, with the confidence score included in every assessment.
+    Your agent no longer guesses whether Stripe, OpenAI, Tavily, or Supabase is safe for a regulated workflow &mdash; it <strong>knows</strong>, with the confidence score attached to every assessment and a durable record of the decision.
   </p>
 </section>
 
@@ -1105,38 +1123,38 @@ curl -X POST https://api.toolrate.ai/v1/report \
 <section class="features">
   <div class="features-header">
     <h2>Built for production agents</h2>
-    <p>Everything your agent needs to make smarter tool choices</p>
+    <p>Reliability intelligence for the developers, enterprises, and agents running real AI workloads.</p>
   </div>
   <div class="features-grid">
     <div class="feature">
       <div class="feature-num">01</div>
       <h3>Reliability Scoring</h3>
-      <p>Bayesian-smoothed scores with recency weighting. 70% weight on last 7 days. Confidence intervals included.</p>
+      <p>Bayesian-smoothed scores with recency weighting &mdash; 70% of the signal drawn from the last 7 days. Every response carries a confidence interval and a per-error-category breakdown.</p>
     </div>
     <div class="feature">
       <div class="feature-num">02</div>
-      <h3>Auto-Fallback</h3>
-      <p>guard() checks the score, runs your function, auto-retries with the next best alternative on failure.</p>
+      <h3>One-Line Guard</h3>
+      <p><code>guard()</code> assesses the score, runs your call, and auto-retries with the next best alternative if it fails. One line of code, zero branching logic in your agent.</p>
     </div>
     <div class="feature">
       <div class="feature-num">03</div>
       <h3>Hidden Gems</h3>
-      <p>Discover tools that nobody talks about but everyone ends up using. Found by analyzing real fallback patterns.</p>
+      <p>Tools nobody pitches but production agents quietly rely on &mdash; surfaced from real fallback patterns across thousands of sessions, ranked by recovery success rate.</p>
     </div>
     <div class="feature">
       <div class="feature-num">04</div>
       <h3>Fallback Chains</h3>
-      <p>When Stripe fails, what do agents switch to? Real journey data from thousands of agent sessions.</p>
+      <p>When OpenAI, Stripe, or SendGrid drops, what do production cohorts actually switch to? Real journey data, ranked by downstream completion rate.</p>
     </div>
     <div class="feature">
       <div class="feature-num">05</div>
-      <h3>Webhooks</h3>
-      <p>Get notified when a tool's reliability drops. HMAC-signed payloads, configurable thresholds per tool.</p>
+      <h3>Reliability Webhooks</h3>
+      <p>Get paged the moment a tool's reliability crosses a threshold you define. HMAC-signed, per-tool, exponential-backoff delivery. Wire it into PagerDuty or Slack in seconds.</p>
     </div>
     <div class="feature">
       <div class="feature-num">06</div>
       <h3>MCP Server</h3>
-      <p>Native integration with Claude Code and Cursor. Check tool reliability without leaving your editor.</p>
+      <p>Native integration with Claude Code, Cursor, and any MCP-aware client. Run assessments from inside your editor without leaving the loop.</p>
     </div>
   </div>
 </section>
