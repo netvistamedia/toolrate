@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime, timezone
+from unittest.mock import AsyncMock, patch
 
 import pytest
 import pytest_asyncio
@@ -15,10 +16,16 @@ from app.services.jurisdiction import (
     classify_jurisdiction,
     data_residency_risk,
     format_hosting_jurisdiction,
+    is_cdn_provider,
     is_gdpr_compliant,
     recommended_for,
+    resolve_jurisdiction,
     lookup_tool_jurisdiction,
+    _resolve_from_seed,
+    _second_level_domain,
+    _extract_hostname,
 )
+from app.data.jurisdiction_seed import JURISDICTION_SEED, lookup_seed
 
 
 TEST_DATABASE_URL = "sqlite+aiosqlite:///test_jurisdiction.db"
@@ -98,6 +105,17 @@ class TestDataResidencyRisk:
     def test_unknown_is_medium(self):
         assert data_residency_risk(None) == "medium"
         assert data_residency_risk("") == "medium"
+
+    def test_low_confidence_bumps_eu_to_low(self):
+        """Low-confidence EU verdict should be downgraded — we're not sure it's really EU."""
+        assert data_residency_risk("EU", confidence="low") == "low"
+
+    def test_low_confidence_bumps_adequate_to_medium(self):
+        assert data_residency_risk("GDPR-adequate", confidence="low") == "medium"
+
+    def test_high_confidence_keeps_eu_at_none(self):
+        assert data_residency_risk("EU", confidence="high") == "none"
+        assert data_residency_risk("EU", confidence="medium") == "none"
 
 
 class TestRecommendedFor:
@@ -353,3 +371,239 @@ class TestEuAlternatives:
         # Without the flag, eu_alternatives should be empty
         resp_plain = await compute_score(db, primary, "__global__")
         assert resp_plain.eu_alternatives == []
+
+
+class TestExtractHostname:
+    def test_full_url(self):
+        assert _extract_hostname("https://api.openai.com/v1/chat/completions") == "api.openai.com"
+
+    def test_bare_hostname(self):
+        assert _extract_hostname("api.openai.com") == "api.openai.com"
+
+    def test_lowercases(self):
+        assert _extract_hostname("https://API.OPENAI.COM/foo") == "api.openai.com"
+
+    def test_empty_returns_none(self):
+        assert _extract_hostname("") is None
+        assert _extract_hostname(None) is None
+
+
+class TestSecondLevelDomain:
+    def test_three_part(self):
+        assert _second_level_domain("api.openai.com") == "openai.com"
+
+    def test_four_part(self):
+        # Without a PSL we collapse everything to the last two labels.
+        # This is imperfect for co.uk but WHOIS usually still resolves.
+        assert _second_level_domain("api.graph.facebook.com") == "facebook.com"
+
+    def test_already_root(self):
+        assert _second_level_domain("openai.com") == "openai.com"
+
+    def test_single_label(self):
+        assert _second_level_domain("localhost") is None
+
+
+class TestIsCdnProvider:
+    def test_cloudflare(self):
+        assert is_cdn_provider("Cloudflare, Inc.") is True
+        assert is_cdn_provider("cloudflarenet") is True
+
+    def test_fastly(self):
+        assert is_cdn_provider("Fastly, Inc.") is True
+
+    def test_akamai(self):
+        assert is_cdn_provider("Akamai Technologies") is True
+
+    def test_non_cdn(self):
+        assert is_cdn_provider("Hetzner Online GmbH") is False
+        assert is_cdn_provider("OpenAI, Inc.") is False
+
+    def test_empty(self):
+        assert is_cdn_provider(None) is False
+        assert is_cdn_provider("") is False
+
+    def test_aws_and_google_not_flagged(self):
+        """We deliberately don't flag AWS/Google as CDNs — they're hosts for real services."""
+        assert is_cdn_provider("Amazon.com, Inc.") is False
+        assert is_cdn_provider("Google LLC") is False
+
+
+class TestJurisdictionSeed:
+    def test_seed_has_critical_entries(self):
+        # Sanity check: if these disappear, production data is wrong
+        assert "api.openai.com" in JURISDICTION_SEED
+        assert "api.anthropic.com" in JURISDICTION_SEED
+        assert "api.stripe.com" in JURISDICTION_SEED
+        assert "api.mistral.ai" in JURISDICTION_SEED
+
+    def test_openai_is_us_non_eu(self):
+        entry = lookup_seed("api.openai.com")
+        assert entry is not None
+        assert entry["country"] == "US"
+        assert entry["category"] == "Non-EU"
+
+    def test_mistral_is_eu(self):
+        entry = lookup_seed("api.mistral.ai")
+        assert entry is not None
+        assert entry["country"] == "FR"
+        assert entry["category"] == "EU"
+
+    def test_deepseek_is_high_risk(self):
+        entry = lookup_seed("api.deepseek.com")
+        assert entry is not None
+        assert entry["category"] == "High-Risk"
+
+    def test_case_insensitive(self):
+        assert lookup_seed("API.OPENAI.COM") is not None
+
+    def test_missing_returns_none(self):
+        assert lookup_seed("api.nothing-here-42.example") is None
+
+    def test_www_prefix_stripped(self):
+        # Register bare, query with www. — should still match
+        assert lookup_seed("www.api.openai.com") is not None
+
+
+class TestResolveFromSeed:
+    def test_converts_seed_to_resolver_dict(self):
+        result = _resolve_from_seed("api.openai.com")
+        assert result is not None
+        assert result["hosting_country"] == "US"
+        assert result["jurisdiction_category"] == "Non-EU"
+        assert result["jurisdiction_source"] == "manual"
+        assert result["jurisdiction_confidence"] == "high"
+        assert result["notes"] is not None
+
+    def test_returns_none_for_unseeded(self):
+        assert _resolve_from_seed("api.unknown-42.example") is None
+
+
+class TestResolveJurisdictionTiers:
+    @pytest.mark.asyncio
+    async def test_seed_wins_over_whois_and_ip(self):
+        """When a tool is in the seed, WHOIS and IP lookups should never fire."""
+        with patch("app.services.jurisdiction._resolve_from_whois", new=AsyncMock(return_value={"should": "not be called"})) as whois_mock, \
+             patch("app.services.jurisdiction._resolve_from_ip", new=AsyncMock(return_value={"should": "not be called"})) as ip_mock:
+            result = await resolve_jurisdiction("https://api.openai.com/v1/chat/completions")
+
+        assert result["jurisdiction_source"] == "manual"
+        assert result["hosting_country"] == "US"
+        whois_mock.assert_not_called()
+        ip_mock.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_whois_used_when_seed_misses(self):
+        """When no seed exists, WHOIS should be tried next."""
+        fake_whois = {
+            "hosting_country": "DE",
+            "hosting_region": None,
+            "hosting_provider": "Example GmbH",
+            "jurisdiction_category": "EU",
+            "jurisdiction_source": "whois",
+            "jurisdiction_confidence": "medium",
+            "notes": "Registrant country from WHOIS",
+        }
+        with patch("app.services.jurisdiction._resolve_from_whois", new=AsyncMock(return_value=fake_whois)), \
+             patch("app.services.jurisdiction._resolve_from_ip", new=AsyncMock(return_value=None)) as ip_mock:
+            result = await resolve_jurisdiction("https://api.unseeded-example.test/v1")
+
+        assert result["jurisdiction_source"] == "whois"
+        assert result["jurisdiction_confidence"] == "medium"
+        ip_mock.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_ip_fallback_when_whois_fails(self):
+        fake_ip = {
+            "hosting_country": "US",
+            "hosting_region": "Virginia",
+            "hosting_provider": "Amazon.com, Inc.",
+            "jurisdiction_category": "Non-EU",
+            "jurisdiction_source": "ip_geolocation",
+            "jurisdiction_confidence": "low",
+            "notes": "IP geolocation via ipinfo.io",
+        }
+        with patch("app.services.jurisdiction._resolve_from_whois", new=AsyncMock(return_value=None)), \
+             patch("app.services.jurisdiction._resolve_from_ip", new=AsyncMock(return_value=fake_ip)):
+            result = await resolve_jurisdiction("https://api.unseeded-example.test/v1")
+
+        assert result["jurisdiction_source"] == "ip_geolocation"
+        assert result["jurisdiction_confidence"] == "low"
+
+    @pytest.mark.asyncio
+    async def test_cdn_detected_flag(self):
+        fake_ip = {
+            "hosting_country": "DE",
+            "hosting_region": "Frankfurt",
+            "hosting_provider": "Cloudflare, Inc.",
+            "jurisdiction_category": "EU",
+            "jurisdiction_source": "cdn_detected",
+            "jurisdiction_confidence": "low",
+            "notes": "CDN edge detected",
+        }
+        with patch("app.services.jurisdiction._resolve_from_whois", new=AsyncMock(return_value=None)), \
+             patch("app.services.jurisdiction._resolve_from_ip", new=AsyncMock(return_value=fake_ip)):
+            result = await resolve_jurisdiction("https://api.some-cdn-fronted.test/v1")
+
+        assert result["jurisdiction_source"] == "cdn_detected"
+        assert result["jurisdiction_confidence"] == "low"
+
+    @pytest.mark.asyncio
+    async def test_all_tiers_fail_returns_empty(self):
+        with patch("app.services.jurisdiction._resolve_from_whois", new=AsyncMock(return_value=None)), \
+             patch("app.services.jurisdiction._resolve_from_ip", new=AsyncMock(return_value=None)):
+            result = await resolve_jurisdiction("https://api.unseeded-example.test/v1")
+
+        assert result == {}
+
+
+class TestComputeScoreExposesConfidence:
+    @pytest.mark.asyncio
+    async def test_manual_source_surfaces_in_response(self, db):
+        tool = Tool(
+            id=uuid.uuid4(),
+            identifier="https://api.openai.com/v1/chat/completions",
+            category="LLM APIs",
+            hosting_country="US",
+            hosting_region="San Francisco, CA",
+            hosting_provider="OpenAI Inc.",
+            jurisdiction_category="Non-EU",
+            jurisdiction_source="manual",
+            jurisdiction_confidence="high",
+            notes="OpenAI OpCo, LLC (Delaware).",
+            report_count=0,
+        )
+        db.add(tool)
+        await db.commit()
+
+        resp = await compute_score(db, tool, "__global__")
+
+        assert resp.jurisdiction_source == "manual"
+        assert resp.jurisdiction_confidence == "high"
+        assert resp.jurisdiction_notes == "OpenAI OpCo, LLC (Delaware)."
+        assert resp.hosting_jurisdiction == "Non-EU (United States - San Francisco, CA)"
+
+    @pytest.mark.asyncio
+    async def test_cdn_detected_has_bumped_residency_risk(self, db):
+        """A cdn_detected verdict claiming 'EU' should still carry low-confidence risk."""
+        tool = Tool(
+            id=uuid.uuid4(),
+            identifier="https://api.cdn-fronted.test",
+            category="LLM APIs",
+            hosting_country="DE",
+            hosting_region="Frankfurt",
+            hosting_provider="Cloudflare, Inc.",
+            jurisdiction_category="EU",
+            jurisdiction_source="cdn_detected",
+            jurisdiction_confidence="low",
+            report_count=0,
+        )
+        db.add(tool)
+        await db.commit()
+
+        resp = await compute_score(db, tool, "__global__")
+
+        # EU + high confidence would be 'none', but with low confidence it gets bumped
+        assert resp.data_residency_risk == "low"
+        assert resp.jurisdiction_confidence == "low"
+        assert resp.jurisdiction_source == "cdn_detected"

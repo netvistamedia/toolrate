@@ -301,14 +301,21 @@ def _jurisdiction_fields(tool: Tool | None, category: str | None) -> dict:
             "hosting_jurisdiction": None,
             "gdpr_compliant": False,
             "data_residency_risk": "medium",
+            "jurisdiction_source": None,
+            "jurisdiction_confidence": None,
+            "jurisdiction_notes": None,
             "recommended_for": recommended_for(None),
         }
+    confidence = tool.jurisdiction_confidence
     return {
         "hosting_jurisdiction": format_hosting_jurisdiction(
             category, tool.hosting_country, tool.hosting_region,
         ),
         "gdpr_compliant": is_gdpr_compliant(category),
-        "data_residency_risk": data_residency_risk(category),
+        "data_residency_risk": data_residency_risk(category, confidence),
+        "jurisdiction_source": tool.jurisdiction_source,
+        "jurisdiction_confidence": confidence,
+        "jurisdiction_notes": tool.notes,
         "recommended_for": recommended_for(category),
     }
 

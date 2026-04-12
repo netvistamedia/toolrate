@@ -69,6 +69,9 @@ class AssessResponse(BaseModel):
     hosting_jurisdiction: str | None = Field(None, description="Human-readable hosting jurisdiction, e.g. 'EU (Germany - Frankfurt)'")
     gdpr_compliant: bool = Field(False, description="True for EU and GDPR-adequate jurisdictions")
     data_residency_risk: str = Field("medium", description="GDPR residency risk: none, low, medium, or high")
+    jurisdiction_source: str | None = Field(None, description="Where the jurisdiction verdict came from: manual, whois, ip_geolocation, or cdn_detected")
+    jurisdiction_confidence: str | None = Field(None, description="Trustworthiness of the jurisdiction verdict: high, medium, or low")
+    jurisdiction_notes: str | None = Field(None, description="Short explanation of the jurisdiction assignment")
     recommended_for: list[str] = Field(default_factory=list, description="Workflow tags this tool is suited for, e.g. 'eu_companies', 'gdpr_strict_workflows'")
     eu_alternatives: list[AlternativeTool] = Field(default_factory=list, description="EU-hosted (or GDPR-adequate) alternatives when eu_only/gdpr_required is set")
 

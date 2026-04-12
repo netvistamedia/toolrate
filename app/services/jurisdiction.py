@@ -1,17 +1,25 @@
-"""Jurisdiction-aware tool metadata — country, provider, GDPR classification.
+"""Hybrid jurisdiction resolver — country, provider, GDPR classification.
 
-Resolves a tool identifier (URL) to the country its IP lives in, groups
-that country into a GDPR bucket (EU / GDPR-adequate / Non-EU / High-Risk),
-and derives downstream flags used by the /assess endpoint:
+Three-tier strategy ordered by trustworthiness:
 
-    hosting_jurisdiction : 'EU (Germany - Frankfurt)'
-    gdpr_compliant       : bool
-    data_residency_risk  : 'none' | 'low' | 'medium' | 'high'
-    recommended_for      : ['eu_companies', 'gdpr_strict_workflows', ...]
+    1. **Manual seed** (source=manual, confidence=high)
+       Hard-coded mapping in app/data/jurisdiction_seed.py for the
+       top ~80 tools where we have verified the legal seat from
+       public filings. Always overrides the other two tiers.
 
-Uses ipinfo.io as the geo backend (free tier, HTTPS, no auth for low volumes).
-All lookups are best-effort — a failure leaves the tool's jurisdiction fields
-as NULL, which downstream code treats the same as 'Non-EU / medium risk'.
+    2. **WHOIS registrant country** (source=whois, confidence=medium)
+       `python-whois` against the bare domain. Privacy proxies and
+       redacted TLDs return None; we ignore those and fall through.
+
+    3. **IP geolocation** (source=ip_geolocation OR cdn_detected, confidence=low)
+       DNS + ipinfo.io. If the provider org matches a known CDN name
+       (Cloudflare, Fastly, Akamai) we flag the result as cdn_detected
+       so callers know the country is almost certainly an edge location,
+       not the company's legal seat.
+
+All tiers return empty on any failure so enrichment stays additive —
+tools without resolvable jurisdiction keep NULL columns and downstream
+code treats that the same as "Non-EU / medium risk / low confidence".
 """
 from __future__ import annotations
 
@@ -23,30 +31,51 @@ from urllib.parse import urlparse
 
 import httpx
 
+from app.data.jurisdiction_seed import lookup_seed
+
 logger = logging.getLogger("nemoflow.jurisdiction")
 
 JurisdictionCategory = Literal["EU", "Non-EU", "GDPR-adequate", "High-Risk"]
+JurisdictionSource = Literal["manual", "whois", "ip_geolocation", "cdn_detected"]
+JurisdictionConfidence = Literal["high", "medium", "low"]
 DataResidencyRisk = Literal["none", "low", "medium", "high"]
 
-# EU + EEA. Jurisdictions that fall under GDPR directly.
+# EU + EEA — jurisdictions that fall under GDPR directly.
 EU_COUNTRIES: frozenset[str] = frozenset({
     "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "FI", "FR", "DE", "GR",
     "HU", "IE", "IT", "LV", "LT", "LU", "MT", "NL", "PL", "PT", "RO", "SK",
     "SI", "ES", "SE",
-    # EEA
-    "IS", "LI", "NO",
+    "IS", "LI", "NO",  # EEA
 })
 
-# Jurisdictions covered by an EU Commission adequacy decision (as of 2024).
+# EU Commission adequacy decisions (as of 2024).
 GDPR_ADEQUATE_COUNTRIES: frozenset[str] = frozenset({
     "AD", "AR", "CA", "FO", "GG", "IL", "IM", "JP", "JE", "NZ", "KR",
     "CH", "GB", "UY",
 })
 
-# Jurisdictions with active mass-surveillance or no meaningful privacy framework.
+# Jurisdictions with active mass-surveillance or no privacy framework.
 HIGH_RISK_COUNTRIES: frozenset[str] = frozenset({
     "CN", "RU", "IR", "KP", "BY", "SY",
 })
+
+# Substring patterns for known CDN providers. When ipinfo.io's org field
+# contains one of these (case-insensitive), we flag the result as
+# cdn_detected so downstream code knows the country is an edge location.
+# Kept deliberately narrow — we DON'T flag AWS/Google/Azure because they're
+# the actual host for many real services, not just CDN edges.
+CDN_PROVIDER_PATTERNS: tuple[str, ...] = (
+    "cloudflare",
+    "fastly",
+    "akamai",
+    "edgecast",
+    "stackpath",
+    "incapsula",
+    "cloudfront",
+    "keycdn",
+    "bunnycdn",
+    "bunny.net",
+)
 
 COUNTRY_NAMES: dict[str, str] = {
     # EU/EEA
@@ -73,6 +102,11 @@ COUNTRY_NAMES: dict[str, str] = {
 }
 
 
+# ═══════════════════════════════════════════════════════════════════════
+# Pure classification helpers
+# ═══════════════════════════════════════════════════════════════════════
+
+
 def classify_jurisdiction(country_code: str | None) -> JurisdictionCategory:
     """Map a 2-letter country code to its GDPR-relevant bucket."""
     if not country_code:
@@ -92,14 +126,25 @@ def is_gdpr_compliant(category: str | None) -> bool:
     return category in ("EU", "GDPR-adequate")
 
 
-def data_residency_risk(category: str | None) -> DataResidencyRisk:
-    """Risk that routing data through this jurisdiction creates a GDPR problem."""
-    return {
+def data_residency_risk(
+    category: str | None,
+    confidence: str | None = None,
+) -> DataResidencyRisk:
+    """Risk that routing data through this jurisdiction creates a GDPR problem.
+
+    Low-confidence EU verdicts get bumped up to 'low' risk instead of 'none'
+    because the category itself is uncertain.
+    """
+    base: dict[str, DataResidencyRisk] = {
         "EU": "none",
         "GDPR-adequate": "low",
         "Non-EU": "medium",
         "High-Risk": "high",
-    }.get(category or "", "medium")
+    }
+    risk = base.get(category or "", "medium")
+    if confidence == "low" and risk in ("none", "low"):
+        return "low" if risk == "none" else "medium"
+    return risk
 
 
 def recommended_for(category: str | None) -> list[str]:
@@ -128,49 +173,161 @@ def format_hosting_jurisdiction(
     return f"{label} ({country_name})"
 
 
-async def lookup_tool_jurisdiction(identifier: str) -> dict[str, Any]:
-    """Resolve a tool URL to hosting country/region/provider via DNS + ipinfo.io.
+def is_cdn_provider(provider: str | None) -> bool:
+    """True if the provider name matches a known CDN."""
+    if not provider:
+        return False
+    lower = provider.lower()
+    return any(pattern in lower for pattern in CDN_PROVIDER_PATTERNS)
 
-    Returns a dict with hosting_country, hosting_region, hosting_provider,
-    and jurisdiction_category. Returns an empty dict on any failure so callers
-    can treat enrichment as purely additive.
-    """
+
+def _extract_hostname(identifier: str) -> str | None:
+    """Extract a bare hostname from a URL or raw hostname string."""
+    if not identifier:
+        return None
+    candidate = identifier if "://" in identifier else f"https://{identifier}"
     try:
-        parsed = urlparse(identifier if "://" in identifier else f"https://{identifier}")
-        host = parsed.hostname
-        if not host:
-            return {}
+        host = urlparse(candidate).hostname
+    except Exception:
+        return None
+    return host.lower() if host else None
 
-        ip = await _resolve_host(host)
-        if not ip:
-            return {}
 
+# ═══════════════════════════════════════════════════════════════════════
+# Tier 1: manual seed
+# ═══════════════════════════════════════════════════════════════════════
+
+
+def _resolve_from_seed(hostname: str) -> dict[str, Any] | None:
+    entry = lookup_seed(hostname)
+    if not entry:
+        return None
+    return {
+        "hosting_country": entry.get("country"),
+        "hosting_region": entry.get("region"),
+        "hosting_provider": entry.get("provider"),
+        "jurisdiction_category": entry.get("category") or classify_jurisdiction(entry.get("country")),
+        "jurisdiction_source": "manual",
+        "jurisdiction_confidence": "high",
+        "notes": entry.get("notes"),
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Tier 2: WHOIS
+# ═══════════════════════════════════════════════════════════════════════
+
+
+async def _resolve_from_whois(hostname: str) -> dict[str, Any] | None:
+    """Try WHOIS for the registered second-level domain."""
+    root_domain = _second_level_domain(hostname)
+    if not root_domain:
+        return None
+
+    try:
+        import whois  # python-whois
+    except ImportError:
+        logger.warning("python-whois not installed; skipping WHOIS lookup")
+        return None
+
+    try:
+        record = await asyncio.wait_for(
+            asyncio.to_thread(whois.whois, root_domain),
+            timeout=6.0,
+        )
+    except Exception as exc:
+        logger.debug("WHOIS failed for %s: %s", root_domain, exc)
+        return None
+
+    country = _first_whois_value(record, "country")
+    registrant_country = _first_whois_value(record, "registrant_country")
+    chosen = country or registrant_country
+    if not chosen or len(chosen) != 2:
+        return None
+
+    code = chosen.upper()
+    org = _first_whois_value(record, "org") or _first_whois_value(record, "registrant_organization")
+
+    return {
+        "hosting_country": code,
+        "hosting_region": None,
+        "hosting_provider": org,
+        "jurisdiction_category": classify_jurisdiction(code),
+        "jurisdiction_source": "whois",
+        "jurisdiction_confidence": "medium",
+        "notes": f"Registrant country from WHOIS (root domain: {root_domain})",
+    }
+
+
+def _second_level_domain(hostname: str) -> str | None:
+    """Return the registered second-level domain, e.g. api.openai.com -> openai.com.
+
+    Falls back to the full hostname for cc-TLDs like api.example.co.uk
+    because distinguishing co.uk from openai.com without a public-suffix
+    list is fragile. python-whois usually still resolves correctly.
+    """
+    if not hostname:
+        return None
+    parts = hostname.split(".")
+    if len(parts) < 2:
+        return None
+    return ".".join(parts[-2:])
+
+
+def _first_whois_value(record: Any, attr: str) -> str | None:
+    """WHOIS records sometimes return list-valued fields. Pick the first non-empty."""
+    value = getattr(record, attr, None) if not isinstance(record, dict) else record.get(attr)
+    if value is None:
+        return None
+    if isinstance(value, (list, tuple)):
+        value = next((v for v in value if v), None)
+    if value is None:
+        return None
+    return str(value).strip() or None
+
+
+# ═══════════════════════════════════════════════════════════════════════
+# Tier 3: IP geolocation (+ CDN detection)
+# ═══════════════════════════════════════════════════════════════════════
+
+
+async def _resolve_from_ip(hostname: str) -> dict[str, Any] | None:
+    ip = await _resolve_host(hostname)
+    if not ip:
+        return None
+
+    try:
         async with httpx.AsyncClient(timeout=5.0) as client:
             resp = await client.get(f"https://ipinfo.io/{ip}/json")
             if resp.status_code != 200:
-                logger.warning(
-                    "ipinfo.io returned %s for %s (%s)", resp.status_code, identifier, ip,
-                )
-                return {}
+                logger.debug("ipinfo.io %s for %s (%s)", resp.status_code, hostname, ip)
+                return None
             data = resp.json()
-
-        country = (data.get("country") or "").strip().upper()
-        if not country:
-            return {}
-
-        # ipinfo 'org' is like 'AS24940 Hetzner Online GmbH'. Strip the ASN prefix.
-        raw_org = data.get("org") or ""
-        provider = raw_org.split(" ", 1)[1] if raw_org.startswith("AS") and " " in raw_org else raw_org
-
-        return {
-            "hosting_country": country,
-            "hosting_region": data.get("city") or data.get("region"),
-            "hosting_provider": provider or None,
-            "jurisdiction_category": classify_jurisdiction(country),
-        }
     except Exception as exc:
-        logger.warning("Jurisdiction lookup failed for %s: %s", identifier, exc)
-        return {}
+        logger.debug("ipinfo.io failed for %s: %s", hostname, exc)
+        return None
+
+    country = (data.get("country") or "").strip().upper()
+    if not country:
+        return None
+
+    raw_org = data.get("org") or ""
+    provider = raw_org.split(" ", 1)[1] if raw_org.startswith("AS") and " " in raw_org else raw_org or None
+
+    is_cdn = is_cdn_provider(provider)
+    return {
+        "hosting_country": country,
+        "hosting_region": data.get("city") or data.get("region"),
+        "hosting_provider": provider,
+        "jurisdiction_category": classify_jurisdiction(country),
+        "jurisdiction_source": "cdn_detected" if is_cdn else "ip_geolocation",
+        "jurisdiction_confidence": "low",
+        "notes": (
+            f"CDN edge detected ({provider}); country is the edge location, not the company's legal seat"
+            if is_cdn
+            else f"IP geolocation via ipinfo.io ({provider or 'unknown provider'})"
+        ),
+    }
 
 
 async def _resolve_host(host: str) -> str | None:
@@ -182,16 +339,59 @@ async def _resolve_host(host: str) -> str | None:
         return None
 
 
-async def enrich_tool(tool: Any) -> bool:
-    """Populate a Tool's jurisdiction fields in-place. Returns True if anything was set.
+# ═══════════════════════════════════════════════════════════════════════
+# Public API
+# ═══════════════════════════════════════════════════════════════════════
 
-    Caller is responsible for committing the surrounding DB transaction.
+
+async def resolve_jurisdiction(identifier: str) -> dict[str, Any]:
+    """Resolve a tool identifier through the three-tier hybrid strategy.
+
+    Returns a dict with all the tool-model jurisdiction fields populated,
+    or empty dict if every tier failed.
     """
-    info = await lookup_tool_jurisdiction(tool.identifier)
+    hostname = _extract_hostname(identifier)
+    if not hostname:
+        return {}
+
+    seeded = _resolve_from_seed(hostname)
+    if seeded:
+        return seeded
+
+    whoisd = await _resolve_from_whois(hostname)
+    if whoisd:
+        return whoisd
+
+    ip = await _resolve_from_ip(hostname)
+    if ip:
+        return ip
+
+    return {}
+
+
+# Kept for backward compatibility with the previous API. Delegates to the
+# hybrid resolver so callers still get the richer metadata automatically.
+async def lookup_tool_jurisdiction(identifier: str) -> dict[str, Any]:
+    return await resolve_jurisdiction(identifier)
+
+
+async def enrich_tool(tool: Any) -> bool:
+    """Populate a Tool's jurisdiction fields in-place.
+
+    Returns True if anything was set. The caller owns committing the
+    surrounding DB transaction.
+    """
+    info = await resolve_jurisdiction(tool.identifier)
     if not info:
         return False
     tool.hosting_country = info.get("hosting_country")
     tool.hosting_region = info.get("hosting_region")
     tool.hosting_provider = info.get("hosting_provider")
     tool.jurisdiction_category = info.get("jurisdiction_category")
+    tool.jurisdiction_source = info.get("jurisdiction_source")
+    tool.jurisdiction_confidence = info.get("jurisdiction_confidence")
+    notes = info.get("notes")
+    if notes:
+        # Preserve prior notes only when adding more detail.
+        tool.notes = notes
     return True
