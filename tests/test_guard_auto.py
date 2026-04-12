@@ -1,16 +1,24 @@
-"""Unit tests for nemoflow.guard — focused on the new fallbacks="auto" mode."""
+"""Unit tests for toolrate.guard — focused on the fallbacks="auto" mode."""
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from typing import Any
 
 import pytest
 
-from nemoflow.guard import guard, _resolve_auto_fallbacks
+# The SDK lives under sdks/python and isn't pip-installed in CI, so make its
+# package directory importable before we import from it.
+_SDK_PATH = str(Path(__file__).resolve().parent.parent / "sdks" / "python")
+if _SDK_PATH not in sys.path:
+    sys.path.insert(0, _SDK_PATH)
+
+from toolrate.guard import guard, _resolve_auto_fallbacks  # noqa: E402
 
 
 class FakeClient:
-    """Minimal NemoFlowClient stand-in that records calls and returns scripted responses."""
+    """Minimal ToolRate client stand-in that records calls and returns scripted responses."""
 
     def __init__(
         self,
