@@ -1,16 +1,12 @@
 import logging
-import mimetypes
 import time
 from contextlib import asynccontextmanager
-
-mimetypes.add_type("image/webp", ".webp")
 
 import redis.asyncio as aioredis
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse
 
 from app.config import settings
 from app.db.session import engine
@@ -108,13 +104,6 @@ app.add_middleware(
     max_age=600,
 )
 
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-
-
-@app.get("/favicon.ico", include_in_schema=False)
-async def favicon():
-    return FileResponse("app/static/toolrate-favicon.png", media_type="image/png")
-
 
 # Security headers + request logging + timing
 @app.middleware("http")
@@ -179,7 +168,7 @@ async def register_page():
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ToolRate — Get Your API Key</title>
-<link rel="icon" href="https://api.toolrate.ai/static/toolrate-favicon.png" type="image/png">
+<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -189,21 +178,21 @@ h1{font-size:1.5rem;font-weight:700;color:#f0f2f8;margin-bottom:0.4rem}
 .sub{font-size:0.85rem;color:#9299b0;margin-bottom:2rem;line-height:1.5}
 label{display:block;font-size:0.78rem;font-weight:500;color:#9299b0;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em}
 input{width:100%;padding:0.75rem 1rem;background:#141620;border:1px solid #282c40;border-radius:8px;color:#f0f2f8;font-family:inherit;font-size:0.9rem;outline:none;transition:border-color 0.2s}
-input:focus{border-color:#f07019}
+input:focus{border-color:#0a95fd}
 input::placeholder{color:#5a5f75}
-.btn{width:100%;padding:0.8rem;margin-top:1.25rem;background:#f07019;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all 0.2s}
-.btn:hover{background:#e0650f;box-shadow:0 0 30px rgba(240,112,25,0.2)}
+.btn{width:100%;padding:0.8rem;margin-top:1.25rem;background:#0a95fd;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all 0.2s}
+.btn:hover{background:#0784e6;box-shadow:0 0 30px rgba(10,149,253,0.2)}
 .btn:disabled{opacity:0.5;cursor:not-allowed}
 .result{display:none;margin-top:1.5rem;padding:1.25rem;background:#141620;border:1px solid #282c40;border-radius:10px}
-.result h3{font-size:0.85rem;font-weight:600;color:#f07019;margin-bottom:0.5rem}
+.result h3{font-size:0.85rem;font-weight:600;color:#0a95fd;margin-bottom:0.5rem}
 .key-box{font-family:'Fira Code',monospace;font-size:0.82rem;color:#f0f2f8;background:#0a0b10;padding:0.75rem 1rem;border-radius:6px;border:1px solid #282c40;word-break:break-all;margin-bottom:0.75rem;position:relative;cursor:pointer;transition:border-color 0.2s}
-.key-box:hover{border-color:#f07019}
+.key-box:hover{border-color:#0a95fd}
 .key-box .copy-hint{position:absolute;right:0.75rem;top:50%;transform:translateY(-50%);font-size:0.65rem;color:#9299b0;font-family:'Poppins',sans-serif}
 .warning{font-size:0.75rem;color:#f0c53b;line-height:1.5}
 .error{display:none;margin-top:1rem;padding:0.75rem 1rem;background:rgba(240,90,90,0.08);border:1px solid rgba(240,90,90,0.2);border-radius:8px;font-size:0.82rem;color:#f05a5a}
 .privacy{font-size:0.7rem;color:#6a6f85;margin-top:1rem;line-height:1.5;text-align:center}
 .back{display:block;text-align:center;margin-top:1.5rem;font-size:0.8rem;color:#9299b0;text-decoration:none}
-.back:hover{color:#f07019}
+.back:hover{color:#0a95fd}
 </style>
 </head>
 <body>
@@ -279,7 +268,7 @@ function copyKey() {
   navigator.clipboard.writeText(key).then(function() {
     var hint = document.querySelector('.copy-hint');
     hint.textContent = 'copied!';
-    hint.style.color = '#f07019';
+    hint.style.color = '#0a95fd';
     setTimeout(function() { hint.textContent = 'click to copy'; hint.style.color = '#9299b0'; }, 2000);
   });
 }
@@ -344,7 +333,7 @@ async def upgrade_page(plan: str = "payg"):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ToolRate — {title}</title>
-<link rel="icon" href="https://api.toolrate.ai/static/toolrate-favicon.png" type="image/png">
+<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{{margin:0;padding:0;box-sizing:border-box}}
@@ -352,26 +341,26 @@ body{{font-family:'Poppins','Segoe UI',Arial,sans-serif;background:#0a0b10;color
 .card{{max-width:480px;width:100%;margin:2rem;padding:2.5rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}}
 h1{{font-size:1.5rem;font-weight:700;color:#f0f2f8;margin-bottom:0.4rem}}
 .sub{{font-size:0.85rem;color:#9299b0;margin-bottom:2rem;line-height:1.5}}
-.plan{{background:#141620;border:1px solid #f07019;border-radius:12px;padding:1.5rem;margin-bottom:2rem;position:relative}}
-.plan::before{{content:'{badge}';position:absolute;top:-0.5rem;left:1.25rem;font-size:0.6rem;font-weight:700;letter-spacing:0.08em;color:#fff;background:#f07019;padding:0.15rem 0.5rem;border-radius:4px}}
+.plan{{background:#141620;border:1px solid #0a95fd;border-radius:12px;padding:1.5rem;margin-bottom:2rem;position:relative}}
+.plan::before{{content:'{badge}';position:absolute;top:-0.5rem;left:1.25rem;font-size:0.6rem;font-weight:700;letter-spacing:0.08em;color:#fff;background:#0a95fd;padding:0.15rem 0.5rem;border-radius:4px}}
 .plan-price{{font-size:2rem;font-weight:700;color:#f0f2f8;margin-bottom:0.25rem}}
 .plan-price span{{font-size:0.85rem;font-weight:300;color:#9299b0}}
 .plan-features{{list-style:none;margin-top:1rem}}
 .plan-features li{{font-size:0.82rem;color:#d4d8e8;padding:0.35rem 0;display:flex;align-items:center;gap:0.5rem}}
-.plan-features li::before{{content:'+';color:#f07019;font-weight:700}}
+.plan-features li::before{{content:'+';color:#0a95fd;font-weight:700}}
 label{{display:block;font-size:0.78rem;font-weight:500;color:#9299b0;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em}}
 input{{width:100%;padding:0.75rem 1rem;background:#141620;border:1px solid #282c40;border-radius:8px;color:#f0f2f8;font-family:'Fira Code',monospace;font-size:0.82rem;outline:none;transition:border-color 0.2s}}
-input:focus{{border-color:#f07019}}
+input:focus{{border-color:#0a95fd}}
 input::placeholder{{color:#5a5f75}}
-.btn{{width:100%;padding:0.8rem;margin-top:1.25rem;background:#f07019;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all 0.2s}}
-.btn:hover{{background:#e0650f;box-shadow:0 0 30px rgba(240,112,25,0.2)}}
+.btn{{width:100%;padding:0.8rem;margin-top:1.25rem;background:#0a95fd;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all 0.2s}}
+.btn:hover{{background:#0784e6;box-shadow:0 0 30px rgba(10,149,253,0.2)}}
 .btn:disabled{{opacity:0.5;cursor:not-allowed}}
 .error{{display:none;margin-top:1rem;padding:0.75rem 1rem;background:rgba(240,90,90,0.08);border:1px solid rgba(240,90,90,0.2);border-radius:8px;font-size:0.82rem;color:#f05a5a}}
 .links{{display:flex;justify-content:space-between;margin-top:1.5rem;flex-wrap:wrap;gap:0.5rem}}
 .links a{{font-size:0.78rem;color:#9299b0;text-decoration:none}}
-.links a:hover{{color:#f07019}}
+.links a:hover{{color:#0a95fd}}
 .switch{{text-align:center;font-size:0.78rem;color:#9299b0;margin-top:0.75rem}}
-.switch a{{color:#f07019;text-decoration:none;font-weight:500}}
+.switch a{{color:#0a95fd;text-decoration:none;font-weight:500}}
 </style>
 </head>
 <body>
@@ -465,8 +454,8 @@ async def billing_success(plan: str = "pro"):
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <style>*{{margin:0;padding:0;box-sizing:border-box}}body{{font-family:'Poppins',sans-serif;background:#0a0b10;color:#d4d8e8;display:flex;justify-content:center;align-items:center;min-height:100vh}}
 .card{{text-align:center;max-width:480px;padding:3rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}}
-h1{{font-size:1.5rem;color:#f07019;margin-bottom:1rem}}p{{color:#9299b0;line-height:1.6;font-size:0.9rem}}
-a{{color:#f07019;text-decoration:none;font-weight:600}}a:hover{{text-decoration:underline}}</style></head>
+h1{{font-size:1.5rem;color:#0a95fd;margin-bottom:1rem}}p{{color:#9299b0;line-height:1.6;font-size:0.9rem}}
+a{{color:#0a95fd;text-decoration:none;font-weight:600}}a:hover{{text-decoration:underline}}</style></head>
 <body><div class="card"><h1>{heading}</h1>
 {body_html}
 <p style="margin-top:1.5rem"><a href="/docs">Go to API Docs &rarr;</a></p></div></body></html>"""
@@ -479,7 +468,7 @@ async def billing_cancel():
 <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Poppins',sans-serif;background:#0a0b10;color:#d4d8e8;display:flex;justify-content:center;align-items:center;min-height:100vh}
 .card{text-align:center;max-width:480px;padding:3rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}
 h1{font-size:1.5rem;color:#9299b0;margin-bottom:1rem}p{color:#9299b0;line-height:1.6;font-size:0.9rem}
-a{color:#f07019;text-decoration:none;font-weight:600}a:hover{text-decoration:underline}</style></head>
+a{color:#0a95fd;text-decoration:none;font-weight:600}a:hover{text-decoration:underline}</style></head>
 <body><div class="card"><h1>Checkout Cancelled</h1>
 <p>No charges were made. You can upgrade anytime.</p>
 <p style="margin-top:1.5rem"><a href="/upgrade">&larr; Try again</a> &nbsp;&middot;&nbsp; <a href="/">Back to ToolRate</a></p></div></body></html>"""

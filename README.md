@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://api.toolrate.ai/static/toolrate-logo.webp" alt="ToolRate" width="80">
+  <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" width="80">
 </p>
 
 <h1 align="center">ToolRate</h1>

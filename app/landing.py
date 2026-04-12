@@ -9,15 +9,15 @@ LANDING_HTML = r"""<!DOCTYPE html>
 <meta name="description" content="ToolRate rates AI tools so that you or your agents pick the right tool from the start. Save time, tokens, energy, and money.">
 <meta property="og:title" content="ToolRate — Pick the Right Tool from the Start">
 <meta property="og:description" content="AI picks a tool, it fails, swaps for another — costing time and tokens. ToolRate rates 600+ tools so agents pick the right one from the start.">
-<meta property="og:image" content="https://api.toolrate.ai/static/toolrate-logo.webp">
+<meta property="og:image" content="https://toolrate.ai/toolrate-logo.webp">
 <meta property="og:url" content="https://api.toolrate.ai">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="ToolRate — Reliability Oracle for AI Agents">
 <meta name="twitter:description" content="Rate 600+ AI tools. One line of code. Auto-fallback. Built by agents, for agents.">
-<meta name="twitter:image" content="https://api.toolrate.ai/static/toolrate-logo.webp">
+<meta name="twitter:image" content="https://toolrate.ai/toolrate-logo.webp">
 <link rel="canonical" href="https://api.toolrate.ai">
-<link rel="icon" href="https://api.toolrate.ai/static/toolrate-favicon.png" type="image/png">
+<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -89,10 +89,12 @@ LANDING_HTML = r"""<!DOCTYPE html>
   --text: #d4d8e8;
   --text-dim: #9299b0;
   --text-bright: #f0f2f8;
-  --orange: #f07019;
-  --orange-dim: rgba(240, 112, 25, 0.08);
-  --orange-glow: rgba(240, 112, 25, 0.2);
-  --orange-mid: rgba(240, 112, 25, 0.5);
+  --brand: #0a95fd;
+  --brand-light: #2fcffa;
+  --brand-gradient: linear-gradient(135deg, #2fcffa 0%, #0a95fd 100%);
+  --brand-dim: rgba(10, 149, 253, 0.10);
+  --brand-glow: rgba(47, 207, 250, 0.28);
+  --brand-mid: rgba(10, 149, 253, 0.5);
   --green: #34d399;
   --red: #f05a5a;
   --mono: 'Fira Code', 'SF Mono', 'Consolas', monospace;
@@ -129,7 +131,7 @@ body::after {
   transform: translateX(-50%);
   width: 800px;
   height: 500px;
-  background: radial-gradient(ellipse, var(--orange-glow) 0%, transparent 70%);
+  background: radial-gradient(ellipse, var(--brand-glow) 0%, transparent 70%);
   opacity: 0.4;
   pointer-events: none;
   z-index: 0;
@@ -170,11 +172,11 @@ body::after {
   font-family: var(--mono);
   font-size: 0.6rem;
   font-weight: 500;
-  color: var(--orange);
-  background: var(--orange-dim);
+  color: var(--brand);
+  background: var(--brand-dim);
   padding: 0.15rem 0.45rem;
   border-radius: 3px;
-  border: 1px solid rgba(240, 112, 25, 0.15);
+  border: 1px solid rgba(10,149,253,0.15);
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
@@ -188,7 +190,7 @@ body::after {
   text-decoration: none;
   transition: color 0.2s;
 }
-.topbar-links a:hover { color: var(--orange); }
+.topbar-links a:hover { color: var(--brand); }
 
 /* ── Buttons ── */
 .btn {
@@ -207,13 +209,13 @@ body::after {
 }
 
 .btn-primary {
-  background: var(--orange);
+  background: var(--brand-gradient);
   color: #fff;
   font-weight: 700;
 }
 .btn-primary:hover {
-  background: #e0650f;
-  box-shadow: 0 0 30px var(--orange-glow), 0 4px 14px rgba(0,0,0,0.5);
+  filter: brightness(1.08);
+  box-shadow: 0 0 30px var(--brand-glow), 0 4px 14px rgba(0,0,0,0.5);
   transform: translateY(-1px);
 }
 
@@ -223,7 +225,7 @@ body::after {
   border: 1px solid var(--border-bright);
 }
 .btn-ghost:hover {
-  border-color: var(--orange-mid);
+  border-color: var(--brand-mid);
   color: var(--text-bright);
 }
 
@@ -242,14 +244,14 @@ body::after {
 .hero-mascot {
   flex-shrink: 0;
   width: 260px;
-  filter: drop-shadow(0 20px 40px rgba(240, 112, 25, 0.15));
+  filter: drop-shadow(0 20px 40px rgba(10,149,253,0.15));
 }
 
 .hero-eyebrow {
   font-family: var(--mono);
   font-size: 0.7rem;
   font-weight: 500;
-  color: var(--orange);
+  color: var(--brand);
   text-transform: uppercase;
   letter-spacing: 0.12em;
   margin-bottom: 1rem;
@@ -264,7 +266,7 @@ body::after {
   margin-bottom: 1.25rem;
 }
 
-.hero h1 span { color: var(--orange); }
+.hero h1 span { color: var(--brand); }
 
 .hero-sub {
   font-size: 1rem;
@@ -302,7 +304,7 @@ body::after {
   font-family: var(--mono);
   font-size: 1.5rem;
   font-weight: 500;
-  color: var(--orange);
+  color: var(--brand);
 }
 
 .readout-label {
@@ -341,8 +343,8 @@ body::after {
 .narrative-problem { background: rgba(240, 90, 90, 0.03); }
 .narrative-problem::before { background: linear-gradient(90deg, var(--red), transparent 80%); }
 
-.narrative-solution { background: var(--orange-dim); }
-.narrative-solution::before { background: linear-gradient(90deg, var(--orange), transparent 80%); }
+.narrative-solution { background: var(--brand-dim); }
+.narrative-solution::before { background: linear-gradient(90deg, var(--brand), transparent 80%); }
 
 .narrative-badge {
   font-family: var(--mono);
@@ -357,7 +359,7 @@ body::after {
 }
 
 .narrative-problem .narrative-badge { color: var(--red); }
-.narrative-solution .narrative-badge { color: var(--orange); }
+.narrative-solution .narrative-badge { color: var(--brand); }
 
 .narrative-dot {
   width: 6px; height: 6px;
@@ -365,7 +367,7 @@ body::after {
   animation: pulse 2s ease-in-out infinite;
 }
 .narrative-problem .narrative-dot { background: var(--red); }
-.narrative-solution .narrative-dot { background: var(--orange); }
+.narrative-solution .narrative-dot { background: var(--brand); }
 
 .narrative-card h3 {
   font-size: 1.25rem;
@@ -390,7 +392,7 @@ body::after {
   border-radius: 16px;
   background:
     radial-gradient(circle at 0% 0%, rgba(52, 211, 153, 0.06) 0%, transparent 55%),
-    radial-gradient(circle at 100% 100%, rgba(240, 112, 25, 0.08) 0%, transparent 55%),
+    radial-gradient(circle at 100% 100%, rgba(10, 149, 253, 0.10) 0%, transparent 55%),
     var(--surface);
   border: 1px solid var(--border-bright);
   overflow: hidden;
@@ -402,7 +404,7 @@ body::after {
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 2px;
-  background: linear-gradient(90deg, var(--green), var(--orange) 50%, var(--red));
+  background: linear-gradient(90deg, var(--green), var(--brand) 50%, var(--red));
 }
 
 .jurisdiction-head {
@@ -421,7 +423,7 @@ body::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(240, 112, 25, 0.12));
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(10,149,253,0.12));
   border: 1px solid var(--border-bright);
   font-size: 1.6rem;
 }
@@ -430,9 +432,9 @@ body::after {
   font-family: var(--mono);
   font-size: 0.6rem;
   font-weight: 500;
-  color: var(--orange);
-  background: var(--orange-dim);
-  border: 1px solid rgba(240, 112, 25, 0.25);
+  color: var(--brand);
+  background: var(--brand-dim);
+  border: 1px solid rgba(10,149,253,0.25);
   padding: 0.2rem 0.55rem;
   border-radius: 4px;
   text-transform: uppercase;
@@ -482,8 +484,8 @@ body::after {
 
 .tier-eu { border-color: rgba(52, 211, 153, 0.3); }
 .tier-eu .tier-dot { background: var(--green); box-shadow: 0 0 10px rgba(52, 211, 153, 0.5); }
-.tier-mid { border-color: rgba(240, 112, 25, 0.3); }
-.tier-mid .tier-dot { background: var(--orange); box-shadow: 0 0 10px var(--orange-glow); }
+.tier-mid { border-color: rgba(10,149,253,0.3); }
+.tier-mid .tier-dot { background: var(--brand); box-shadow: 0 0 10px var(--brand-glow); }
 .tier-high { border-color: rgba(240, 90, 90, 0.3); }
 .tier-high .tier-dot { background: var(--red); box-shadow: 0 0 10px rgba(240, 90, 90, 0.45); }
 
@@ -509,7 +511,7 @@ body::after {
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--orange);
+  color: var(--brand);
   margin-bottom: 0.9rem;
 }
 
@@ -535,7 +537,7 @@ body::after {
   position: absolute;
   left: 0;
   top: 0;
-  color: var(--orange);
+  color: var(--brand);
   font-weight: 600;
 }
 
@@ -555,7 +557,7 @@ body::after {
 }
 
 .jurisdiction-punch strong {
-  color: var(--orange);
+  color: var(--brand);
   font-weight: 600;
 }
 
@@ -598,7 +600,7 @@ body::after {
   border-right: 1px solid var(--border);
 }
 .code-tab:last-child { border-right: none; }
-.code-tab.active { background: var(--orange-dim); color: var(--orange); }
+.code-tab.active { background: var(--brand-dim); color: var(--brand); }
 .code-tab:hover:not(.active) { color: var(--text); }
 
 .code-block {
@@ -615,7 +617,7 @@ body::after {
   position: absolute;
   top: 0; left: 0; right: 0;
   height: 1px;
-  background: linear-gradient(90deg, transparent, var(--orange-glow), transparent);
+  background: linear-gradient(90deg, transparent, var(--brand-glow), transparent);
 }
 
 .code-block pre {
@@ -626,7 +628,7 @@ body::after {
 }
 
 .code-block .kw { color: #c792ea; }
-.code-block .fn { color: var(--orange); }
+.code-block .fn { color: var(--brand); }
 .code-block .str { color: #ecc48d; }
 .code-block .cm { color: var(--text-dim); font-style: italic; }
 
@@ -678,7 +680,7 @@ body::after {
   font-family: var(--mono);
   font-size: 0.65rem;
   font-weight: 500;
-  color: var(--orange);
+  color: var(--brand);
   letter-spacing: 0.08em;
   margin-bottom: 0.75rem;
 }
@@ -731,8 +733,8 @@ body::after {
 }
 
 .pricing-card.featured {
-  border-color: var(--orange);
-  box-shadow: 0 0 50px var(--orange-dim);
+  border-color: var(--brand);
+  box-shadow: 0 0 50px var(--brand-dim);
 }
 
 .pricing-card.featured::before {
@@ -744,7 +746,7 @@ body::after {
   font-weight: 600;
   letter-spacing: 0.08em;
   color: #fff;
-  background: var(--orange);
+  background: var(--brand);
   padding: 0.15rem 0.6rem;
   border-radius: 4px;
 }
@@ -789,7 +791,7 @@ body::after {
   gap: 0.5rem;
   font-weight: 400;
 }
-.pricing-features li::before { content: '+'; color: var(--orange); font-weight: 600; }
+.pricing-features li::before { content: '+'; color: var(--brand); font-weight: 600; }
 .pricing-features li:last-child { border-bottom: none; }
 
 /* ── Footer ── */
@@ -815,7 +817,7 @@ body::after {
   text-decoration: none;
   transition: color 0.2s;
 }
-.footer-right a:hover { color: var(--orange); }
+.footer-right a:hover { color: var(--brand); }
 
 /* ── Animations ── */
 @keyframes fadeUp {
@@ -862,7 +864,7 @@ body::after {
 <!-- Top bar -->
 <header class="topbar">
   <div class="topbar-left">
-    <img src="https://api.toolrate.ai/static/toolrate-logo.webp" alt="ToolRate" style="height:32px">
+    <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" style="height:32px">
     <span class="topbar-tag">v0.1</span>
   </div>
   <nav class="topbar-links">
@@ -1069,7 +1071,7 @@ curl -X POST https://api.toolrate.ai/v1/report \
 <section class="pricing" id="pricing">
   <div class="pricing-header">
     <h2>Simple pricing</h2>
-    <p style="font-size:0.85rem;color:var(--text-dim);margin-top:0.5rem;font-weight:300">Start free. Scale with pay-as-you-go. Flat-rate when you need it. <a href="/pricing" style="color:var(--orange)">See all plans &rarr;</a></p>
+    <p style="font-size:0.85rem;color:var(--text-dim);margin-top:0.5rem;font-weight:300">Start free. Scale with pay-as-you-go. Flat-rate when you need it. <a href="/pricing" style="color:var(--brand)">See all plans &rarr;</a></p>
   </div>
   <div class="pricing-grid">
     <div class="pricing-card">
@@ -1110,7 +1112,7 @@ curl -X POST https://api.toolrate.ai/v1/report \
     </div>
   </div>
   <p style="text-align:center;margin-top:2rem;font-size:0.82rem;color:var(--text-dim)">
-    Building an AI platform? <a href="/pricing#contact-sales" style="color:var(--orange);font-weight:500">Talk to sales about Enterprise →</a>
+    Building an AI platform? <a href="/pricing#contact-sales" style="color:var(--brand);font-weight:500">Talk to sales about Enterprise →</a>
   </p>
 </section>
 

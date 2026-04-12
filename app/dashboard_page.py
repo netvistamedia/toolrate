@@ -11,7 +11,7 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>ToolRate — Admin Dashboard</title>
-<link rel="icon" href="https://api.toolrate.ai/static/toolrate-favicon.png" type="image/png">
+<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -24,8 +24,8 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
   --text-bright: #f0f2f8;
   --text-dim: #9299b0;
   --text-mute: #6a6f85;
-  --orange: #f07019;
-  --orange-dim: rgba(240,112,25,0.16);
+  --brand: #0a95fd;
+  --brand-dim: rgba(10,149,253,0.16);
   --green: #3ddc84;
   --red: #f05a5a;
   --yellow: #f0c53b;
@@ -40,12 +40,12 @@ code,.mono{font-family:'Fira Code',monospace}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:1.4rem 0;border-bottom:1px solid var(--border);margin-bottom:2rem}
 .topbar-left{display:flex;align-items:center;gap:0.75rem}
 .topbar-left img{height:28px}
-.topbar-tag{font-size:0.6rem;color:var(--orange);border:1px solid var(--orange);padding:0.2rem 0.55rem;border-radius:4px;letter-spacing:0.12em;text-transform:uppercase;font-weight:600}
+.topbar-tag{font-size:0.6rem;color:var(--brand);border:1px solid var(--brand);padding:0.2rem 0.55rem;border-radius:4px;letter-spacing:0.12em;text-transform:uppercase;font-weight:600}
 .topbar-right{display:flex;align-items:center;gap:1rem;font-size:0.74rem;color:var(--text-dim)}
 .topbar-right .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 10px var(--green);animation:pulse 2s infinite}
 .topbar-right .dot.err{background:var(--red);box-shadow:0 0 10px var(--red)}
 .topbar-right button{background:transparent;border:1px solid var(--border-strong);color:var(--text-dim);padding:0.35rem 0.7rem;border-radius:6px;font-family:inherit;font-size:0.72rem;cursor:pointer}
-.topbar-right button:hover{color:var(--orange);border-color:var(--orange)}
+.topbar-right button:hover{color:var(--brand);border-color:var(--brand)}
 
 /* ── Auth screen ── */
 .auth{max-width:440px;margin:6rem auto;padding:2.5rem;background:var(--surface);border:1px solid var(--border);border-radius:14px}
@@ -53,9 +53,9 @@ code,.mono{font-family:'Fira Code',monospace}
 .auth p{font-size:0.82rem;color:var(--text-dim);margin-bottom:1.5rem;line-height:1.55}
 .auth label{display:block;font-size:0.68rem;font-weight:500;color:var(--text-dim);margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.08em}
 .auth input{width:100%;padding:0.75rem 1rem;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:8px;color:var(--text-bright);font-family:'Fira Code',monospace;font-size:0.82rem;outline:none;transition:border-color 0.2s}
-.auth input:focus{border-color:var(--orange)}
-.auth button{width:100%;padding:0.8rem;margin-top:1rem;background:var(--orange);border:none;color:#fff;border-radius:8px;font-family:inherit;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s}
-.auth button:hover{background:#e0650f}
+.auth input:focus{border-color:var(--brand)}
+.auth button{width:100%;padding:0.8rem;margin-top:1rem;background:var(--brand);border:none;color:#fff;border-radius:8px;font-family:inherit;font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s}
+.auth button:hover{background:#0784e6}
 .auth .err{display:none;margin-top:1rem;padding:0.7rem 0.9rem;background:rgba(240,90,90,0.08);border:1px solid rgba(240,90,90,0.25);color:var(--red);border-radius:8px;font-size:0.78rem}
 .auth .err.show{display:block}
 .auth .hint{font-size:0.7rem;color:var(--text-mute);margin-top:1rem;line-height:1.5}
@@ -66,8 +66,8 @@ code,.mono{font-family:'Fira Code',monospace}
 .tile .label{font-size:0.68rem;font-weight:500;color:var(--text-dim);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:0.6rem}
 .tile .value{font-size:2rem;font-weight:700;color:var(--text-bright);letter-spacing:-0.02em;font-variant-numeric:tabular-nums;line-height:1.1}
 .tile .sub{font-size:0.72rem;color:var(--text-dim);margin-top:0.3rem}
-.tile.accent{border-color:var(--orange);background:linear-gradient(180deg,rgba(240,112,25,0.06),var(--surface))}
-.tile.accent .label{color:var(--orange)}
+.tile.accent{border-color:var(--brand);background:linear-gradient(180deg,rgba(10,149,253,0.06),var(--surface))}
+.tile.accent .label{color:var(--brand)}
 
 /* ── Section card ── */
 .section{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:1.6rem 1.75rem;margin-bottom:1.25rem}
@@ -81,15 +81,15 @@ code,.mono{font-family:'Fira Code',monospace}
 
 /* ── Sparkline ── */
 .spark{width:100%;height:70px;margin-top:0.5rem}
-.spark path.area{fill:rgba(240,112,25,0.14)}
-.spark path.line{fill:none;stroke:var(--orange);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
-.spark circle{fill:var(--orange)}
+.spark path.area{fill:rgba(10,149,253,0.14)}
+.spark path.line{fill:none;stroke:var(--brand);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.spark circle{fill:var(--brand)}
 .spark text{font-family:'Poppins',sans-serif;font-size:9px;fill:var(--text-mute)}
 
 /* ── Bars (histogram) ── */
 .bars{display:flex;align-items:flex-end;gap:0.5rem;height:110px;margin-top:0.6rem}
 .bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:0.3rem}
-.bar .col{width:100%;background:var(--orange);border-radius:4px 4px 0 0;min-height:2px;transition:height 0.4s}
+.bar .col{width:100%;background:var(--brand);border-radius:4px 4px 0 0;min-height:2px;transition:height 0.4s}
 .bar .col.low{background:var(--red)}
 .bar .col.mid{background:var(--yellow)}
 .bar .lbl{font-size:0.62rem;color:var(--text-mute);letter-spacing:0.04em}
@@ -161,7 +161,7 @@ td.tool .id{color:var(--text-mute);font-size:0.68rem;font-family:'Fira Code',mon
 
 <header class="topbar">
   <div class="topbar-left">
-    <img src="https://api.toolrate.ai/static/toolrate-logo.webp" alt="ToolRate">
+    <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate">
     <span class="topbar-tag">Admin</span>
   </div>
   <div class="topbar-right">

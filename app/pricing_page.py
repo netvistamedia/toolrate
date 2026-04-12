@@ -9,10 +9,10 @@ PRICING_HTML = r"""<!DOCTYPE html>
 <meta name="description" content="ToolRate pricing — Free for hackers, Pay-as-you-go at $0.008 per assessment (best for agents and bots), Pro $29/mo for power users, Enterprise / Platform for AI platforms.">
 <meta property="og:title" content="ToolRate — Pricing">
 <meta property="og:description" content="Four clean plans for the reliability oracle for AI agents — Free, Pay-as-you-go, Pro, and Enterprise.">
-<meta property="og:image" content="https://api.toolrate.ai/static/toolrate-logo.webp">
+<meta property="og:image" content="https://toolrate.ai/toolrate-logo.webp">
 <meta property="og:url" content="https://api.toolrate.ai/pricing">
 <link rel="canonical" href="https://api.toolrate.ai/pricing">
-<link rel="icon" href="https://api.toolrate.ai/static/toolrate-favicon.png" type="image/png">
+<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {
@@ -44,14 +44,14 @@ PRICING_HTML = r"""<!DOCTYPE html>
   --text-bright: #f0f2f8;
   --text-dim: #9299b0;
   --text-mute: #6a6f85;
-  --orange: #f07019;
-  --orange-dim: rgba(240,112,25,0.16);
+  --brand: #0a95fd;
+  --brand-dim: rgba(10,149,253,0.16);
   --green: #3ddc84;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{background:var(--bg);color:var(--text);font-family:'Poppins','Segoe UI',Arial,sans-serif;font-weight:300;line-height:1.55;-webkit-font-smoothing:antialiased}
 a{color:inherit;text-decoration:none}
-code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,25,0.12);color:#ffb97a;padding:0.1rem 0.35rem;border-radius:4px}
+code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(10,149,253,0.12);color:#7dd3fc;padding:0.1rem 0.35rem;border-radius:4px}
 .page{max-width:1200px;margin:0 auto;padding:0 2rem}
 
 /* ── Topbar ── */
@@ -60,16 +60,16 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,
 .topbar-tag{font-size:0.65rem;color:var(--text-dim);border:1px solid var(--border-strong);padding:0.15rem 0.5rem;border-radius:4px;letter-spacing:0.06em}
 .topbar-links{display:flex;gap:1.75rem;align-items:center}
 .topbar-links a{font-size:0.82rem;color:var(--text-dim);transition:color 0.2s}
-.topbar-links a:hover{color:var(--orange)}
+.topbar-links a:hover{color:var(--brand)}
 .btn{display:inline-flex;align-items:center;justify-content:center;padding:0.7rem 1.2rem;font-family:inherit;font-size:0.8rem;font-weight:600;border-radius:8px;border:1px solid var(--border-strong);background:transparent;color:var(--text-bright);cursor:pointer;transition:all 0.2s;text-decoration:none}
-.btn:hover{border-color:var(--orange);color:var(--orange)}
-.btn-primary{background:var(--orange);border-color:var(--orange);color:#fff}
-.btn-primary:hover{background:#e0650f;color:#fff;box-shadow:0 0 40px var(--orange-dim)}
+.btn:hover{border-color:var(--brand);color:var(--brand)}
+.btn-primary{background:var(--brand);border-color:var(--brand);color:#fff}
+.btn-primary:hover{background:#0784e6;color:#fff;box-shadow:0 0 40px var(--brand-dim)}
 .btn-ghost{background:transparent;color:var(--text)}
 
 /* ── Hero ── */
 .hero{text-align:center;padding:3.5rem 0 2.5rem}
-.eyebrow{display:inline-block;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--orange);border:1px solid var(--orange);padding:0.25rem 0.8rem;border-radius:999px;margin-bottom:1.25rem;font-weight:500}
+.eyebrow{display:inline-block;font-size:0.7rem;letter-spacing:0.14em;text-transform:uppercase;color:var(--brand);border:1px solid var(--brand);padding:0.25rem 0.8rem;border-radius:999px;margin-bottom:1.25rem;font-weight:500}
 .hero h1{font-size:2.6rem;font-weight:700;color:var(--text-bright);letter-spacing:-0.02em;margin-bottom:0.8rem}
 .hero p{font-size:1.02rem;color:var(--text-dim);max-width:680px;margin:0 auto;font-weight:300}
 
@@ -77,12 +77,12 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,
 .plans{display:grid;grid-template-columns:repeat(4,1fr);gap:1.25rem;margin-top:3rem;align-items:stretch}
 .plan{position:relative;display:flex;flex-direction:column;padding:2.1rem 1.6rem 1.8rem;background:var(--surface);border:1px solid var(--border);border-radius:16px;transition:border-color 0.2s, transform 0.2s}
 .plan:hover{border-color:var(--border-strong)}
-.plan.featured{border-color:var(--orange);box-shadow:0 0 80px var(--orange-dim);transform:translateY(-6px)}
+.plan.featured{border-color:var(--brand);box-shadow:0 0 80px var(--brand-dim);transform:translateY(-6px)}
 .plan.featured:hover{transform:translateY(-8px)}
 .plan.enterprise{background:linear-gradient(180deg,#141015 0%,#0f1118 100%);border-color:#3a2a18}
-.plan-badge{position:absolute;top:-0.72rem;left:50%;transform:translateX(-50%);font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#fff;background:var(--orange);padding:0.32rem 0.85rem;border-radius:999px;white-space:nowrap}
+.plan-badge{position:absolute;top:-0.72rem;left:50%;transform:translateX(-50%);font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#fff;background:var(--brand);padding:0.32rem 0.85rem;border-radius:999px;white-space:nowrap}
 .plan-badge.gray{background:#2a2e42}
-.plan-tier{font-size:0.68rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--orange);margin-bottom:0.8rem}
+.plan-tier{font-size:0.68rem;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--brand);margin-bottom:0.8rem}
 .plan.enterprise .plan-tier{color:#f0c53b}
 .plan-price{font-size:2.3rem;font-weight:700;color:var(--text-bright);margin-bottom:0.1rem;letter-spacing:-0.02em;line-height:1.1}
 .plan-price span.unit{font-size:0.78rem;font-weight:400;color:var(--text-dim);margin-left:0.25rem}
@@ -91,7 +91,7 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,
 .plan-features{list-style:none;margin-bottom:1.75rem;flex:1}
 .plan-features li{font-size:0.78rem;color:var(--text);padding:0.5rem 0;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:0.55rem;font-weight:400;line-height:1.5}
 .plan-features li:last-child{border-bottom:none}
-.plan-features li::before{content:'✓';color:var(--orange);font-weight:700;flex-shrink:0}
+.plan-features li::before{content:'✓';color:var(--brand);font-weight:700;flex-shrink:0}
 .plan.enterprise .plan-features li::before{color:#f0c53b}
 .plan-features li.muted{color:var(--text-dim)}
 .plan-features li.muted::before{color:var(--text-mute)}
@@ -99,15 +99,15 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,
 
 /* ── Why PAYG section ── */
 .why-payg{margin-top:5rem;padding:3rem;background:linear-gradient(135deg,#101218 0%,#0f1118 50%,#121620 100%);border:1px solid var(--border-strong);border-radius:18px;position:relative;overflow:hidden}
-.why-payg::before{content:'';position:absolute;top:-60px;right:-60px;width:340px;height:340px;background:radial-gradient(circle,rgba(240,112,25,0.1) 0%,transparent 65%);pointer-events:none}
+.why-payg::before{content:'';position:absolute;top:-60px;right:-60px;width:340px;height:340px;background:radial-gradient(circle,rgba(10,149,253,0.1) 0%,transparent 65%);pointer-events:none}
 .why-payg-inner{position:relative}
-.why-payg .eyebrow{border-color:var(--orange);color:var(--orange)}
+.why-payg .eyebrow{border-color:var(--brand);color:var(--brand)}
 .why-payg h2{font-size:1.9rem;font-weight:700;color:var(--text-bright);margin-bottom:0.85rem;letter-spacing:-0.01em;line-height:1.2;max-width:720px}
 .why-payg p.lead{font-size:0.95rem;color:var(--text);margin-bottom:2rem;max-width:720px;font-weight:400}
 .why-payg-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
 .why-payg-card{padding:1.6rem;background:rgba(15,17,24,0.6);border:1px solid var(--border);border-radius:12px}
 .why-payg-card h4{font-size:0.92rem;font-weight:600;color:var(--text-bright);margin-bottom:0.5rem;display:flex;align-items:center;gap:0.5rem}
-.why-payg-card h4::before{content:'→';color:var(--orange);font-weight:700}
+.why-payg-card h4::before{content:'→';color:var(--brand);font-weight:700}
 .why-payg-card p{font-size:0.78rem;color:var(--text-dim);line-height:1.65;font-weight:300}
 
 /* ── Enterprise section ── */
@@ -119,7 +119,7 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,
 .enterprise-section p.lead{font-size:0.95rem;color:var(--text);margin-bottom:1.25rem;font-weight:400}
 .enterprise-points{list-style:none;margin-bottom:1.5rem}
 .enterprise-points li{font-size:0.84rem;color:var(--text-dim);padding:0.45rem 0;display:flex;gap:0.65rem;align-items:flex-start;line-height:1.55}
-.enterprise-points li::before{content:'→';color:var(--orange);font-weight:700;flex-shrink:0}
+.enterprise-points li::before{content:'→';color:var(--brand);font-weight:700;flex-shrink:0}
 .enterprise-points strong{color:var(--text-bright);font-weight:500}
 
 /* ── Contact form ── */
@@ -130,7 +130,7 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,
 .form-row label{display:block;font-size:0.7rem;font-weight:500;color:var(--text-dim);margin-bottom:0.35rem;text-transform:uppercase;letter-spacing:0.06em}
 .form-row input,.form-row textarea,.form-row select{width:100%;padding:0.7rem 0.9rem;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:8px;color:var(--text-bright);font-family:inherit;font-size:0.85rem;outline:none;transition:border-color 0.2s;font-weight:400}
 .form-row textarea{resize:vertical;min-height:90px;line-height:1.5}
-.form-row input:focus,.form-row textarea:focus,.form-row select:focus{border-color:var(--orange)}
+.form-row input:focus,.form-row textarea:focus,.form-row select:focus{border-color:var(--brand)}
 .form-row input::placeholder,.form-row textarea::placeholder{color:var(--text-mute)}
 .form-status{display:none;margin-top:0.75rem;padding:0.75rem 1rem;border-radius:8px;font-size:0.82rem}
 .form-status.ok{display:block;background:rgba(61,220,132,0.08);border:1px solid rgba(61,220,132,0.25);color:var(--green)}
@@ -140,15 +140,15 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,
 .calc{margin-top:3rem;padding:2rem 2.25rem;background:var(--surface);border:1px solid var(--border);border-radius:14px;display:grid;grid-template-columns:1fr 1fr;gap:2rem;align-items:center}
 .calc h3{font-size:1rem;font-weight:600;color:var(--text-bright);margin-bottom:0.4rem}
 .calc p.hint{font-size:0.78rem;color:var(--text-dim);margin-bottom:1rem;line-height:1.55}
-.calc input[type=range]{width:100%;accent-color:var(--orange)}
+.calc input[type=range]{width:100%;accent-color:var(--brand)}
 .calc .calls{font-size:1.1rem;font-weight:600;color:var(--text-bright);margin-bottom:0.35rem;font-variant-numeric:tabular-nums}
 .calc .breakdown{display:flex;gap:1.25rem;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);font-size:0.78rem}
 .calc .breakdown div{flex:1}
 .calc .breakdown .label{color:var(--text-dim);margin-bottom:0.2rem}
 .calc .breakdown .val{color:var(--text-bright);font-weight:600;font-size:0.95rem;font-variant-numeric:tabular-nums}
-.calc .breakdown .val.accent{color:var(--orange)}
-.calc .rec{font-size:0.78rem;color:var(--text);padding:0.7rem 0.9rem;background:rgba(240,112,25,0.08);border:1px solid rgba(240,112,25,0.2);border-radius:8px;margin-top:1rem}
-.calc .rec strong{color:var(--orange)}
+.calc .breakdown .val.accent{color:var(--brand)}
+.calc .rec{font-size:0.78rem;color:var(--text);padding:0.7rem 0.9rem;background:rgba(10,149,253,0.08);border:1px solid rgba(10,149,253,0.2);border-radius:8px;margin-top:1rem}
+.calc .rec strong{color:var(--brand)}
 
 /* ── FAQ ── */
 .faq{margin-top:5rem}
@@ -163,7 +163,7 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,
 .footer-left{font-size:0.72rem;color:var(--text-dim)}
 .footer-right{display:flex;gap:1.25rem}
 .footer-right a{font-size:0.72rem;color:var(--text-dim)}
-.footer-right a:hover{color:var(--orange)}
+.footer-right a:hover{color:var(--brand)}
 
 /* ── Responsive ── */
 @media (max-width:1080px){
@@ -190,7 +190,7 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,
 
 <header class="topbar">
   <a href="/" class="topbar-left">
-    <img src="https://api.toolrate.ai/static/toolrate-logo.webp" alt="ToolRate" style="height:32px">
+    <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" style="height:32px">
     <span class="topbar-tag">v0.1</span>
   </a>
   <nav class="topbar-links">
