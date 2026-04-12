@@ -18,3 +18,9 @@ class Tool(Base):
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
     report_count: Mapped[int] = mapped_column(Integer, default=0)
+
+    # Jurisdiction / GDPR metadata — populated lazily by app/services/jurisdiction.py
+    hosting_country: Mapped[str | None] = mapped_column(String(2))
+    hosting_region: Mapped[str | None] = mapped_column(String(64))
+    hosting_provider: Mapped[str | None] = mapped_column(String(128))
+    jurisdiction_category: Mapped[str | None] = mapped_column(String(32))

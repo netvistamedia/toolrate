@@ -9,6 +9,13 @@ from app.models.report import ExecutionReport
 from app.models.tool import Tool
 from app.models.alternative import Alternative
 from app.schemas.assess import AssessResponse, AlternativeTool, PitfallDetail, TrendInfo, LatencyInfo
+from app.services.jurisdiction import (
+    classify_jurisdiction,
+    data_residency_risk,
+    format_hosting_jurisdiction,
+    is_gdpr_compliant,
+    recommended_for,
+)
 
 # Pre-defined mitigations for known error categories
 MITIGATIONS = {
@@ -60,6 +67,9 @@ async def compute_score(
     tool: Tool,
     context_hash: str,
     data_pool: str | None = None,
+    *,
+    eu_only: bool = False,
+    gdpr_required: bool = False,
 ) -> AssessResponse:
     now = datetime.now(timezone.utc)
     cutoff_30d = now - timedelta(days=30)
@@ -100,9 +110,15 @@ async def compute_score(
         result = await db.execute(query)
         reports = list(result.scalars().all())
 
-    # Cold start — no reports at all
+    # Cold start — no reports at all. Still honor eu_only/gdpr_required so the
+    # caller can surface EU alternatives even for tools we've never seen used.
     if not reports:
-        return _cold_start_response(now, tool.category)
+        cold = _cold_start_response(now, tool)
+        if eu_only or gdpr_required:
+            cold.eu_alternatives = await _get_eu_alternatives(
+                db, tool, gdpr_required=gdpr_required,
+            )
+        return cold
 
     # Determine data source
     # Check if all reports come from the LLM synthetic fingerprint
@@ -222,6 +238,15 @@ async def compute_score(
     # Step 8: Alternatives
     alternatives = await _get_alternatives(db, tool.id)
 
+    # Step 9: Jurisdiction + GDPR flags (from tool metadata)
+    juris_category = tool.jurisdiction_category
+    juris_fields = _jurisdiction_fields(tool, juris_category)
+
+    # Step 10: EU / GDPR-filtered alternatives on demand
+    eu_alts: list[AlternativeTool] = []
+    if eu_only or gdpr_required:
+        eu_alts = await _get_eu_alternatives(db, tool, gdpr_required=gdpr_required)
+
     return AssessResponse(
         reliability_score=round(reliability * 100, 1),
         confidence=round(confidence, 2),
@@ -235,13 +260,22 @@ async def compute_score(
         estimated_latency_ms=avg_latency,
         latency=latency_info,
         last_updated=now,
+        **juris_fields,
+        eu_alternatives=eu_alts,
     )
 
 
-def _cold_start_response(now: datetime, category: str | None = None) -> AssessResponse:
+def _cold_start_response(now: datetime, tool: Tool | None = None) -> AssessResponse:
     """Response for tools with no data — uses category-adaptive Bayesian prior."""
-    alpha, beta = _get_priors(category)
+    tool_category = tool.category if tool else None
+    alpha, beta = _get_priors(tool_category)
     reliability = alpha / (alpha + beta)
+
+    if tool is not None:
+        juris_fields = _jurisdiction_fields(tool, tool.jurisdiction_category)
+    else:
+        juris_fields = _jurisdiction_fields(None, None)
+
     return AssessResponse(
         reliability_score=round(reliability * 100, 1),
         confidence=0.0,
@@ -255,7 +289,67 @@ def _cold_start_response(now: datetime, category: str | None = None) -> AssessRe
         estimated_latency_ms=None,
         latency=None,
         last_updated=now,
+        **juris_fields,
+        eu_alternatives=[],
     )
+
+
+def _jurisdiction_fields(tool: Tool | None, category: str | None) -> dict:
+    """Build the jurisdiction-related fields attached to every AssessResponse."""
+    if tool is None:
+        return {
+            "hosting_jurisdiction": None,
+            "gdpr_compliant": False,
+            "data_residency_risk": "medium",
+            "recommended_for": recommended_for(None),
+        }
+    return {
+        "hosting_jurisdiction": format_hosting_jurisdiction(
+            category, tool.hosting_country, tool.hosting_region,
+        ),
+        "gdpr_compliant": is_gdpr_compliant(category),
+        "data_residency_risk": data_residency_risk(category),
+        "recommended_for": recommended_for(category),
+    }
+
+
+async def _get_eu_alternatives(
+    db: AsyncSession,
+    tool: Tool,
+    *,
+    gdpr_required: bool,
+    limit: int = 3,
+) -> list[AlternativeTool]:
+    """Find alternative tools hosted in EU (or GDPR-adequate) jurisdictions.
+
+    Uses report_count as a cheap proxy for reliability so we don't recompute
+    the full score for each candidate.
+    """
+    allowed = ("EU", "GDPR-adequate") if gdpr_required else ("EU",)
+    stmt = (
+        select(Tool)
+        .where(
+            Tool.jurisdiction_category.in_(allowed),
+            Tool.id != tool.id,
+            Tool.report_count >= 5,
+        )
+    )
+    if tool.category:
+        stmt = stmt.where(Tool.category == tool.category)
+    stmt = stmt.order_by(Tool.report_count.desc()).limit(limit)
+
+    results = (await db.execute(stmt)).scalars().all()
+    out: list[AlternativeTool] = []
+    for peer in results:
+        estimated_score = min(95.0, 80.0 + (peer.report_count / 20))
+        out.append(
+            AlternativeTool(
+                tool=peer.identifier,
+                score=round(estimated_score, 1),
+                reason=f"{peer.jurisdiction_category} alternative in {tool.category or 'same category'}",
+            )
+        )
+    return out
 
 
 async def _get_alternatives(db: AsyncSession, tool_id) -> list[AlternativeTool]:

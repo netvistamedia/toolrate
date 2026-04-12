@@ -7,6 +7,8 @@ class AssessRequest(BaseModel):
     tool_identifier: str = Field(..., max_length=512, description="URL, name, or OpenAPI snippet identifying the tool")
     context: str = Field("", max_length=1024, description="Workflow context for context-bucketed scoring")
     sample_payload: dict | None = Field(None, description="Optional sample payload (not stored)")
+    eu_only: bool = Field(False, description="If true, surface EU-hosted alternatives in eu_alternatives")
+    gdpr_required: bool = Field(False, description="If true, surface EU + GDPR-adequate alternatives in eu_alternatives")
 
     model_config = {
         "json_schema_extra": {
@@ -64,6 +66,11 @@ class AssessResponse(BaseModel):
     estimated_latency_ms: float | None = Field(None, description="Average latency in milliseconds (deprecated, use latency)")
     latency: LatencyInfo | None = Field(None, description="Latency percentiles (avg, P50, P95, P99)")
     last_updated: datetime = Field(..., description="When this score was last computed")
+    hosting_jurisdiction: str | None = Field(None, description="Human-readable hosting jurisdiction, e.g. 'EU (Germany - Frankfurt)'")
+    gdpr_compliant: bool = Field(False, description="True for EU and GDPR-adequate jurisdictions")
+    data_residency_risk: str = Field("medium", description="GDPR residency risk: none, low, medium, or high")
+    recommended_for: list[str] = Field(default_factory=list, description="Workflow tags this tool is suited for, e.g. 'eu_companies', 'gdpr_strict_workflows'")
+    eu_alternatives: list[AlternativeTool] = Field(default_factory=list, description="EU-hosted (or GDPR-adequate) alternatives when eu_only/gdpr_required is set")
 
     model_config = {
         "json_schema_extra": {

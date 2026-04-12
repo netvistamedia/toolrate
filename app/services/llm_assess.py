@@ -172,6 +172,9 @@ async def create_tool_from_assessment(
             )
             db.add(alt_tool)
             await db.flush()
+            # Enrich jurisdiction for the newly created alternative
+            from app.services.jurisdiction import enrich_tool
+            await enrich_tool(alt_tool)
 
         # Check if alternative link already exists
         result = await db.execute(

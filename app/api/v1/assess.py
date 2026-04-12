@@ -58,17 +58,35 @@ async def assess_tool(
     if not tool:
         return await _cold_start(body, db, redis, ctx_hash, data_pool)
 
-    # Check cache
+    # Lazy jurisdiction backfill — one-time cost per pre-existing tool
+    if not tool.jurisdiction_category:
+        from app.services.jurisdiction import enrich_tool
+        if await enrich_tool(tool):
+            await db.commit()
+            await db.refresh(tool)
+
+    # Check cache. The cached score is invariant in eu_only/gdpr_required, so
+    # we still use the cache on those requests and augment with eu_alternatives
+    # after the fact.
     cached = await get_cached_score(redis, str(tool.id), ctx_hash, data_pool)
     if cached:
+        if body.eu_only or body.gdpr_required:
+            from app.services.scoring import _get_eu_alternatives
+            cached.eu_alternatives = await _get_eu_alternatives(
+                db, tool, gdpr_required=body.gdpr_required,
+            )
         return cached
 
     # Compute score
-    response = await compute_score(db, tool, ctx_hash, data_pool)
+    response = await compute_score(
+        db, tool, ctx_hash, data_pool,
+        eu_only=body.eu_only, gdpr_required=body.gdpr_required,
+    )
 
-    # Cache it
+    # Cache it (without eu_alternatives so the cached entry is flag-invariant)
+    cacheable = response.model_copy(update={"eu_alternatives": []})
     ttl = settings.cache_ttl_hot if tool.report_count >= settings.hot_threshold_reports_7d else settings.cache_ttl_cold
-    await set_cached_score(redis, str(tool.id), ctx_hash, data_pool, response, ttl)
+    await set_cached_score(redis, str(tool.id), ctx_hash, data_pool, cacheable, ttl)
 
     return response
 
@@ -104,9 +122,12 @@ async def _cold_start(body: AssessRequest, db: Db, redis: RedisClient, ctx_hash:
     from app.services.report_ingest import upsert_tool
     from app.services.scoring import _cold_start_response, compute_score
     from app.services.llm_assess import assess_tool_with_llm, create_tool_from_assessment
+    from app.services.jurisdiction import enrich_tool
     from datetime import datetime, timezone
 
     tool = await upsert_tool(db, body.tool_identifier)
+    # Enrich jurisdiction eagerly — this is the first time we've seen the tool.
+    await enrich_tool(tool)
     await db.commit()
     await redis.set(f"tool:{body.tool_identifier}", str(tool.id), ex=3600)
 
@@ -130,4 +151,5 @@ async def _cold_start(body: AssessRequest, db: Db, redis: RedisClient, ctx_hash:
             if cached:
                 return cached
 
-    return _cold_start_response(datetime.now(timezone.utc), tool.category)
+    # Tool has jurisdiction data from enrich_tool above; build the response from it.
+    return _cold_start_response(datetime.now(timezone.utc), tool)
