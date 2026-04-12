@@ -10,6 +10,11 @@ venv/
 # Environment
 .env
 
+# Secrets — never commit
+api_key.py
+*.token
+.pypirc
+
 # IDE
 .vscode/
 .idea/
