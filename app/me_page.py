@@ -5,7 +5,9 @@ the page prompts for the key, stores it only in browser localStorage, and
 polls the endpoint every 60 seconds while the tab is visible.
 """
 
-ME_PAGE_HTML = r"""<!DOCTYPE html>
+from app.site_header import SITE_HEADER_CSS, SITE_HEADER_HTML, SITE_HEADER_JS
+
+_ME_PAGE_TEMPLATE = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -37,16 +39,18 @@ a{color:inherit;text-decoration:none}
 code,.mono{font-family:'Fira Code',monospace}
 .page{max-width:1180px;margin:0 auto;padding:0 2rem 4rem}
 
-/* ── Topbar ── */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:1.4rem 0;border-bottom:1px solid var(--border);margin-bottom:2rem;flex-wrap:wrap;gap:0.75rem}
-.topbar-left{display:flex;align-items:center;gap:0.75rem}
-.topbar-left img{height:28px}
+/* ── Shared marketing topbar (logo + nav + mobile hamburger) ── */
+__SITE_HEADER_CSS__
+
+/* ── Auth-specific status strip (tier tag + live dot + refresh/logout) ── */
+.status-strip{display:flex;align-items:center;justify-content:space-between;padding:0.85rem 0 1.4rem;margin-bottom:1.5rem;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:0.75rem}
+.status-strip-left{display:flex;align-items:center;gap:0.75rem}
 .topbar-tag{font-size:0.6rem;color:var(--brand);border:1px solid var(--brand);padding:0.2rem 0.55rem;border-radius:4px;letter-spacing:0.12em;text-transform:uppercase;font-weight:600}
-.topbar-right{display:flex;align-items:center;gap:1rem;font-size:0.74rem;color:var(--text-dim)}
-.topbar-right .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 10px var(--green);animation:pulse 2s infinite}
-.topbar-right .dot.err{background:var(--red);box-shadow:0 0 10px var(--red)}
-.topbar-right button{background:transparent;border:1px solid var(--border-strong);color:var(--text-dim);padding:0.35rem 0.7rem;border-radius:6px;font-family:inherit;font-size:0.72rem;cursor:pointer}
-.topbar-right button:hover{color:var(--brand);border-color:var(--brand)}
+.status-strip-right{display:flex;align-items:center;gap:1rem;font-size:0.74rem;color:var(--text-dim);flex-wrap:wrap}
+.status-strip-right .dot{width:8px;height:8px;border-radius:50%;background:var(--green);display:inline-block;box-shadow:0 0 10px var(--green);animation:pulse 2s infinite}
+.status-strip-right .dot.err{background:var(--red);box-shadow:0 0 10px var(--red)}
+.status-strip-right button{background:transparent;border:1px solid var(--border-strong);color:var(--text-dim);padding:0.35rem 0.7rem;border-radius:6px;font-family:inherit;font-size:0.72rem;cursor:pointer}
+.status-strip-right button:hover{color:var(--brand);border-color:var(--brand)}
 
 /* ── Auth screen ── */
 .auth{max-width:440px;margin:6rem auto;padding:2.5rem;background:var(--surface);border:1px solid var(--border);border-radius:14px}
@@ -137,6 +141,8 @@ code,.mono{font-family:'Fira Code',monospace}
 </head>
 <body>
 
+__SITE_HEADER_HTML__
+
 <!-- Auth prompt -->
 <div class="auth" id="auth-screen">
   <h1>Your ToolRate account</h1>
@@ -151,18 +157,17 @@ code,.mono{font-family:'Fira Code',monospace}
 <!-- Dashboard -->
 <div class="page" id="dashboard" style="display:none">
 
-<header class="topbar">
-  <div class="topbar-left">
-    <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate">
+<div class="status-strip">
+  <div class="status-strip-left">
     <span class="topbar-tag" id="tier-tag">—</span>
   </div>
-  <div class="topbar-right">
+  <div class="status-strip-right">
     <span><span class="dot" id="status-dot"></span> <span id="status-text">Live</span></span>
     <span id="last-update">&mdash;</span>
     <button onclick="refresh()">Refresh</button>
     <button onclick="logout()">Log out</button>
   </div>
-</header>
+</div>
 
 <!-- Upgrade banner (only shown when backend suggests one) -->
 <div class="upgrade" id="upgrade-banner" style="display:none">
@@ -534,5 +539,14 @@ refreshTimer = setInterval(function() {
   if (document.visibilityState === 'visible' && getKey()) refresh();
 }, 60000);
 </script>
+__SITE_HEADER_JS__
 </body>
 </html>"""
+
+
+ME_PAGE_HTML = (
+    _ME_PAGE_TEMPLATE
+    .replace("__SITE_HEADER_CSS__", SITE_HEADER_CSS)
+    .replace("__SITE_HEADER_HTML__", SITE_HEADER_HTML)
+    .replace("__SITE_HEADER_JS__", SITE_HEADER_JS)
+)
