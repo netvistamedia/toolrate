@@ -1009,10 +1009,10 @@ body::after {
     <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" class="hero-brand">
     <h1>Real advice for every tool your <span>agent considers</span>.</h1>
     <p class="hero-sub">
-      AI agents waste tokens and time retrying flaky, slow, or non-compliant tools.
+      AI agents burn tokens retrying flaky, slow, or non-compliant tools.
       ToolRate delivers <strong>objective, crowdsourced reliability ratings</strong> and
-      actionable intelligence &mdash; based on thousands of real agent executions across
-      production workloads.
+      actionable intelligence &mdash; drawn from thousands of real agent executions in
+      production.
     </p>
     <p class="hero-kicker"><strong>Know before you call. Choose correctly the first time.</strong></p>
     <div class="hero-actions">
@@ -1047,12 +1047,12 @@ body::after {
   <div class="narrative-card narrative-problem">
     <div class="narrative-badge"><span class="narrative-dot"></span> The Problem</div>
     <h3>Agents burn cycles on failing tools</h3>
-    <p>Your agent picks Stripe, it times out. Falls back to LemonSqueezy, auth fails. Tries PayPal, finally works. Three attempts, wasted tokens, degraded user experience, and no record of why any of it happened.</p>
+    <p>Stripe times out. LemonSqueezy rejects auth. PayPal finally works. Three attempts, wasted tokens, degraded UX &mdash; and no record of why any of it happened.</p>
   </div>
   <div class="narrative-card narrative-solution">
     <div class="narrative-badge"><span class="narrative-dot"></span> The Solution</div>
     <h3>One assessment before every call</h3>
-    <p>ToolRate scores every tool in real time from the collective experience of thousands of production agents. Check the score, pick the best option first, fall back intelligently &mdash; and log every decision with a confidence level attached.</p>
+    <p>ToolRate scores every tool in real time from the collective experience of thousands of production agents. Pick the best option first, fall back intelligently, and log every decision with a confidence score attached.</p>
   </div>
 </div>
 
@@ -1065,10 +1065,10 @@ body::after {
     <span class="jurisdiction-badge">Exclusive to ToolRate</span>
   </div>
   <p class="jurisdiction-lead">
-    The only reliability API that tells you <em>where</em> every tool actually runs. Every
-    listing carries a verified hosting jurisdiction, GDPR posture, and confidence score &mdash;
-    so compliance, security, and data residency are decided at assessment time, not during
-    post-incident review.
+    The only reliability API that knows <em>where</em> every tool actually runs. Every
+    listing ships with a verified hosting jurisdiction, GDPR posture, and confidence
+    score &mdash; so data residency, privacy, and compliance are decided at assessment
+    time, not in a post-incident review.
   </p>
 
   <div class="jurisdiction-tiers">
@@ -1088,10 +1088,10 @@ body::after {
 
   <div class="jurisdiction-benefits-title">Built into every response</div>
   <ul class="jurisdiction-benefits">
-    <li><strong>EU-first routing</strong> &mdash; sensitive calls land in GDPR territory automatically, without policy code in your agent.</li>
-    <li><strong>Assess-time enforcement</strong> &mdash; block non-compliant tools before the request ever leaves the process.</li>
-    <li><strong>Compliant fallbacks</strong> &mdash; when a high-risk tool is the only option, a cleaner alternative comes back in the same response.</li>
-    <li><strong>Audit-ready sovereignty</strong> &mdash; every assessment is timestamped, confidence-scored, and exportable for compliance review.</li>
+    <li><strong>EU-first routing</strong> &mdash; sensitive calls land in GDPR territory automatically, with no policy code in your agent.</li>
+    <li><strong>Assess-time enforcement</strong> &mdash; non-compliant tools are blocked before the request ever leaves the process.</li>
+    <li><strong>Compliant fallbacks</strong> &mdash; when a high-risk tool is the only option, a cleaner alternative is returned in the same response.</li>
+    <li><strong>Audit-ready sovereignty</strong> &mdash; every decision is timestamped, confidence-scored, and exportable for compliance review.</li>
   </ul>
 
   <p class="jurisdiction-punch">
@@ -1160,38 +1160,38 @@ curl -X POST https://api.toolrate.ai/v1/report \
 <section class="features">
   <div class="features-header">
     <h2>Built for production agents</h2>
-    <p>Reliability intelligence for the developers, enterprises, and agents running real AI workloads.</p>
+    <p>Reliability intelligence for the developers, enterprises, and agents running production AI workloads.</p>
   </div>
   <div class="features-grid">
     <div class="feature">
       <div class="feature-num">01</div>
       <h3>Reliability Scoring</h3>
-      <p>Bayesian-smoothed scores with recency weighting &mdash; 70% of the signal drawn from the last 7 days. Every response carries a confidence interval and a per-error-category breakdown.</p>
+      <p>Bayesian-smoothed scores weighted toward the last 7 days. Every assessment ships with a confidence interval and a per-error-category breakdown &mdash; so agents know how much to trust the number, and auditors know how it was reached.</p>
     </div>
     <div class="feature">
       <div class="feature-num">02</div>
       <h3>One-Line Guard</h3>
-      <p><code>guard()</code> assesses the score, runs your call, and auto-retries with the next best alternative if it fails. One line of code, zero branching logic in your agent.</p>
+      <p>One call to <code>guard()</code> wraps any tool call with assess-before, run, and automatic fallback to the next best alternative. Zero branching logic. Zero retry boilerplate. Production-ready in a single line.</p>
     </div>
     <div class="feature">
       <div class="feature-num">03</div>
       <h3>Hidden Gems</h3>
-      <p>Tools nobody pitches but production agents quietly rely on &mdash; surfaced from real fallback patterns across thousands of sessions, ranked by recovery success rate.</p>
+      <p>The tools nobody pitches but production agents quietly rely on &mdash; surfaced from real fallback patterns across thousands of sessions and ranked by recovery rate.</p>
     </div>
     <div class="feature">
       <div class="feature-num">04</div>
       <h3>Fallback Chains</h3>
-      <p>When OpenAI, Stripe, or SendGrid drops, what do production cohorts actually switch to? Real journey data, ranked by downstream completion rate.</p>
+      <p>When OpenAI, Stripe, or SendGrid drops, what do production agents actually switch to? Live journey data, ranked by downstream completion rate.</p>
     </div>
     <div class="feature">
       <div class="feature-num">05</div>
       <h3>Reliability Webhooks</h3>
-      <p>Get paged the moment a tool's reliability crosses a threshold you define. HMAC-signed, per-tool, exponential-backoff delivery. Wire it into PagerDuty or Slack in seconds.</p>
+      <p>Get paged the moment a tool's reliability crosses a threshold you define. HMAC-signed, per-tool, exponential-backoff delivery &mdash; wired into PagerDuty or Slack in seconds.</p>
     </div>
     <div class="feature">
       <div class="feature-num">06</div>
       <h3>MCP Server</h3>
-      <p>Native integration with Claude Code, Cursor, and any MCP-aware client. Run assessments from inside your editor without leaving the loop.</p>
+      <p>Native integration with Claude Code, Cursor, and any MCP-aware client. Run assessments from inside your editor without breaking the loop.</p>
     </div>
   </div>
 </section>
@@ -1199,8 +1199,8 @@ curl -X POST https://api.toolrate.ai/v1/report \
 <!-- Pricing -->
 <section class="pricing" id="pricing">
   <div class="pricing-header">
-    <h2>Simple pricing</h2>
-    <p style="font-size:0.85rem;color:var(--text-dim);margin-top:0.5rem;font-weight:300">Start free. Scale with pay-as-you-go. Flat-rate when you need it. <a href="/pricing" style="color:var(--brand)">See all plans &rarr;</a></p>
+    <h2>Pricing that scales with your agents</h2>
+    <p style="font-size:0.9rem;color:var(--text-dim);margin-top:0.6rem;font-weight:300">Start free. Scale with pay-as-you-go. Flat-rate when you need it. <a href="/pricing" style="color:var(--brand)">See all plans &rarr;</a></p>
   </div>
   <div class="pricing-grid">
     <div class="pricing-card">
@@ -1249,7 +1249,7 @@ curl -X POST https://api.toolrate.ai/v1/report \
 
 <!-- Footer -->
 <footer class="footer container">
-  <div class="footer-left">Built for agents, by agents &middot; GDPR compliant &middot; Hosted in Germany</div>
+  <div class="footer-left">Built for production agents &middot; GDPR compliant &middot; Hosted in Germany</div>
   <div class="footer-right">
     <a href="/docs">Documentation</a>
     <a href="https://github.com/netvistamedia/toolrate">GitHub</a>
