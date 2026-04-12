@@ -280,10 +280,20 @@ body::after {
   font-size: 1.1rem;
   font-weight: 300;
   color: var(--text-dim);
-  max-width: 620px;
-  margin: 0 auto 2.25rem;
+  max-width: 640px;
+  margin: 0 auto 1.25rem;
   line-height: 1.7;
-  text-wrap: balance;
+  text-wrap: pretty;
+}
+
+.hero-kicker {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: var(--text-bright);
+  max-width: 640px;
+  margin: 0 auto 2.25rem;
+  line-height: 1.5;
+  letter-spacing: -0.005em;
 }
 
 .hero-actions {
@@ -896,9 +906,12 @@ body::after {
     <div class="hero-eyebrow">Reliability Oracle for AI Agents</div>
     <h1>Real advice for every tool your <span>agent considers</span></h1>
     <p class="hero-sub">
-      AI agents pick tools, they fail, swap for another &mdash; costing time, tokens, and money.
-      ToolRate rates 600+ tools so your agents pick correctly the first time.
+      AI agents waste thousands of tokens and hours retrying flaky, slow, or non-compliant tools.
+      ToolRate gives your agents objective, real-world ratings based on millions of actual agent
+      runs &mdash; including reliability scores, jurisdiction risks, cost insights, and smart
+      alternatives.
     </p>
+    <p class="hero-kicker">Stop guessing. Start succeeding on the first call.</p>
     <div class="hero-actions">
       <a href="/docs" class="btn btn-primary">Get Started Free</a>
       <a href="https://github.com/netvistamedia/toolrate" class="btn btn-ghost">View on GitHub</a>
