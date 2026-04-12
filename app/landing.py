@@ -1082,7 +1082,7 @@ body::after {
   </div>
   <p class="jurisdiction-lead">
     ToolRate is the only reliability layer that knows exactly <em>where</em> every tool
-    actually runs &mdash; and surfaces clear data residency, privacy, and compliance
+    actually runs &mdash; and clearly surfaces data residency, privacy, and compliance
     risk in every assessment.
     From EU-hosted tools to high-risk jurisdictions, you get clear risk scoring and
     intelligent alternatives in one call.
