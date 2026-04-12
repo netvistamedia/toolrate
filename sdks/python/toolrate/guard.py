@@ -1,9 +1,9 @@
 """ToolRate Guard — one-line reliability wrapper for tool calls.
 
 Usage:
-    from nemoflow import NemoFlowClient, guard
+    from toolrate import ToolRate, guard
 
-    client = NemoFlowClient("nf_live_...")
+    client = ToolRate("nf_live_...")
 
     # Wrap any tool call — assess before, report after
     result = guard(client, "https://api.openai.com/v1/chat/completions",
@@ -29,7 +29,7 @@ Usage:
                    })
 
     # As a decorator
-    @nemoflow_guard(client, "https://api.stripe.com/v1/charges")
+    @toolrate_guard(client, "https://api.stripe.com/v1/charges")
     def charge_customer(amount, currency):
         return stripe.Charge.create(amount=amount, currency=currency)
 """
@@ -41,7 +41,7 @@ import uuid
 from functools import wraps
 from typing import Any, Callable, Literal, TypeVar, Union
 
-from nemoflow.client import NemoFlowClient
+from toolrate.client import ToolRate
 
 T = TypeVar("T")
 
@@ -49,7 +49,7 @@ Fallbacks = Union[list[tuple[str, Callable[[], T]]], Literal["auto"], None]
 
 
 def guard(
-    client: NemoFlowClient,
+    client: ToolRate,
     tool_identifier: str,
     fn: Callable[[], T],
     *,
@@ -68,7 +68,7 @@ def guard(
     5. On failure with fallbacks, automatically tries the next option
 
     Args:
-        client: NemoFlowClient instance
+        client: ToolRate instance
         tool_identifier: The tool's API identifier
         fn: The actual tool call to execute (as a callable)
         context: Workflow context for context-bucketed scoring
@@ -161,8 +161,8 @@ def guard(
     raise last_error  # type: ignore[misc]
 
 
-def nemoflow_guard(
-    client: NemoFlowClient,
+def toolrate_guard(
+    client: ToolRate,
     tool_identifier: str,
     *,
     context: str = "",
@@ -174,7 +174,7 @@ def nemoflow_guard(
     """Decorator version of guard.
 
     Usage:
-        @nemoflow_guard(client, "https://api.stripe.com/v1/charges")
+        @toolrate_guard(client, "https://api.stripe.com/v1/charges")
         def charge(amount, currency):
             return stripe.Charge.create(amount=amount, currency=currency)
     """
@@ -193,7 +193,7 @@ def nemoflow_guard(
 
 
 def _resolve_auto_fallbacks(
-    client: NemoFlowClient,
+    client: ToolRate,
     primary_identifier: str,
     primary_assessment: dict[str, Any] | None,
     resolvers: dict[str, Callable[[], Any]],
@@ -237,7 +237,7 @@ def _resolve_auto_fallbacks(
     return out
 
 
-def _safe_report(client: NemoFlowClient, tool_identifier: str, **kwargs: Any) -> None:
+def _safe_report(client: ToolRate, tool_identifier: str, **kwargs: Any) -> None:
     """Fire-and-forget reporting. Never fail the user's tool call because reporting failed."""
     try:
         client.report(tool_identifier, **kwargs)

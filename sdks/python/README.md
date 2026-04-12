@@ -5,7 +5,7 @@ Python client for the [ToolRate API](https://api.toolrate.ai) — the reliabilit
 ## Installation
 
 ```bash
-pip install nemoflow
+pip install toolrate
 ```
 
 ## Quick start — one line of code
@@ -13,9 +13,9 @@ pip install nemoflow
 The `guard` function wraps any tool call with automatic reliability checking:
 
 ```python
-from nemoflow import NemoFlowClient, guard
+from toolrate import ToolRate, guard
 
-client = NemoFlowClient(api_key="nf_live_...")
+client = ToolRate(api_key="nf_live_...")
 
 # Wrap any tool call — assesses before, reports after, automatically
 result = guard(client, "https://api.openai.com/v1/chat/completions",
@@ -50,11 +50,11 @@ result = guard(
 ## Decorator
 
 ```python
-from nemoflow import NemoFlowClient, nemoflow_guard
+from toolrate import ToolRate, toolrate_guard
 
-client = NemoFlowClient(api_key="nf_live_...")
+client = ToolRate(api_key="nf_live_...")
 
-@nemoflow_guard(client, "https://api.stripe.com/v1/charges")
+@toolrate_guard(client, "https://api.stripe.com/v1/charges")
 def charge_customer(amount, currency):
     return stripe.Charge.create(amount=amount, currency=currency)
 
@@ -94,9 +94,9 @@ chain = client.discover_fallback_chain("https://api.sendgrid.com/v3/mail/send")
 ## Direct API usage
 
 ```python
-from nemoflow import NemoFlowClient
+from toolrate import ToolRate
 
-client = NemoFlowClient(api_key="nf_live_...")
+client = ToolRate(api_key="nf_live_...")
 
 # Assess
 result = client.assess("https://api.openai.com/v1/chat/completions",
@@ -115,11 +115,11 @@ client.close()
 
 ## Async support
 
-`AsyncNemoFlowClient` has the same interface — all methods are `async`.
+`AsyncToolRate` has the same interface — all methods are `async`.
 
 ```python
-from nemoflow import AsyncNemoFlowClient
+from toolrate import AsyncToolRate
 
-async with AsyncNemoFlowClient(api_key="nf_live_...") as client:
+async with AsyncToolRate(api_key="nf_live_...") as client:
     result = await client.assess("https://api.openai.com/v1/chat/completions")
 ```

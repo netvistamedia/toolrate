@@ -1,7 +1,7 @@
 {
-  "name": "toolrate",
+  "name": "nemoflow",
   "version": "0.3.2",
-  "description": "Reliability oracle for AI agents — real advice for every tool your agent considers",
+  "description": "Deprecated — the 'nemoflow' package has been renamed to 'toolrate'. This package is a thin compatibility shim that re-exports everything from 'toolrate' and logs a deprecation warning on import.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -17,9 +17,7 @@
     "agents",
     "reliability",
     "tools",
-    "llm",
-    "api",
-    "fallback"
+    "deprecated"
   ],
   "author": "ToolRate <bleep@toolrate.ai>",
   "license": "MIT",
@@ -30,6 +28,9 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "toolrate": "^0.3.2"
   },
   "devDependencies": {
     "typescript": "^6.0.2"

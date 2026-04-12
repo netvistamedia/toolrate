@@ -1055,9 +1055,9 @@ body::after {
     </div>
   </div>
   <div class="code-block">
-    <div id="tab-python" class="code-panel active"><pre><span class="kw">from</span> nemoflow <span class="kw">import</span> NemoFlowClient, guard
+    <div id="tab-python" class="code-panel active"><pre><span class="kw">from</span> toolrate <span class="kw">import</span> ToolRate, guard
 
-client = NemoFlowClient(<span class="str">"nf_live_..."</span>)
+client = ToolRate(<span class="str">"nf_live_..."</span>)
 
 <span class="cm"># Check reliability before calling</span>
 score = client.assess(<span class="str">"https://api.stripe.com/v1/charges"</span>)
@@ -1070,9 +1070,9 @@ result = <span class="fn">guard</span>(client, <span class="str">"https://api.st
                    (<span class="str">"https://api.lemonsqueezy.com/v1/checkouts"</span>,
                     <span class="kw">lambda</span>: lemon.create_checkout(...)),
                ])</pre></div>
-    <div id="tab-typescript" class="code-panel"><pre><span class="kw">import</span> { NemoFlowClient } <span class="kw">from</span> <span class="str">"nemoflow"</span>;
+    <div id="tab-typescript" class="code-panel"><pre><span class="kw">import</span> { ToolRate } <span class="kw">from</span> <span class="str">"toolrate"</span>;
 
-<span class="kw">const</span> client = <span class="kw">new</span> <span class="fn">NemoFlowClient</span>(<span class="str">"nf_live_..."</span>);
+<span class="kw">const</span> client = <span class="kw">new</span> <span class="fn">ToolRate</span>(<span class="str">"nf_live_..."</span>);
 
 <span class="cm">// Check reliability before calling</span>
 <span class="kw">const</span> score = <span class="kw">await</span> client.<span class="fn">assess</span>(<span class="str">"https://api.stripe.com/v1/charges"</span>);

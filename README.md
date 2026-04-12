@@ -18,10 +18,6 @@
 
 ToolRate is a reliability oracle for AI agents. It scores 600+ tools and APIs in real time so your agent picks the right one *before* wasting a call on a failing endpoint. One line wraps any tool call with assess-before, report-after, and automatic fallback.
 
-<p align="center">
-  <img src="https://nemoflow.com/nemo-tool-rating.webp" alt="ToolRate mascot rating tools" width="360">
-</p>
-
 ## The problem
 
 AI agents fail **60-80% of the time** on external tool calls. Timeouts, rate limits, auth failures, flaky APIs. Your agent retries blindly, burns tokens, and still fails. ToolRate gives it the information it needs to make smarter choices.
@@ -31,9 +27,9 @@ AI agents fail **60-80% of the time** on external tool calls. Timeouts, rate lim
 **Python**
 
 ```python
-from nemoflow import NemoFlowClient, guard
+from toolrate import ToolRate, guard
 
-client = NemoFlowClient("nf_live_...")
+client = ToolRate("nf_live_...")
 
 result = guard(client, "https://api.openai.com/v1/chat/completions",
                lambda: openai.chat.completions.create(model="gpt-4", messages=msgs))
@@ -42,9 +38,9 @@ result = guard(client, "https://api.openai.com/v1/chat/completions",
 **TypeScript**
 
 ```typescript
-import { ToolRate } from "nemoflow";
+import { ToolRate } from "toolrate";
 
-const nemo = new ToolRate("nf_live_...");
+const client = new ToolRate("nf_live_...");
 
 const result = await nemo.guard(
   "https://api.openai.com/v1/chat/completions",
@@ -87,8 +83,8 @@ A single call gives your agent a reliability score, failure risk, common pitfall
 ## Install
 
 ```bash
-pip install nemoflow        # Python
-npm install nemoflow        # TypeScript / Node.js
+pip install toolrate        # Python
+npm install toolrate        # TypeScript / Node.js
 ```
 
 ## Quickstart
@@ -102,9 +98,9 @@ https://toolrate.ai/register
 **2. Assess a tool:**
 
 ```python
-from nemoflow import NemoFlowClient
+from toolrate import ToolRate
 
-client = NemoFlowClient("nf_live_...")
+client = ToolRate("nf_live_...")
 score = client.assess("https://api.stripe.com/v1/charges", context="e-commerce checkout")
 print(score["reliability_score"])  # 94.2
 ```

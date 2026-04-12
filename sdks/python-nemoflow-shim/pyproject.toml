@@ -3,18 +3,18 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "toolrate"
+name = "nemoflow"
 version = "0.3.2"
-description = "Reliability oracle for AI agents — pick the right tool from the start"
+description = "Deprecated — the 'nemoflow' package has been renamed to 'toolrate'. This package is a thin compatibility shim that re-exports everything from 'toolrate' and emits a DeprecationWarning on import."
 readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
 authors = [
     {name = "ToolRate", email = "bleep@toolrate.ai"},
 ]
-keywords = ["ai", "agents", "reliability", "tools", "llm", "api"]
+keywords = ["ai", "agents", "reliability", "tools", "llm", "api", "deprecated"]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 7 - Inactive",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
@@ -26,7 +26,7 @@ classifiers = [
     "Topic :: Software Development :: Libraries",
 ]
 dependencies = [
-    "httpx>=0.24.0",
+    "toolrate>=0.3.2",
 ]
 
 [project.urls]

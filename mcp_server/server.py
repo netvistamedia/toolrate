@@ -8,12 +8,12 @@ Run:
 Configure in Claude Code settings or .cursor/mcp.json:
     {
       "mcpServers": {
-        "nemoflow": {
+        "toolrate": {
           "command": "python",
           "args": ["-m", "mcp_server"],
           "env": {
-            "NEMOFLOW_API_KEY": "nf_live_...",
-            "NEMOFLOW_BASE_URL": "https://api.toolrate.ai"
+            "TOOLRATE_API_KEY": "nf_live_...",
+            "TOOLRATE_BASE_URL": "https://api.toolrate.ai"
           }
         }
       }
@@ -29,8 +29,14 @@ mcp = FastMCP(
     instructions="Reliability oracle for AI agents — assess tools before calling, report results after.",
 )
 
-API_KEY = os.environ.get("NEMOFLOW_API_KEY", "")
-BASE_URL = os.environ.get("NEMOFLOW_BASE_URL", "https://api.toolrate.ai")
+# New env var names are TOOLRATE_*; the legacy NEMOFLOW_* names still work
+# as a fallback so existing MCP configs keep running.
+API_KEY = os.environ.get("TOOLRATE_API_KEY") or os.environ.get("NEMOFLOW_API_KEY", "")
+BASE_URL = (
+    os.environ.get("TOOLRATE_BASE_URL")
+    or os.environ.get("NEMOFLOW_BASE_URL")
+    or "https://api.toolrate.ai"
+)
 
 
 def _client() -> httpx.Client:

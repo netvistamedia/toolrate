@@ -30,6 +30,12 @@ docker-compose.override.yml
 
 # Build artifacts
 sdks/python/dist/
+sdks/python-nemoflow-shim/dist/
+sdks/typescript/dist/
+sdks/typescript/node_modules/
+sdks/typescript-nemoflow-shim/dist/
+sdks/typescript-nemoflow-shim/node_modules/
+sdks/typescript-nemoflow-shim/package-lock.json
 
 # OS
 .DS_Store

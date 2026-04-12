@@ -15,8 +15,8 @@ ToolRate provides real-time reliability scores for external tools and APIs, base
 
 ## SDKs
 
-- Python: `pip install nemoflow`
-- TypeScript: `npm install nemoflow`
+- Python: `pip install toolrate`
+- TypeScript: `npm install toolrate`
 
 ## API Base URL
 
@@ -77,13 +77,13 @@ subscription, scales to zero, and the first 100 assessments every day are on us.
 ### Python
 
 ```bash
-pip install nemoflow
+pip install toolrate
 ```
 
 ```python
-from nemoflow import NemoFlowClient, guard
+from toolrate import ToolRate, guard
 
-client = NemoFlowClient("nf_live_...")
+client = ToolRate("nf_live_...")
 
 # Check reliability before calling
 score = client.assess("https://api.stripe.com/v1/charges")
@@ -101,11 +101,11 @@ result = guard(client, "https://api.stripe.com/v1/charges",
 ### TypeScript
 
 ```bash
-npm install nemoflow
+npm install toolrate
 ```
 
 ```typescript
-import { ToolRate } from "nemoflow";
+import { ToolRate } from "toolrate";
 
 const client = new ToolRate("nf_live_...");
 

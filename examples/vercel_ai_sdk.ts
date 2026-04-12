@@ -6,10 +6,10 @@
  * loop and the guard() pattern for automatic fallback.
  *
  * Install:
- *   npm install nemoflow ai @ai-sdk/openai zod
+ *   npm install toolrate ai @ai-sdk/openai zod
  *
  * Set environment variables:
- *   export NEMOFLOW_API_KEY="nf_live_..."
+ *   export TOOLRATE_API_KEY="nf_live_..."
  *   export OPENAI_API_KEY="sk-..."
  *
  * Run:
@@ -19,13 +19,13 @@
 import { generateText, tool } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
-import { ToolRate } from "nemoflow";
+import { ToolRate } from "toolrate";
 
 // ---------------------------------------------------------------------------
 // 1. Initialize ToolRate client
 // ---------------------------------------------------------------------------
 
-const nemo = new ToolRate(process.env.NEMOFLOW_API_KEY ?? "nf_live_your_key_here");
+const client = new ToolRate(process.env.TOOLRATE_API_KEY ?? "nf_live_your_key_here");
 
 // ---------------------------------------------------------------------------
 // 2. Helper: wrap any async function with ToolRate assess -> execute -> report

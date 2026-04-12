@@ -6,10 +6,10 @@ ToolRate checks tool reliability before each call, reports results back,
 and automatically falls back to alternatives when tools are unreliable.
 
 Install:
-    pip install nemoflow crewai crewai-tools
+    pip install toolrate crewai crewai-tools
 
 Set environment variables:
-    export NEMOFLOW_API_KEY="nf_live_..."
+    export TOOLRATE_API_KEY="nf_live_..."
     export OPENAI_API_KEY="sk-..."
 
 Run:
@@ -26,13 +26,13 @@ from crewai import Agent, Crew, Process, Task
 from crewai.tools import BaseTool
 from pydantic import Field
 
-from nemoflow import NemoFlowClient, guard
+from toolrate import ToolRate, guard
 
 # ---------------------------------------------------------------------------
 # 1. Initialize ToolRate client
 # ---------------------------------------------------------------------------
 
-nemo = NemoFlowClient(os.environ.get("NEMOFLOW_API_KEY", "nf_live_your_key_here"))
+nemo = ToolRate(os.environ.get("TOOLRATE_API_KEY", "nf_live_your_key_here"))
 
 
 # ---------------------------------------------------------------------------

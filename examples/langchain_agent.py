@@ -5,10 +5,10 @@ An agent that uses ToolRate to check tool reliability before calling tools,
 and reports outcomes back to build community intelligence.
 
 Install:
-    pip install nemoflow langchain langchain-openai langchain-community
+    pip install toolrate langchain langchain-openai langchain-community
 
 Set environment variables:
-    export NEMOFLOW_API_KEY="nf_live_..."
+    export TOOLRATE_API_KEY="nf_live_..."
     export OPENAI_API_KEY="sk-..."
 
 Run:
@@ -26,13 +26,13 @@ from langchain.tools import StructuredTool
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import ChatOpenAI
 
-from nemoflow import NemoFlowClient, guard
+from toolrate import ToolRate, guard
 
 # ---------------------------------------------------------------------------
 # 1. Initialize ToolRate client
 # ---------------------------------------------------------------------------
 
-nemo = NemoFlowClient(os.environ.get("NEMOFLOW_API_KEY", "nf_live_your_key_here"))
+nemo = ToolRate(os.environ.get("TOOLRATE_API_KEY", "nf_live_your_key_here"))
 
 
 # ---------------------------------------------------------------------------
@@ -66,7 +66,7 @@ def _get_weather(city: str) -> str:
 #   d) Automatically falls back to alternatives if the primary tool fails
 # ---------------------------------------------------------------------------
 
-def nemoflow_search(query: str) -> str:
+def toolrate_search(query: str) -> str:
     """Web search with ToolRate reliability guard and automatic fallback."""
     return guard(
         nemo,
@@ -83,7 +83,7 @@ def nemoflow_search(query: str) -> str:
     )
 
 
-def nemoflow_weather(city: str) -> str:
+def toolrate_weather(city: str) -> str:
     """Weather lookup with ToolRate assess -> execute -> report loop."""
     tool_url = "https://api.openweathermap.org/data/2.5/weather"
 
@@ -121,14 +121,14 @@ def nemoflow_weather(city: str) -> str:
 # ---------------------------------------------------------------------------
 
 search_tool = StructuredTool.from_function(
-    func=nemoflow_search,
+    func=toolrate_search,
     name="web_search",
     description="Search the web for current information. Includes automatic "
                 "fallback to alternative search engines via ToolRate.",
 )
 
 weather_tool = StructuredTool.from_function(
-    func=nemoflow_weather,
+    func=toolrate_weather,
     name="weather",
     description="Get current weather for a city. Reliability is checked via "
                 "ToolRate before each call.",

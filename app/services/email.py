@@ -35,13 +35,13 @@ async def send_welcome_email(to_email: str, api_key_prefix: str):
   <h2 style="font-size:1.1rem;margin-bottom:0.75rem">Quick Start</h2>
 
   <p><strong>1. Install the SDK</strong></p>
-  <pre style="background:#1a1a2e;color:#e0e0e0;padding:1rem;border-radius:8px;font-size:0.85rem;overflow-x:auto"><code>pip install nemoflow    <span style="color:#666"># Python</span>
-npm install nemoflow    <span style="color:#666"># TypeScript</span></code></pre>
+  <pre style="background:#1a1a2e;color:#e0e0e0;padding:1rem;border-radius:8px;font-size:0.85rem;overflow-x:auto"><code>pip install toolrate    <span style="color:#666"># Python</span>
+npm install toolrate    <span style="color:#666"># TypeScript</span></code></pre>
 
   <p><strong>2. Check a tool before calling it</strong></p>
-  <pre style="background:#1a1a2e;color:#e0e0e0;padding:1rem;border-radius:8px;font-size:0.85rem;overflow-x:auto"><code><span style="color:#7b61ff">from</span> nemoflow <span style="color:#7b61ff">import</span> NemoFlowClient
+  <pre style="background:#1a1a2e;color:#e0e0e0;padding:1rem;border-radius:8px;font-size:0.85rem;overflow-x:auto"><code><span style="color:#7b61ff">from</span> toolrate <span style="color:#7b61ff">import</span> ToolRate
 
-client = NemoFlowClient(<span style="color:#ff6b9d">"your_full_api_key"</span>)
+client = ToolRate(<span style="color:#ff6b9d">"your_full_api_key"</span>)
 score = client.assess(<span style="color:#ff6b9d">"https://api.stripe.com/v1/charges"</span>)
 print(score.reliability_score)  <span style="color:#666"># e.g. 94.2</span></code></pre>
 

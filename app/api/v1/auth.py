@@ -104,9 +104,9 @@ async def register(
     asyncio.create_task(_safe_send())
 
     quickstart = (
-        f"pip install nemoflow\n\n"
-        f"from nemoflow import NemoFlowClient\n"
-        f"client = NemoFlowClient(\"{key_prefix}...\")\n"
+        f"pip install toolrate\n\n"
+        f"from toolrate import ToolRate\n"
+        f"client = ToolRate(\"{key_prefix}...\")\n"
         f"print(client.assess(\"https://api.stripe.com/v1/charges\"))"
     )
 

@@ -5,13 +5,13 @@ TypeScript client for the [ToolRate API](https://api.toolrate.ai) — the reliab
 ## Installation
 
 ```bash
-npm install nemoflow
+npm install toolrate
 ```
 
 ## Quick start — one line with guard()
 
 ```typescript
-import { ToolRate } from "nemoflow";
+import { ToolRate } from "toolrate";
 
 const nemo = new ToolRate("nf_live_...");
 

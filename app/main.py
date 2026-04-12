@@ -67,8 +67,8 @@ X-Api-Key: nf_live_your_key_here
 
 ## SDKs
 
-- **Python**: `pip install nemoflow`
-- **TypeScript**: `npm install nemoflow`
+- **Python**: `pip install toolrate`
+- **TypeScript**: `npm install toolrate`
 """
 
 app = FastAPI(

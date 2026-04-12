@@ -8,7 +8,7 @@ _DEFAULT_BASE_URL = "https://api.toolrate.ai"
 _DEFAULT_TIMEOUT = 30.0
 
 
-class NemoFlowClient:
+class ToolRate:
     """Synchronous client for the ToolRate API."""
 
     def __init__(
@@ -220,14 +220,14 @@ class NemoFlowClient:
     def close(self) -> None:
         self._client.close()
 
-    def __enter__(self) -> NemoFlowClient:
+    def __enter__(self) -> ToolRate:
         return self
 
     def __exit__(self, *exc: Any) -> None:
         self.close()
 
 
-class AsyncNemoFlowClient:
+class AsyncToolRate:
     """Asynchronous client for the ToolRate API."""
 
     def __init__(
@@ -418,8 +418,13 @@ class AsyncNemoFlowClient:
     async def close(self) -> None:
         await self._client.aclose()
 
-    async def __aenter__(self) -> AsyncNemoFlowClient:
+    async def __aenter__(self) -> AsyncToolRate:
         return self
 
     async def __aexit__(self, *exc: Any) -> None:
         await self.close()
+
+
+# Backwards-compatible aliases (deprecated names kept for existing imports)
+NemoFlowClient = ToolRate
+AsyncNemoFlowClient = AsyncToolRate
