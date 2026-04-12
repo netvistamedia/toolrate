@@ -211,7 +211,11 @@ async def main():
     args = parser.parse_args()
 
     import os
-    api_key = args.anthropic_key or os.environ.get("ANTHROPIC_API_KEY", "")
+    api_key = (
+        args.anthropic_key
+        or os.environ.get("ANTHROPIC_API_KEY")
+        or os.environ.get("NEMO_ANTHROPIC_API_KEY", "")
+    )
 
     print("=== NemoFlow API Discovery ===\n")
 
