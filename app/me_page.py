@@ -12,7 +12,7 @@ ME_PAGE_HTML = r"""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>ToolRate — Your Dashboard</title>
-<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
+<link rel="icon" href="https://api.toolrate.ai/static/toolrate-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -153,7 +153,7 @@ code,.mono{font-family:'Fira Code',monospace}
 
 <header class="topbar">
   <div class="topbar-left">
-    <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate">
+    <img src="https://api.toolrate.ai/static/toolrate-logo.webp" alt="ToolRate">
     <span class="topbar-tag" id="tier-tag">—</span>
   </div>
   <div class="topbar-right">

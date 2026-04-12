@@ -6,7 +6,8 @@ import redis.asyncio as aioredis
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.db.session import engine
@@ -104,6 +105,13 @@ app.add_middleware(
     max_age=600,
 )
 
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    return FileResponse("app/static/toolrate-favicon.png", media_type="image/png")
+
 
 # Security headers + request logging + timing
 @app.middleware("http")
@@ -168,7 +176,7 @@ async def register_page():
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ToolRate — Get Your API Key</title>
-<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
+<link rel="icon" href="https://api.toolrate.ai/static/toolrate-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -333,7 +341,7 @@ async def upgrade_page(plan: str = "payg"):
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ToolRate — {title}</title>
-<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
+<link rel="icon" href="https://api.toolrate.ai/static/toolrate-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{{margin:0;padding:0;box-sizing:border-box}}

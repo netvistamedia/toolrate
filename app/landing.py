@@ -9,15 +9,15 @@ LANDING_HTML = r"""<!DOCTYPE html>
 <meta name="description" content="ToolRate rates AI tools so that you or your agents pick the right tool from the start. Save time, tokens, energy, and money.">
 <meta property="og:title" content="ToolRate — Pick the Right Tool from the Start">
 <meta property="og:description" content="AI picks a tool, it fails, swaps for another — costing time and tokens. ToolRate rates 600+ tools so agents pick the right one from the start.">
-<meta property="og:image" content="https://toolrate.ai/toolrate-logo.webp">
+<meta property="og:image" content="https://api.toolrate.ai/static/toolrate-logo.webp">
 <meta property="og:url" content="https://api.toolrate.ai">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="ToolRate — Reliability Oracle for AI Agents">
 <meta name="twitter:description" content="Rate 600+ AI tools. One line of code. Auto-fallback. Built by agents, for agents.">
-<meta name="twitter:image" content="https://toolrate.ai/toolrate-logo.webp">
+<meta name="twitter:image" content="https://api.toolrate.ai/static/toolrate-logo.webp">
 <link rel="canonical" href="https://api.toolrate.ai">
-<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
+<link rel="icon" href="https://api.toolrate.ai/static/toolrate-favicon.png" type="image/png">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -862,7 +862,7 @@ body::after {
 <!-- Top bar -->
 <header class="topbar">
   <div class="topbar-left">
-    <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" style="height:32px">
+    <img src="https://api.toolrate.ai/static/toolrate-logo.webp" alt="ToolRate" style="height:32px">
     <span class="topbar-tag">v0.1</span>
   </div>
   <nav class="topbar-links">

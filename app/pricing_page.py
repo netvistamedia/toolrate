@@ -9,10 +9,10 @@ PRICING_HTML = r"""<!DOCTYPE html>
 <meta name="description" content="ToolRate pricing — Free for hackers, Pay-as-you-go at $0.008 per assessment (best for agents and bots), Pro $29/mo for power users, Enterprise / Platform for AI platforms.">
 <meta property="og:title" content="ToolRate — Pricing">
 <meta property="og:description" content="Four clean plans for the reliability oracle for AI agents — Free, Pay-as-you-go, Pro, and Enterprise.">
-<meta property="og:image" content="https://toolrate.ai/toolrate-logo.webp">
+<meta property="og:image" content="https://api.toolrate.ai/static/toolrate-logo.webp">
 <meta property="og:url" content="https://api.toolrate.ai/pricing">
 <link rel="canonical" href="https://api.toolrate.ai/pricing">
-<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
+<link rel="icon" href="https://api.toolrate.ai/static/toolrate-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {
@@ -190,7 +190,7 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,
 
 <header class="topbar">
   <a href="/" class="topbar-left">
-    <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" style="height:32px">
+    <img src="https://api.toolrate.ai/static/toolrate-logo.webp" alt="ToolRate" style="height:32px">
     <span class="topbar-tag">v0.1</span>
   </a>
   <nav class="topbar-links">
