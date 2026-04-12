@@ -1,6 +1,8 @@
 """Landing page HTML — kept separate to avoid cluttering main.py."""
 
-LANDING_HTML = r"""<!DOCTYPE html>
+from app.site_header import SITE_HEADER_CSS, SITE_HEADER_HTML, SITE_HEADER_JS
+
+_LANDING_TEMPLATE = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -141,56 +143,10 @@ body::after {
 .page { position: relative; z-index: 1; }
 .container { max-width: 1080px; margin: 0 auto; padding: 0 2rem; }
 
-/* ── Top bar ── */
-.topbar {
-  padding: 1.25rem 2rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border);
-  animation: fadeDown 0.5s ease-out both;
-  position: relative;
-  z-index: 10;
-}
-
-.topbar-left {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.topbar-logo { width: 30px; height: 30px; border-radius: 6px; }
-
-.topbar-name {
-  font-weight: 600;
-  font-size: 1rem;
-  color: var(--text-bright);
-  letter-spacing: -0.01em;
-}
-
-.topbar-tag {
-  font-family: var(--mono);
-  font-size: 0.6rem;
-  font-weight: 500;
-  color: var(--brand);
-  background: var(--brand-dim);
-  padding: 0.15rem 0.45rem;
-  border-radius: 3px;
-  border: 1px solid rgba(10,149,253,0.15);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-
-.topbar-links { display: flex; gap: 1.25rem; align-items: center; }
-
-.topbar-links a {
-  font-size: 0.8rem;
-  font-weight: 400;
-  color: var(--text-bright);
-  text-decoration: none;
-  transition: color 0.2s;
-}
-.topbar-links a:hover { color: var(--brand); }
+/* ── Top bar — see app/site_header.py ── */
+__SITE_HEADER_CSS__
+/* Landing-specific: ensure the fade-in animation still plays. */
+.site-topbar { animation: fadeDown 0.5s ease-out both; }
 
 /* ── Buttons ── */
 .btn {
@@ -273,16 +229,6 @@ body::after {
   z-index: 1;
   max-width: 820px;
   margin: 0 auto;
-}
-
-.hero-brand {
-  display: block;
-  width: 260px;
-  max-width: 72%;
-  height: auto;
-  margin: 0 auto 2.75rem;
-  filter: drop-shadow(0 12px 40px rgba(10, 149, 253, 0.3));
-  animation: fadeUp 0.6s ease-out both;
 }
 
 .hero h1 {
@@ -992,7 +938,6 @@ body::after {
   .jurisdiction-benefits { grid-template-columns: 1fr; }
   .features-grid { grid-template-columns: 1fr; }
   .pricing-grid { grid-template-columns: 1fr; max-width: 420px; }
-  .topbar { flex-direction: column; gap: 0.75rem; }
   .footer { flex-direction: column; gap: 0.75rem; text-align: center; }
   .code-header { flex-direction: column; gap: 0.75rem; align-items: flex-start; }
 }
@@ -1002,20 +947,7 @@ body::after {
 
 <div class="page">
 
-<!-- Top bar -->
-<header class="topbar">
-  <div class="topbar-left">
-    <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" style="height:32px">
-    <span class="topbar-tag">v0.1</span>
-  </div>
-  <nav class="topbar-links">
-    <a href="/pricing">Pricing</a>
-    <a href="/docs">Docs</a>
-    <a href="/redoc">API Reference</a>
-    <a href="https://github.com/netvistamedia/toolrate">GitHub</a>
-    <a href="/register" class="btn btn-primary" style="padding:0.4rem 1rem;font-size:0.78rem;color:#fff">Get API Key</a>
-  </nav>
-</header>
+__SITE_HEADER_HTML__
 
 <main class="container">
 
@@ -1023,7 +955,6 @@ body::after {
 <section class="hero">
   <div class="hero-glow"></div>
   <div class="hero-content">
-    <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" class="hero-brand">
     <h1>Real advice for every tool your <span>agent considers</span>.</h1>
     <p class="hero-sub">
       AI agents burn tokens retrying flaky, slow, or non-compliant tools.
@@ -1285,6 +1216,14 @@ function showTab(lang) {
   document.getElementById('tab-' + lang).classList.add('active');
 }
 </script>
-
+__SITE_HEADER_JS__
 </body>
 </html>"""
+
+
+LANDING_HTML = (
+    _LANDING_TEMPLATE
+    .replace("__SITE_HEADER_CSS__", SITE_HEADER_CSS)
+    .replace("__SITE_HEADER_HTML__", SITE_HEADER_HTML)
+    .replace("__SITE_HEADER_JS__", SITE_HEADER_JS)
+)

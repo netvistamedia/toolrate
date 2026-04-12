@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.db.session import engine
+from app.site_header import SITE_HEADER_CSS, SITE_HEADER_HTML, SITE_HEADER_JS
 
 # Structured logging
 logging.basicConfig(
@@ -197,9 +198,11 @@ async def register_page():
 <link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
+:root{--brand:#0a95fd;--brand-dim:rgba(10,149,253,0.08);--border:#1c1f2e;--border-strong:#282c40;--surface:#0f1118;--text-bright:#f0f2f8}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Poppins','Segoe UI',Arial,sans-serif;background:#0a0b10;color:#d4d8e8;min-height:100vh;display:flex;justify-content:center;align-items:center}
-.card{max-width:440px;width:100%;margin:2rem;padding:2.5rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}
+body{font-family:'Poppins','Segoe UI',Arial,sans-serif;background:#0a0b10;color:#d4d8e8;min-height:100vh;display:flex;flex-direction:column}
+.register-wrap{flex:1;display:flex;justify-content:center;align-items:center;padding:2rem 0}
+.card{max-width:440px;width:100%;margin:0 2rem;padding:2.5rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}
 h1{font-size:1.5rem;font-weight:700;color:#f0f2f8;margin-bottom:0.4rem}
 .sub{font-size:0.85rem;color:#9299b0;margin-bottom:2rem;line-height:1.5}
 label{display:block;font-size:0.78rem;font-weight:500;color:#9299b0;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em}
@@ -219,9 +222,12 @@ input::placeholder{color:#5a5f75}
 .privacy{font-size:0.7rem;color:#6a6f85;margin-top:1rem;line-height:1.5;text-align:center}
 .back{display:block;text-align:center;margin-top:1.5rem;font-size:0.8rem;color:#9299b0;text-decoration:none}
 .back:hover{color:#0a95fd}
+""" + SITE_HEADER_CSS + """
 </style>
 </head>
 <body>
+""" + SITE_HEADER_HTML + """
+<div class="register-wrap">
 <div class="card">
   <h1>Get your API key</h1>
   <p class="sub">Free tier — 100 calls/day. No credit card required.</p>
@@ -249,6 +255,7 @@ input::placeholder{color:#5a5f75}
 
   <p class="privacy">Your email is hashed for deduplication only — we never store it in plain text.</p>
   <a href="/" class="back">&larr; Back to ToolRate</a>
+</div>
 </div>
 
 <script>
@@ -299,6 +306,7 @@ function copyKey() {
   });
 }
 </script>
+""" + SITE_HEADER_JS + """
 </body>
 </html>"""
 
@@ -353,6 +361,13 @@ async def upgrade_page(plan: str = "payg"):
 
     features_html = "".join(f"<li>{f}</li>" for f in features)
 
+    # Doubled braces in the CSS/JS below are deliberate — this is an f-string,
+    # so single `{` / `}` are f-string interpolation. The shared site header
+    # is pre-formatted (not an f-string) so we pre-escape its braces before
+    # embedding it below.
+    header_css_fstring = SITE_HEADER_CSS.replace("{", "{{").replace("}", "}}")
+    header_html_fstring = SITE_HEADER_HTML.replace("{", "{{").replace("}", "}}")
+    header_js_fstring = SITE_HEADER_JS.replace("{", "{{").replace("}", "}}")
     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -362,9 +377,11 @@ async def upgrade_page(plan: str = "payg"):
 <link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
+:root{{--brand:#0a95fd;--brand-dim:rgba(10,149,253,0.08);--border:#1c1f2e;--border-strong:#282c40;--surface:#0f1118;--text-bright:#f0f2f8}}
 *{{margin:0;padding:0;box-sizing:border-box}}
-body{{font-family:'Poppins','Segoe UI',Arial,sans-serif;background:#0a0b10;color:#d4d8e8;min-height:100vh;display:flex;justify-content:center;align-items:center}}
-.card{{max-width:480px;width:100%;margin:2rem;padding:2.5rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}}
+body{{font-family:'Poppins','Segoe UI',Arial,sans-serif;background:#0a0b10;color:#d4d8e8;min-height:100vh;display:flex;flex-direction:column}}
+.upgrade-wrap{{flex:1;display:flex;justify-content:center;align-items:center;padding:2rem 0}}
+.card{{max-width:480px;width:100%;margin:0 2rem;padding:2.5rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}}
 h1{{font-size:1.5rem;font-weight:700;color:#f0f2f8;margin-bottom:0.4rem}}
 .sub{{font-size:0.85rem;color:#9299b0;margin-bottom:2rem;line-height:1.5}}
 .plan{{background:#141620;border:1px solid #0a95fd;border-radius:12px;padding:1.5rem;margin-bottom:2rem;position:relative}}
@@ -387,9 +404,12 @@ input::placeholder{{color:#5a5f75}}
 .links a:hover{{color:#0a95fd}}
 .switch{{text-align:center;font-size:0.78rem;color:#9299b0;margin-top:0.75rem}}
 .switch a{{color:#0a95fd;text-decoration:none;font-weight:500}}
+{header_css_fstring}
 </style>
 </head>
 <body>
+{header_html_fstring}
+<div class="upgrade-wrap">
 <div class="card">
   <h1>{title}</h1>
   <p class="sub">{sub}</p>
@@ -417,6 +437,7 @@ input::placeholder{{color:#5a5f75}}
     <a href="/pricing">&larr; Back to Pricing</a>
     <a href="/register">Need an API key first?</a>
   </div>
+</div>
 </div>
 
 <script>
@@ -455,6 +476,7 @@ async function handleUpgrade(e) {{
   }}
 }}
 </script>
+{header_js_fstring}
 </body>
 </html>"""
 
@@ -476,28 +498,53 @@ async def billing_success(plan: str = "pro"):
             '<strong style="color:#f0f2f8">10,000 assessments per month</strong>. '
             'The change is effective immediately.</p>'
         )
+    header_css_fstring = SITE_HEADER_CSS.replace("{", "{{").replace("}", "}}")
+    header_html_fstring = SITE_HEADER_HTML.replace("{", "{{").replace("}", "}}")
+    header_js_fstring = SITE_HEADER_JS.replace("{", "{{").replace("}", "}}")
     return f"""<!DOCTYPE html><html><head><meta charset="utf-8"><title>ToolRate — {heading}</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-<style>*{{margin:0;padding:0;box-sizing:border-box}}body{{font-family:'Poppins',sans-serif;background:#0a0b10;color:#d4d8e8;display:flex;justify-content:center;align-items:center;min-height:100vh}}
-.card{{text-align:center;max-width:480px;padding:3rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}}
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
+<style>
+:root{{--brand:#0a95fd;--brand-dim:rgba(10,149,253,0.08);--border:#1c1f2e;--border-strong:#282c40;--surface:#0f1118;--text-bright:#f0f2f8}}
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{font-family:'Poppins',sans-serif;background:#0a0b10;color:#d4d8e8;min-height:100vh;display:flex;flex-direction:column}}
+.billing-wrap{{flex:1;display:flex;justify-content:center;align-items:center;padding:2rem 0}}
+.card{{text-align:center;max-width:480px;padding:3rem;margin:0 2rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}}
 h1{{font-size:1.5rem;color:#0a95fd;margin-bottom:1rem}}p{{color:#9299b0;line-height:1.6;font-size:0.9rem}}
-a{{color:#0a95fd;text-decoration:none;font-weight:600}}a:hover{{text-decoration:underline}}</style></head>
-<body><div class="card"><h1>{heading}</h1>
+a{{color:#0a95fd;text-decoration:none;font-weight:600}}a:hover{{text-decoration:underline}}
+{header_css_fstring}
+</style></head>
+<body>
+{header_html_fstring}
+<div class="billing-wrap"><div class="card"><h1>{heading}</h1>
 {body_html}
-<p style="margin-top:1.5rem"><a href="/docs">Go to API Docs &rarr;</a></p></div></body></html>"""
+<p style="margin-top:1.5rem"><a href="/docs">Go to API Docs &rarr;</a></p></div></div>
+{header_js_fstring}
+</body></html>"""
 
 
 @app.get("/billing/cancel", include_in_schema=False, response_class=HTMLResponse)
 async def billing_cancel():
     return """<!DOCTYPE html><html><head><meta charset="utf-8"><title>ToolRate — Checkout Cancelled</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Poppins',sans-serif;background:#0a0b10;color:#d4d8e8;display:flex;justify-content:center;align-items:center;min-height:100vh}
-.card{text-align:center;max-width:480px;padding:3rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
+<style>
+:root{--brand:#0a95fd;--brand-dim:rgba(10,149,253,0.08);--border:#1c1f2e;--border-strong:#282c40;--surface:#0f1118;--text-bright:#f0f2f8}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Poppins',sans-serif;background:#0a0b10;color:#d4d8e8;min-height:100vh;display:flex;flex-direction:column}
+.billing-wrap{flex:1;display:flex;justify-content:center;align-items:center;padding:2rem 0}
+.card{text-align:center;max-width:480px;padding:3rem;margin:0 2rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}
 h1{font-size:1.5rem;color:#9299b0;margin-bottom:1rem}p{color:#9299b0;line-height:1.6;font-size:0.9rem}
-a{color:#0a95fd;text-decoration:none;font-weight:600}a:hover{text-decoration:underline}</style></head>
-<body><div class="card"><h1>Checkout Cancelled</h1>
+a{color:#0a95fd;text-decoration:none;font-weight:600}a:hover{text-decoration:underline}
+""" + SITE_HEADER_CSS + """
+</style></head>
+<body>
+""" + SITE_HEADER_HTML + """
+<div class="billing-wrap"><div class="card"><h1>Checkout Cancelled</h1>
 <p>No charges were made. You can upgrade anytime.</p>
-<p style="margin-top:1.5rem"><a href="/upgrade">&larr; Try again</a> &nbsp;&middot;&nbsp; <a href="/">Back to ToolRate</a></p></div></body></html>"""
+<p style="margin-top:1.5rem"><a href="/upgrade">&larr; Try again</a> &nbsp;&middot;&nbsp; <a href="/">Back to ToolRate</a></p></div></div>
+""" + SITE_HEADER_JS + """
+</body></html>"""
 
 
 @app.api_route("/llms.txt", methods=["GET", "HEAD"], include_in_schema=False, response_class=PlainTextResponse)

@@ -1,6 +1,8 @@
 """Pricing page HTML — four-tier plan: Free, Pay-as-you-go (featured), Pro, Enterprise."""
 
-PRICING_HTML = r"""<!DOCTYPE html>
+from app.site_header import SITE_HEADER_CSS, SITE_HEADER_HTML, SITE_HEADER_JS
+
+_PRICING_TEMPLATE = r"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -54,13 +56,8 @@ a{color:inherit;text-decoration:none}
 code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(10,149,253,0.12);color:#7dd3fc;padding:0.1rem 0.35rem;border-radius:4px}
 .page{max-width:1200px;margin:0 auto;padding:0 2rem}
 
-/* ── Topbar ── */
-.topbar{display:flex;align-items:center;justify-content:space-between;padding:1.4rem 0}
-.topbar-left{display:flex;align-items:center;gap:0.75rem}
-.topbar-tag{font-size:0.65rem;color:var(--text-dim);border:1px solid var(--border-strong);padding:0.15rem 0.5rem;border-radius:4px;letter-spacing:0.06em}
-.topbar-links{display:flex;gap:1.75rem;align-items:center}
-.topbar-links a{font-size:0.82rem;color:var(--text-dim);transition:color 0.2s}
-.topbar-links a:hover{color:var(--brand)}
+/* ── Topbar (shared — see app/site_header.py) ── */
+__SITE_HEADER_CSS__
 .btn{display:inline-flex;align-items:center;justify-content:center;padding:0.7rem 1.2rem;font-family:inherit;font-size:0.8rem;font-weight:600;border-radius:8px;border:1px solid var(--border-strong);background:transparent;color:var(--text-bright);cursor:pointer;transition:all 0.2s;text-decoration:none}
 .btn:hover{border-color:var(--brand);color:var(--brand)}
 .btn-primary{background:var(--brand);border-color:var(--brand);color:#fff}
@@ -180,7 +177,6 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(10,149,2
   .hero h1{font-size:2rem}
   .enterprise-section,.why-payg{padding:2rem}
   .footer{flex-direction:column;gap:0.75rem}
-  .topbar-links a:not(.btn){display:none}
 }
 </style>
 </head>
@@ -188,18 +184,7 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(10,149,2
 
 <div class="page">
 
-<header class="topbar">
-  <a href="/" class="topbar-left">
-    <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" style="height:32px">
-    <span class="topbar-tag">v0.1</span>
-  </a>
-  <nav class="topbar-links">
-    <a href="/">Home</a>
-    <a href="/docs">Docs</a>
-    <a href="https://github.com/netvistamedia/toolrate">GitHub</a>
-    <a href="/register" class="btn btn-primary">Get API Key</a>
-  </nav>
-</header>
+__SITE_HEADER_HTML__
 
 <section class="hero">
   <span class="eyebrow">Pricing</span>
@@ -509,5 +494,14 @@ async function submitSales(e) {
   }
 }
 </script>
+__SITE_HEADER_JS__
 </body>
 </html>"""
+
+
+PRICING_HTML = (
+    _PRICING_TEMPLATE
+    .replace("__SITE_HEADER_CSS__", SITE_HEADER_CSS)
+    .replace("__SITE_HEADER_HTML__", SITE_HEADER_HTML)
+    .replace("__SITE_HEADER_JS__", SITE_HEADER_JS)
+)
