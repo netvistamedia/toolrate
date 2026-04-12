@@ -1027,8 +1027,8 @@ body::after {
     <h1>Real advice for every tool your <span>agent considers</span>.</h1>
     <p class="hero-sub">
       AI agents burn tokens retrying flaky, slow, or non-compliant tools.
-      ToolRate delivers objective reliability ratings and actionable intelligence
-      drawn from thousands of real agent executions in production.
+      ToolRate gives your agents objective reliability ratings and smart
+      recommendations drawn from thousands of real agent executions in production.
     </p>
     <p class="hero-kicker"><strong>Know before you call.</strong></p>
     <div class="hero-actions">
@@ -1085,7 +1085,7 @@ body::after {
     actually runs &mdash; and surfaces data residency, privacy, and compliance risk in
     every assessment.
     From EU-hosted tools to high-risk jurisdictions, you get clear risk scoring and
-    smart alternatives in one call.
+    intelligent alternatives in one call.
   </p>
 
   <div class="jurisdiction-tiers">
