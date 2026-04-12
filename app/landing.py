@@ -10,20 +10,20 @@ LANDING_HTML = r"""<!DOCTYPE html>
 <meta property="og:title" content="ToolRate — Pick the Right Tool from the Start">
 <meta property="og:description" content="AI picks a tool, it fails, swaps for another — costing time and tokens. ToolRate rates 600+ tools so agents pick the right one from the start.">
 <meta property="og:image" content="https://toolrate.ai/toolrate-logo.webp">
-<meta property="og:url" content="https://api.toolrate.ai">
+<meta property="og:url" content="https://toolrate.ai">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:title" content="ToolRate — Reliability Oracle for AI Agents">
 <meta name="twitter:description" content="Rate 600+ AI tools. One line of code. Auto-fallback. Built by agents, for agents.">
 <meta name="twitter:image" content="https://toolrate.ai/toolrate-logo.webp">
-<link rel="canonical" href="https://api.toolrate.ai">
+<link rel="canonical" href="https://toolrate.ai">
 <link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "ToolRate",
-  "url": "https://api.toolrate.ai",
+  "url": "https://toolrate.ai",
   "description": "Reliability oracle for AI agents. Rates 600+ tools and APIs so agents pick the right one from the start. Real-time reliability scores, failure risk assessment, auto-fallback, and hidden gem discovery.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Any",
@@ -864,7 +864,7 @@ body::after {
     <a href="/pricing">Pricing</a>
     <a href="/docs">Docs</a>
     <a href="/redoc">API Reference</a>
-    <a href="https://github.com/netvistamedia/nemoflow">GitHub</a>
+    <a href="https://github.com/netvistamedia/toolrate">GitHub</a>
     <a href="/register" class="btn btn-primary" style="padding:0.4rem 1rem;font-size:0.78rem;color:#fff">Get API Key</a>
   </nav>
 </header>
@@ -883,7 +883,7 @@ body::after {
     </p>
     <div class="hero-actions">
       <a href="/docs" class="btn btn-primary">Get Started Free</a>
-      <a href="https://github.com/netvistamedia/nemoflow" class="btn btn-ghost">View on GitHub</a>
+      <a href="https://github.com/netvistamedia/toolrate" class="btn btn-ghost">View on GitHub</a>
     </div>
   </div>
 </section>
@@ -1115,7 +1115,7 @@ curl -X POST https://api.toolrate.ai/v1/report \
   <div class="footer-left">Built for agents, by agents &middot; GDPR compliant &middot; Hosted in Germany</div>
   <div class="footer-right">
     <a href="/docs">Documentation</a>
-    <a href="https://github.com/netvistamedia/nemoflow">GitHub</a>
+    <a href="https://github.com/netvistamedia/toolrate">GitHub</a>
     <a href="/health">Status</a>
   </div>
 </footer>

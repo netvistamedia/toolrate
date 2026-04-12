@@ -1,12 +1,16 @@
 import logging
+import mimetypes
 import time
 from contextlib import asynccontextmanager
+
+mimetypes.add_type("image/webp", ".webp")
 
 import redis.asyncio as aioredis
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.db.session import engine
@@ -103,6 +107,26 @@ app.add_middleware(
     allow_headers=["X-Api-Key", "Content-Type"],
     max_age=600,
 )
+
+# Brand assets — logo and favicon served from the FastAPI app so they
+# live at https://toolrate.ai/toolrate-logo.webp (and /toolrate-favicon.png).
+# The files live in app/static/ and are deployed with the app image.
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
+
+
+@app.get("/toolrate-logo.webp", include_in_schema=False)
+async def brand_logo():
+    return FileResponse("app/static/toolrate-logo.webp", media_type="image/webp")
+
+
+@app.get("/toolrate-favicon.png", include_in_schema=False)
+async def brand_favicon():
+    return FileResponse("app/static/toolrate-favicon.png", media_type="image/png")
+
+
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon_ico():
+    return FileResponse("app/static/toolrate-favicon.png", media_type="image/png")
 
 
 # Security headers + request logging + timing
@@ -496,13 +520,13 @@ async def robots_txt():
 async def sitemap_xml():
     return """<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://api.toolrate.ai/</loc><priority>1.0</priority></url>
+  <url><loc>https://toolrate.ai/</loc><priority>1.0</priority></url>
+  <url><loc>https://toolrate.ai/pricing</loc><priority>0.9</priority></url>
+  <url><loc>https://toolrate.ai/register</loc><priority>0.8</priority></url>
+  <url><loc>https://toolrate.ai/llms.txt</loc><priority>0.7</priority></url>
+  <url><loc>https://toolrate.ai/llms-full.txt</loc><priority>0.7</priority></url>
   <url><loc>https://api.toolrate.ai/docs</loc><priority>0.9</priority></url>
   <url><loc>https://api.toolrate.ai/redoc</loc><priority>0.9</priority></url>
-  <url><loc>https://api.toolrate.ai/pricing</loc><priority>0.9</priority></url>
-  <url><loc>https://api.toolrate.ai/register</loc><priority>0.8</priority></url>
-  <url><loc>https://api.toolrate.ai/llms.txt</loc><priority>0.7</priority></url>
-  <url><loc>https://api.toolrate.ai/llms-full.txt</loc><priority>0.7</priority></url>
 </urlset>"""
 
 

@@ -9,9 +9,9 @@
 </p>
 
 <p align="center">
-  <a href="https://api.toolrate.ai">API</a> &nbsp;|&nbsp;
+  <a href="https://toolrate.ai">API</a> &nbsp;|&nbsp;
   <a href="https://api.toolrate.ai/docs">Docs</a> &nbsp;|&nbsp;
-  <a href="https://api.toolrate.ai/register">Get API Key</a>
+  <a href="https://toolrate.ai/register">Get API Key</a>
 </p>
 
 ---
@@ -96,7 +96,7 @@ npm install nemoflow        # TypeScript / Node.js
 **1. Get an API key** (free, no credit card):
 
 ```
-https://api.toolrate.ai/register
+https://toolrate.ai/register
 ```
 
 **2. Assess a tool:**

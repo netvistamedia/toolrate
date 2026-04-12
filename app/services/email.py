@@ -51,8 +51,8 @@ print(score.reliability_score)  <span style="color:#666"># e.g. 94.2</span></cod
   <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid #e9ecef">
     <p style="margin:0 0 0.5rem"><strong>Useful links</strong></p>
     <p style="margin:0.25rem 0"><a href="https://api.toolrate.ai/docs" style="color:#7b61ff">API Documentation</a></p>
-    <p style="margin:0.25rem 0"><a href="https://api.toolrate.ai/pricing" style="color:#7b61ff">See pricing</a> — Pay-as-you-go at $0.008/call or Pro at $29/month</p>
-    <p style="margin:0.25rem 0"><a href="https://github.com/netvistamedia/nemoflow" style="color:#7b61ff">GitHub</a></p>
+    <p style="margin:0.25rem 0"><a href="https://toolrate.ai/pricing" style="color:#7b61ff">See pricing</a> — Pay-as-you-go at $0.008/call or Pro at $29/month</p>
+    <p style="margin:0.25rem 0"><a href="https://github.com/netvistamedia/toolrate" style="color:#7b61ff">GitHub</a></p>
   </div>
 
   <p style="color:#999;font-size:0.75rem;margin-top:2rem;text-align:center">

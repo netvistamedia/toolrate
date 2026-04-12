@@ -32,4 +32,4 @@ dependencies = [
 [project.urls]
 Homepage = "https://toolrate.ai"
 Documentation = "https://api.toolrate.ai/docs"
-Repository = "https://github.com/netvistamedia/nemoflow"
+Repository = "https://github.com/netvistamedia/toolrate"

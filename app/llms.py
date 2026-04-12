@@ -10,8 +10,8 @@ ToolRate provides real-time reliability scores for external tools and APIs, base
 
 - [API Documentation](https://api.toolrate.ai/docs): Interactive Swagger UI with all endpoints
 - [API Reference](https://api.toolrate.ai/redoc): Full OpenAPI reference documentation
-- [GitHub](https://github.com/netvistamedia/nemoflow): Source code and examples
-- [Get API Key](https://api.toolrate.ai/register): Free tier — 100 calls/day, no credit card required
+- [GitHub](https://github.com/netvistamedia/toolrate): Source code and examples
+- [Get API Key](https://toolrate.ai/register): Free tier — 100 calls/day, no credit card required
 
 ## SDKs
 
@@ -20,7 +20,7 @@ ToolRate provides real-time reliability scores for external tools and APIs, base
 
 ## API Base URL
 
-https://api.toolrate.ai
+https://toolrate.ai
 
 ## Authentication
 
@@ -37,7 +37,7 @@ All API endpoints require an API key via the `X-Api-Key` header.
 
 ## Optional
 
-- [Full documentation for LLMs](https://api.toolrate.ai/llms-full.txt)
+- [Full documentation for LLMs](https://toolrate.ai/llms-full.txt)
 """
 
 LLMS_FULL_TXT = """# ToolRate — Full Documentation for LLMs
@@ -48,7 +48,7 @@ ToolRate provides real-time reliability scores for external tools and APIs, base
 
 ## API Base URL
 
-https://api.toolrate.ai
+https://toolrate.ai
 
 ## Authentication
 
@@ -58,7 +58,7 @@ All endpoints (except `/health` and `/v1/auth/register`) require an API key via 
 X-Api-Key: nf_live_your_key_here
 ```
 
-Get a free API key at https://api.toolrate.ai/register (100 calls/day, no credit card).
+Get a free API key at https://toolrate.ai/register (100 calls/day, no credit card).
 
 ## Rate Limits & Plans
 
@@ -373,10 +373,10 @@ ToolRate uses a multi-factor scoring algorithm:
 - **<8ms average response time**
 - **10 LLM sources** contributing assessment data
 - **GDPR compliant**, hosted in Germany (Hetzner Cloud)
-- **Open source**: https://github.com/netvistamedia/nemoflow
+- **Open source**: https://github.com/netvistamedia/toolrate
 """
 
-ROBOTS_TXT = """# ToolRate — https://api.toolrate.ai
+ROBOTS_TXT = """# ToolRate — https://toolrate.ai
 User-agent: *
 Allow: /
 Disallow: /v1/
@@ -384,5 +384,5 @@ Disallow: /billing/
 
 # LLM-specific content
 # See https://llmstxt.org
-Sitemap: https://api.toolrate.ai/sitemap.xml
+Sitemap: https://toolrate.ai/sitemap.xml
 """

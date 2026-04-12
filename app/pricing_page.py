@@ -10,8 +10,8 @@ PRICING_HTML = r"""<!DOCTYPE html>
 <meta property="og:title" content="ToolRate — Pricing">
 <meta property="og:description" content="Four clean plans for the reliability oracle for AI agents — Free, Pay-as-you-go, Pro, and Enterprise.">
 <meta property="og:image" content="https://toolrate.ai/toolrate-logo.webp">
-<meta property="og:url" content="https://api.toolrate.ai/pricing">
-<link rel="canonical" href="https://api.toolrate.ai/pricing">
+<meta property="og:url" content="https://toolrate.ai/pricing">
+<link rel="canonical" href="https://toolrate.ai/pricing">
 <link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <script type="application/ld+json">
@@ -196,7 +196,7 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(10,149,2
   <nav class="topbar-links">
     <a href="/">Home</a>
     <a href="/docs">Docs</a>
-    <a href="https://github.com/netvistamedia/nemoflow">GitHub</a>
+    <a href="https://github.com/netvistamedia/toolrate">GitHub</a>
     <a href="/register" class="btn btn-primary">Get API Key</a>
   </nav>
 </header>

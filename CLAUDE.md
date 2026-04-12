@@ -2,7 +2,7 @@
 
 ## What is this
 
-ToolRate is a reliability oracle for AI agents. It rates 600+ tools/APIs so agents pick the right one from the start. Live at https://api.toolrate.ai.
+ToolRate is a reliability oracle for AI agents. It rates 600+ tools/APIs so agents pick the right one from the start. Live at https://toolrate.ai.
 
 ## Stack
 

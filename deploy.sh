@@ -28,4 +28,4 @@ echo "Deployed successfully!"
 docker compose ps
 REMOTE
 
-echo "Done! https://api.toolrate.ai"
+echo "Done! https://toolrate.ai"

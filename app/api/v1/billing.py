@@ -168,8 +168,8 @@ async def create_checkout(
         customer=customer_id,
         mode="subscription",
         line_items=[line_item],
-        success_url=f"https://api.toolrate.ai/billing/success?plan={plan}&session_id={{CHECKOUT_SESSION_ID}}",
-        cancel_url="https://api.toolrate.ai/billing/cancel",
+        success_url=f"https://toolrate.ai/billing/success?plan={plan}&session_id={{CHECKOUT_SESSION_ID}}",
+        cancel_url="https://toolrate.ai/billing/cancel",
         metadata={"api_key_id": str(api_key.id), "plan": plan},
         subscription_data={"metadata": {"api_key_id": str(api_key.id), "plan": plan}},
     )
