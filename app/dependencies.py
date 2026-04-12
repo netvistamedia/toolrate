@@ -69,6 +69,15 @@ async def get_api_key(
     return api_key
 
 
+async def require_admin_key(api_key: Annotated[ApiKey, Depends(get_api_key)]) -> ApiKey:
+    """Reject with 403 unless the caller is using an admin-tier key."""
+    if api_key.tier != "admin":
+        from fastapi import HTTPException
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return api_key
+
+
 Db = Annotated[AsyncSession, Depends(get_db)]
 RedisClient = Annotated[Redis, Depends(get_redis)]
 AuthenticatedKey = Annotated[ApiKey, Depends(get_api_key)]
+AdminKey = Annotated[ApiKey, Depends(require_admin_key)]

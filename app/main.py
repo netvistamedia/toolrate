@@ -278,6 +278,12 @@ async def pricing_page():
     return PRICING_HTML
 
 
+@app.get("/dashboard", include_in_schema=False, response_class=HTMLResponse)
+async def dashboard_page():
+    from app.dashboard_page import DASHBOARD_HTML
+    return DASHBOARD_HTML
+
+
 @app.get("/upgrade", include_in_schema=False, response_class=HTMLResponse)
 async def upgrade_page(plan: str = "payg"):
     if plan not in ("payg", "pro"):

@@ -21,6 +21,7 @@ TIER_DEFAULTS = {
     "payg":       ("daily",   "payg_daily_hard_cap"),
     "pro":        ("monthly", "pro_monthly_limit"),
     "enterprise": ("daily",   "enterprise_daily_limit"),
+    "admin":      ("daily",   "enterprise_daily_limit"),
 }
 
 
