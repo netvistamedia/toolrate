@@ -1026,7 +1026,7 @@ body::after {
     <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" class="hero-brand">
     <h1>Real advice for every tool your <span>agent considers</span>.</h1>
     <p class="hero-sub">
-      AI agents burn tokens and time retrying flaky, slow, or non-compliant tools.
+      AI agents burn tokens retrying flaky, slow, or non-compliant tools.
       ToolRate delivers objective reliability ratings and smart recommendations
       from thousands of real agent executions in production.
     </p>
