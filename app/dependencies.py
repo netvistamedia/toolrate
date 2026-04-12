@@ -43,9 +43,13 @@ async def get_api_key(
         raise RateLimitExceeded()
 
     # Check daily rate limit
-    allowed, _ = await check_rate_limit(redis, key_hash, api_key.daily_limit)
+    allowed, current_count = await check_rate_limit(redis, key_hash, api_key.daily_limit)
     if not allowed:
         raise RateLimitExceeded()
+
+    # Store rate limit info for response headers
+    request.state.rate_limit = api_key.daily_limit
+    request.state.rate_remaining = max(0, api_key.daily_limit - current_count)
 
     return api_key
 

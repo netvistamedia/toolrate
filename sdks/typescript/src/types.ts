@@ -18,16 +18,56 @@ export interface AlternativeTool {
   reason: string;
 }
 
+export interface PitfallDetail {
+  category: string;
+  percentage: number;
+  count: number;
+  mitigation: string | null;
+}
+
+export interface TrendInfo {
+  direction: "improving" | "stable" | "degrading";
+  score24h: number | null;
+  score7d: number | null;
+  change24h: number | null;
+}
+
+export interface LatencyInfo {
+  avg: number | null;
+  p50: number | null;
+  p95: number | null;
+  p99: number | null;
+}
+
 export interface AssessResponse {
   reliabilityScore: number;
   confidence: number;
+  dataSource: "empirical" | "llm_estimated" | "bayesian_prior";
   historicalSuccessRate: string;
   predictedFailureRisk: string;
-  commonPitfalls: string[];
+  trend: TrendInfo | null;
+  commonPitfalls: PitfallDetail[];
   recommendedMitigations: string[];
   topAlternatives: AlternativeTool[];
-  estimatedLatencyMs: number;
+  estimatedLatencyMs: number | null;
+  latency: LatencyInfo | null;
   lastUpdated: string;
+}
+
+// ── Batch Assess ────────────────────────────────────────────────────
+
+export interface BatchAssessItem {
+  toolIdentifier: string;
+  context?: string;
+}
+
+export interface BatchAssessResponse {
+  assessments: Array<{
+    toolIdentifier: string;
+    result?: AssessResponse;
+    error?: string;
+  }>;
+  count: number;
 }
 
 // ── Report ──────────────────────────────────────────────────────────
@@ -79,6 +119,73 @@ export interface FallbackChainResponse {
   tool: string;
   fallbackChain: FallbackTool[];
   count: number;
+}
+
+// ── Tools ───────────────────────────────────────────────────────────
+
+export interface ToolItem {
+  identifier: string;
+  displayName: string | null;
+  category: string | null;
+  reportCount: number;
+  firstSeenAt: string | null;
+}
+
+export interface ToolsResponse {
+  tools: ToolItem[];
+  total: number;
+  offset: number;
+  limit: number;
+}
+
+export interface CategoryItem {
+  name: string;
+  toolCount: number;
+}
+
+export interface CategoriesResponse {
+  categories: CategoryItem[];
+  total: number;
+}
+
+// ── Stats ───────────────────────────────────────────────────────────
+
+export interface PlatformStats {
+  totalTools: number;
+  totalReports: number;
+  [key: string]: unknown;
+}
+
+export interface PersonalStats {
+  tier: string;
+  dailyLimit: number;
+  [key: string]: unknown;
+}
+
+// ── Webhooks ────────────────────────────────────────────────────────
+
+export interface WebhookResponse {
+  id: string;
+  url: string;
+  event: string;
+  toolIdentifier: string | null;
+  threshold: number;
+  secret?: string;
+  isActive: boolean;
+}
+
+export interface WebhookListResponse {
+  webhooks: WebhookResponse[];
+  count: number;
+}
+
+// ── Account ─────────────────────────────────────────────────────────
+
+export interface RotateKeyResponse {
+  newApiKey: string;
+  oldKeyPrefix: string;
+  tier: string;
+  dailyLimit: number;
 }
 
 // ── Guard ───────────────────────────────────────────────────────────

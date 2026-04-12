@@ -22,9 +22,11 @@ async def list_tools(
     stmt = select(Tool)
 
     if q:
-        pattern = f"%{q}%"
+        # Escape SQL wildcards in user input to prevent pattern injection
+        escaped = q.replace("%", r"\%").replace("_", r"\_")
+        pattern = f"%{escaped}%"
         stmt = stmt.where(
-            Tool.identifier.ilike(pattern) | Tool.display_name.ilike(pattern)
+            Tool.identifier.ilike(pattern, escape="\\") | Tool.display_name.ilike(pattern, escape="\\")
         )
 
     if category:

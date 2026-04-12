@@ -30,15 +30,39 @@ class AlternativeTool(BaseModel):
     reason: str = Field(..., description="Why this is a good alternative")
 
 
+class PitfallDetail(BaseModel):
+    category: str = Field(..., description="Error category (e.g. timeout, rate_limit)")
+    percentage: int = Field(..., description="Percentage of total failures")
+    count: int = Field(..., description="Absolute number of occurrences")
+    mitigation: str | None = Field(None, description="Recommended action to mitigate this failure")
+
+
+class TrendInfo(BaseModel):
+    direction: str = Field(..., description="Trend direction: improving, stable, or degrading")
+    score_24h: float | None = Field(None, description="Success rate over the last 24 hours (0-100)")
+    score_7d: float | None = Field(None, description="Success rate over the last 7 days (0-100)")
+    change_24h: float | None = Field(None, description="Score change vs 7-day baseline (negative = degrading)")
+
+
+class LatencyInfo(BaseModel):
+    avg: float | None = Field(None, description="Average latency in ms")
+    p50: float | None = Field(None, description="Median (50th percentile) latency in ms")
+    p95: float | None = Field(None, description="95th percentile latency in ms")
+    p99: float | None = Field(None, description="99th percentile latency in ms")
+
+
 class AssessResponse(BaseModel):
     reliability_score: float = Field(..., ge=0, le=100, description="Reliability score (0-100)")
     confidence: float = Field(..., ge=0, le=1, description="Confidence in the score (0-1), based on data volume")
+    data_source: str = Field(..., description="Where this score comes from: empirical, llm_estimated, or bayesian_prior")
     historical_success_rate: str = Field(..., description="Human-readable success rate summary")
     predicted_failure_risk: str = Field(..., description="Risk level: low, medium, high, or unknown")
-    common_pitfalls: list[str] = Field(..., description="Most common failure categories with percentages")
+    trend: TrendInfo | None = Field(None, description="Score trend over time (null for cold start)")
+    common_pitfalls: list[PitfallDetail] = Field(..., description="Most common failure categories with counts and mitigations")
     recommended_mitigations: list[str] = Field(..., description="Actionable steps to reduce failure risk")
     top_alternatives: list[AlternativeTool] = Field(..., description="Up to 3 alternative tools with their scores")
-    estimated_latency_ms: float | None = Field(None, description="Average latency in milliseconds")
+    estimated_latency_ms: float | None = Field(None, description="Average latency in milliseconds (deprecated, use latency)")
+    latency: LatencyInfo | None = Field(None, description="Latency percentiles (avg, P50, P95, P99)")
     last_updated: datetime = Field(..., description="When this score was last computed")
 
     model_config = {
@@ -47,9 +71,19 @@ class AssessResponse(BaseModel):
                 {
                     "reliability_score": 94.2,
                     "confidence": 0.87,
+                    "data_source": "empirical",
                     "historical_success_rate": "89% (last 30 days, 12k calls)",
                     "predicted_failure_risk": "low",
-                    "common_pitfalls": ["timeout (8% of failures)", "rate_limit (3% of failures)"],
+                    "trend": {
+                        "direction": "stable",
+                        "score_24h": 91.0,
+                        "score_7d": 89.0,
+                        "change_24h": 2.0,
+                    },
+                    "common_pitfalls": [
+                        {"category": "timeout", "percentage": 8, "count": 120, "mitigation": "Increase timeout to 30s; implement retry with exponential backoff"},
+                        {"category": "rate_limit", "percentage": 3, "count": 45, "mitigation": "Add request throttling; use credential rotation if available"},
+                    ],
                     "recommended_mitigations": [
                         "Increase timeout to 30s; implement retry with exponential backoff",
                         "Add request throttling; use credential rotation if available",
@@ -58,6 +92,7 @@ class AssessResponse(BaseModel):
                         {"tool": "https://api.lemonsqueezy.com/v1/checkouts", "score": 97.1, "reason": "Alternative provider"},
                     ],
                     "estimated_latency_ms": 420,
+                    "latency": {"avg": 420, "p50": 380, "p95": 890, "p99": 1200},
                     "last_updated": "2026-04-11T09:05:00Z",
                 }
             ]

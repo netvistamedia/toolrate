@@ -36,4 +36,7 @@ async def submit_report(
         previous_tool=body.previous_tool,
     )
 
-    return ReportResponse(tool_id=str(tool.id))
+    return ReportResponse(
+        tool_id=str(tool.id),
+        status="accepted" if report else "throttled",
+    )

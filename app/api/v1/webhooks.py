@@ -1,8 +1,10 @@
+import ipaddress
 import secrets
 import uuid as _uuid
+from urllib.parse import urlparse
 
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, field_validator
 from sqlalchemy import select, func
 
 from app.dependencies import Db, AuthenticatedKey
@@ -10,12 +12,51 @@ from app.models.webhook import Webhook
 
 router = APIRouter()
 
+# IP ranges that must be blocked for webhook URLs (SSRF prevention)
+_BLOCKED_NETWORKS = [
+    ipaddress.ip_network("127.0.0.0/8"),       # Loopback
+    ipaddress.ip_network("10.0.0.0/8"),         # Private
+    ipaddress.ip_network("172.16.0.0/12"),      # Private
+    ipaddress.ip_network("192.168.0.0/16"),     # Private
+    ipaddress.ip_network("169.254.0.0/16"),     # Link-local / AWS metadata
+    ipaddress.ip_network("::1/128"),            # IPv6 loopback
+    ipaddress.ip_network("fc00::/7"),           # IPv6 private
+    ipaddress.ip_network("fe80::/10"),          # IPv6 link-local
+]
+
+
+def _is_public_url(url: str) -> bool:
+    """Validate that a webhook URL points to a public address (SSRF prevention)."""
+    parsed = urlparse(str(url))
+    hostname = parsed.hostname
+    if not hostname:
+        return False
+    # Block obvious internal hostnames
+    if hostname in ("localhost", "0.0.0.0", "metadata.google.internal"):
+        return False
+    # Try to parse as IP and check against blocked ranges
+    try:
+        addr = ipaddress.ip_address(hostname)
+        return not any(addr in net for net in _BLOCKED_NETWORKS)
+    except ValueError:
+        pass  # It's a hostname, not an IP — allow it (DNS resolution happens at delivery time)
+    return True
+
 
 class WebhookCreate(BaseModel):
     url: HttpUrl = Field(..., description="HTTPS URL to receive webhook POST requests")
     event: str = Field("score.change", description="Event type (currently only 'score.change')")
     tool_identifier: str | None = Field(None, description="Only fire for this tool (omit for all tools)")
     threshold: int = Field(5, ge=1, le=50, description="Minimum score change (points) to trigger webhook")
+
+    @field_validator("url")
+    @classmethod
+    def url_must_be_public(cls, v):
+        if not _is_public_url(str(v)):
+            raise ValueError("Webhook URL must point to a publicly accessible address")
+        if not str(v).startswith("https://"):
+            raise ValueError("Webhook URL must use HTTPS")
+        return v
 
 
 class WebhookResponse(BaseModel):
@@ -44,7 +85,7 @@ async def create_webhook(
         )
     )).scalar()
     if count >= 10:
-        raise HTTPException(400, "Maximum 10 active webhooks per API key")
+        raise HTTPException(422, "Maximum 10 active webhooks per API key")
 
     if body.event != "score.change":
         raise HTTPException(400, f"Unsupported event type: {body.event}. Currently only 'score.change' is supported.")
@@ -59,6 +100,10 @@ async def create_webhook(
         secret=secret,
     )
     db.add(wh)
+    from app.services.audit import log_audit
+    await log_audit(db, "webhook_created", actor_key_prefix=api_key.key_prefix,
+                    resource_type="webhook", resource_id=str(wh.id),
+                    detail={"url": str(body.url), "event": body.event})
     await db.commit()
 
     return WebhookResponse(

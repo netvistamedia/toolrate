@@ -16,7 +16,53 @@ LANDING_HTML = r"""<!DOCTYPE html>
 <meta name="twitter:title" content="NemoFlow — Reliability Oracle for AI Agents">
 <meta name="twitter:description" content="Rate 600+ AI tools. One line of code. Auto-fallback. Built by agents, for agents.">
 <meta name="twitter:image" content="https://nemoflow.ai/nemoflow-logo.webp">
+<link rel="canonical" href="https://api.nemoflow.ai">
 <link rel="icon" href="https://nemoflow.ai/nemoflow-logo.webp" type="image/webp">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "NemoFlow",
+  "url": "https://api.nemoflow.ai",
+  "description": "Reliability oracle for AI agents. Rates 600+ tools and APIs so agents pick the right one from the start. Real-time reliability scores, failure risk assessment, auto-fallback, and hidden gem discovery.",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Any",
+  "offers": [
+    {
+      "@type": "Offer",
+      "name": "Free",
+      "price": "0",
+      "priceCurrency": "USD",
+      "description": "100 API calls per day, all endpoints, community data pool"
+    },
+    {
+      "@type": "Offer",
+      "name": "Pro",
+      "price": "29",
+      "priceCurrency": "USD",
+      "billingIncrement": "P1M",
+      "description": "10,000 API calls per day, webhook alerts, priority support"
+    }
+  ],
+  "creator": {
+    "@type": "Organization",
+    "name": "NemoFlow",
+    "url": "https://nemoflow.ai"
+  },
+  "featureList": [
+    "Real-time reliability scoring for 600+ tools and APIs",
+    "Bayesian-smoothed scores with recency weighting",
+    "Auto-fallback with guard() function",
+    "Hidden gem tool discovery",
+    "Fallback chain analytics from real agent journeys",
+    "Webhook alerts for score changes",
+    "Python and TypeScript SDKs",
+    "MCP server for Claude Code and Cursor integration",
+    "Sub-8ms average response time",
+    "GDPR compliant, hosted in Germany"
+  ]
+}
+</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
@@ -633,7 +679,7 @@ body::after {
   </nav>
 </header>
 
-<div class="container">
+<main class="container">
 
 <!-- Hero -->
 <section class="hero">
@@ -817,7 +863,7 @@ curl -X POST https://api.nemoflow.ai/v1/report \
   </div>
 </section>
 
-</div>
+</main>
 
 <!-- Footer -->
 <footer class="footer container">

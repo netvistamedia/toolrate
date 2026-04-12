@@ -8,8 +8,7 @@ from app.config import settings
 from app.models.report import ExecutionReport
 from app.models.tool import Tool
 from app.models.alternative import Alternative
-from app.models.score_cache import ScoreSnapshot
-from app.schemas.assess import AssessResponse, AlternativeTool
+from app.schemas.assess import AssessResponse, AlternativeTool, PitfallDetail, TrendInfo, LatencyInfo
 
 # Pre-defined mitigations for known error categories
 MITIGATIONS = {
@@ -22,6 +21,38 @@ MITIGATIONS = {
     "not_found": "Verify resource exists before operating; check API endpoint URL",
     "permission_denied": "Check API key scopes; verify account permissions",
 }
+
+# Category-adaptive Bayesian priors — tuned per tool category
+CATEGORY_PRIORS: dict[str, tuple[float, float]] = {
+    "Payment APIs": (8.0, 1.0),       # ~89% — payment providers are generally reliable
+    "Email APIs": (7.0, 1.0),         # ~87%
+    "Cloud Storage": (8.0, 1.0),      # ~89%
+    "LLM APIs": (6.0, 1.5),           # ~80% — LLMs have more variability
+    "Search APIs": (6.5, 1.0),        # ~87%
+    "Developer Tools": (6.0, 1.0),    # ~86%
+    "Communication APIs": (7.0, 1.0), # ~87%
+}
+
+
+def _get_priors(category: str | None) -> tuple[float, float]:
+    """Return (alpha, beta) Bayesian priors, adaptive to tool category."""
+    if category and category in CATEGORY_PRIORS:
+        return CATEGORY_PRIORS[category]
+    return (settings.bayesian_alpha_prior, settings.bayesian_beta_prior)
+
+
+def _compute_percentiles(values: list[int]) -> LatencyInfo | None:
+    """Compute latency percentiles from a sorted list of values."""
+    if not values:
+        return None
+    s = sorted(values)
+    n = len(s)
+    return LatencyInfo(
+        avg=round(sum(s) / n),
+        p50=round(s[n // 2]),
+        p95=round(s[int(n * 0.95)]) if n >= 5 else round(s[-1]),
+        p99=round(s[int(n * 0.99)]) if n >= 10 else round(s[-1]),
+    )
 
 
 async def compute_score(
@@ -71,13 +102,18 @@ async def compute_score(
 
     # Cold start — no reports at all
     if not reports:
-        return _cold_start_response(now)
+        return _cold_start_response(now, tool.category)
+
+    # Determine data source
+    # Check if all reports come from the LLM synthetic fingerprint
+    all_llm = all(r.reporter_fingerprint and r.reporter_fingerprint.startswith("llm") for r in reports[:5])
+    data_source = "llm_estimated" if all_llm else "empirical"
 
     # Step 1: Recency-weighted success rate
     weighted_successes = 0.0
     weighted_failures = 0.0
     total_weight = 0.0
-    latencies = []
+    latencies: list[int] = []
     error_counts: dict[str, int] = {}
     reports_7d = 0
     successes_7d = 0
@@ -113,9 +149,10 @@ async def compute_score(
             if report.success:
                 successes_24h += 1
 
-    # Step 2: Bayesian smoothing
-    alpha = settings.bayesian_alpha_prior + weighted_successes
-    beta = settings.bayesian_beta_prior + weighted_failures
+    # Step 2: Bayesian smoothing with category-adaptive priors
+    alpha_prior, beta_prior = _get_priors(tool.category)
+    alpha = alpha_prior + weighted_successes
+    beta = beta_prior + weighted_failures
     reliability = alpha / (alpha + beta)
 
     # Step 3: Confidence
@@ -124,14 +161,36 @@ async def compute_score(
 
     # Step 4: Failure risk with trend adjustment
     failure_risk = 1 - reliability
-    if reports_7d > 0 and reports_24h > 0:
-        sr_7d = successes_7d / reports_7d
-        sr_24h = successes_24h / reports_24h
+    sr_7d = (successes_7d / reports_7d * 100) if reports_7d > 0 else None
+    sr_24h = (successes_24h / reports_24h * 100) if reports_24h > 0 else None
+
+    if sr_7d is not None and sr_24h is not None:
         if sr_24h < sr_7d:
-            trend_penalty = (sr_7d - sr_24h) * 0.5
+            trend_penalty = ((sr_7d - sr_24h) / 100) * 0.5
             failure_risk = min(1.0, failure_risk + trend_penalty)
 
     risk_label = "low" if failure_risk < 0.15 else "medium" if failure_risk < 0.35 else "high"
+
+    # Step 4b: Trend info
+    trend = None
+    if sr_7d is not None or sr_24h is not None:
+        if sr_7d is not None and sr_24h is not None:
+            change = round(sr_24h - sr_7d, 1)
+            if change > 2:
+                direction = "improving"
+            elif change < -2:
+                direction = "degrading"
+            else:
+                direction = "stable"
+        else:
+            change = None
+            direction = "stable"
+        trend = TrendInfo(
+            direction=direction,
+            score_24h=round(sr_24h, 1) if sr_24h is not None else None,
+            score_7d=round(sr_7d, 1) if sr_7d is not None else None,
+            change_24h=change,
+        )
 
     # Step 5: Success rate strings
     total = len(reports)
@@ -139,19 +198,26 @@ async def compute_score(
     sr_30d = round(successes_total / total * 100) if total else 0
     success_rate_str = f"{sr_30d}% (last 30 days, {total} calls)"
 
-    # Step 6: Common pitfalls and mitigations
+    # Step 6: Structured pitfalls and mitigations
     total_failures = sum(1 for r in reports if not r.success)
     sorted_errors = sorted(error_counts.items(), key=lambda x: x[1], reverse=True)[:5]
-    pitfalls = []
-    mitigations = []
+    pitfalls: list[PitfallDetail] = []
+    mitigations: list[str] = []
     for category, count in sorted_errors:
         pct = round(count / total_failures * 100) if total_failures else 0
-        pitfalls.append(f"{category} ({pct}% of failures)")
-        if category in MITIGATIONS:
-            mitigations.append(MITIGATIONS[category])
+        mitigation = MITIGATIONS.get(category)
+        pitfalls.append(PitfallDetail(
+            category=category,
+            percentage=pct,
+            count=count,
+            mitigation=mitigation,
+        ))
+        if mitigation:
+            mitigations.append(mitigation)
 
-    # Step 7: Latency
+    # Step 7: Latency with percentiles
     avg_latency = round(sum(latencies) / len(latencies)) if latencies else None
+    latency_info = _compute_percentiles(latencies)
 
     # Step 8: Alternatives
     alternatives = await _get_alternatives(db, tool.id)
@@ -159,30 +225,35 @@ async def compute_score(
     return AssessResponse(
         reliability_score=round(reliability * 100, 1),
         confidence=round(confidence, 2),
+        data_source=data_source,
         historical_success_rate=success_rate_str,
         predicted_failure_risk=risk_label,
+        trend=trend,
         common_pitfalls=pitfalls,
         recommended_mitigations=mitigations,
         top_alternatives=alternatives,
         estimated_latency_ms=avg_latency,
+        latency=latency_info,
         last_updated=now,
     )
 
 
-def _cold_start_response(now: datetime) -> AssessResponse:
-    """Response for tools with no data — uses Bayesian prior."""
-    alpha = settings.bayesian_alpha_prior
-    beta = settings.bayesian_beta_prior
+def _cold_start_response(now: datetime, category: str | None = None) -> AssessResponse:
+    """Response for tools with no data — uses category-adaptive Bayesian prior."""
+    alpha, beta = _get_priors(category)
     reliability = alpha / (alpha + beta)
     return AssessResponse(
         reliability_score=round(reliability * 100, 1),
         confidence=0.0,
+        data_source="bayesian_prior",
         historical_success_rate="No data available",
         predicted_failure_risk="unknown",
+        trend=None,
         common_pitfalls=[],
         recommended_mitigations=[],
         top_alternatives=[],
         estimated_latency_ms=None,
+        latency=None,
         last_updated=now,
     )
 

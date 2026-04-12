@@ -28,7 +28,7 @@ async def create_checkout(
     if api_key.tier == "pro" and api_key.stripe_subscription_id:
         raise HTTPException(400, "Already on Pro tier")
 
-    stripe.api_key = settings.stripe_secret_key
+    sk = settings.stripe_secret_key
 
     # Create or reuse Stripe customer (run in thread to avoid blocking event loop)
     if api_key.stripe_customer_id:
@@ -36,6 +36,7 @@ async def create_checkout(
     else:
         customer = await asyncio.to_thread(
             stripe.Customer.create,
+            api_key=sk,
             metadata={"api_key_id": str(api_key.id), "key_prefix": api_key.key_prefix},
         )
         customer_id = customer.id
@@ -44,6 +45,7 @@ async def create_checkout(
 
     session = await asyncio.to_thread(
         stripe.checkout.Session.create,
+        api_key=sk,
         customer=customer_id,
         mode="subscription",
         line_items=[{"price": settings.stripe_pro_price_id, "quantity": 1}],
@@ -94,14 +96,14 @@ async def _handle_checkout_completed(db, session):
     subscription_id = session.get("subscription")
 
     if not api_key_id:
-        logger.warning("Checkout completed without api_key_id metadata")
-        return
+        logger.error("Checkout completed without api_key_id metadata — Stripe will retry")
+        raise HTTPException(500, "Missing api_key_id in checkout metadata")
 
     try:
         key_uuid = _uuid.UUID(api_key_id)
     except ValueError:
-        logger.warning("Invalid api_key_id in checkout metadata: %s", api_key_id)
-        return
+        logger.error("Invalid api_key_id in checkout metadata: %s — Stripe will retry", api_key_id)
+        raise HTTPException(500, "Invalid api_key_id in checkout metadata")
 
     await db.execute(
         update(ApiKey)
@@ -113,6 +115,10 @@ async def _handle_checkout_completed(db, session):
             stripe_subscription_id=subscription_id,
         )
     )
+    from app.services.audit import log_audit
+    await log_audit(db, "upgraded_to_pro", resource_type="api_key",
+                    resource_id=api_key_id,
+                    detail={"subscription_id": subscription_id})
     await db.commit()
     logger.info("Upgraded API key %s to pro (subscription %s)", api_key_id, subscription_id)
 

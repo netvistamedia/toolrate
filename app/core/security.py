@@ -17,3 +17,10 @@ def hash_api_key(key: str) -> str:
 
 def make_fingerprint(key_hash: str, client_ip: str) -> str:
     return hashlib.sha256(f"{key_hash}:{client_ip}".encode()).hexdigest()
+
+
+def context_hash(context: str) -> str:
+    """Hash a context string for bucketed scoring. Empty/None returns '__global__'."""
+    if not context:
+        return "__global__"
+    return hashlib.sha256(context.encode()).hexdigest()[:16]

@@ -3,11 +3,11 @@ from datetime import datetime, timezone
 
 from redis.asyncio import Redis
 
-from app.schemas.assess import AssessResponse, AlternativeTool
+from app.schemas.assess import AssessResponse
 
 
 def _cache_key(tool_id: str, context_hash: str, data_pool: str | None) -> str:
-    return f"score:{tool_id}:{context_hash}:{data_pool or ''}"
+    return f"score:{tool_id}:{context_hash}:{data_pool or '__default__'}"
 
 
 async def get_cached_score(
@@ -17,18 +17,12 @@ async def get_cached_score(
     data = await redis.get(key)
     if data is None:
         return None
-    parsed = json.loads(data)
-    return AssessResponse(
-        reliability_score=parsed["reliability_score"],
-        confidence=parsed["confidence"],
-        historical_success_rate=parsed["historical_success_rate"],
-        predicted_failure_risk=parsed["predicted_failure_risk"],
-        common_pitfalls=parsed["common_pitfalls"],
-        recommended_mitigations=parsed["recommended_mitigations"],
-        top_alternatives=[AlternativeTool(**a) for a in parsed["top_alternatives"]],
-        estimated_latency_ms=parsed.get("estimated_latency_ms"),
-        last_updated=datetime.fromisoformat(parsed["last_updated"]),
-    )
+    try:
+        return AssessResponse.model_validate_json(data)
+    except Exception:
+        # Corrupted cache entry — delete it and fall through to recompute
+        await redis.delete(key)
+        return None
 
 
 async def set_cached_score(
@@ -40,15 +34,4 @@ async def set_cached_score(
     ttl: int,
 ) -> None:
     key = _cache_key(tool_id, context_hash, data_pool)
-    data = {
-        "reliability_score": response.reliability_score,
-        "confidence": response.confidence,
-        "historical_success_rate": response.historical_success_rate,
-        "predicted_failure_risk": response.predicted_failure_risk,
-        "common_pitfalls": response.common_pitfalls,
-        "recommended_mitigations": response.recommended_mitigations,
-        "top_alternatives": [a.model_dump() for a in response.top_alternatives],
-        "estimated_latency_ms": response.estimated_latency_ms,
-        "last_updated": response.last_updated.isoformat(),
-    }
-    await redis.set(key, json.dumps(data), ex=ttl)
+    await redis.set(key, response.model_dump_json(), ex=ttl)

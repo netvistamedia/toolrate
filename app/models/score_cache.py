@@ -11,7 +11,7 @@ class ScoreSnapshot(Base):
     __tablename__ = "score_snapshots"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    tool_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tools.id"), nullable=False)
+    tool_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"), nullable=False)
     context_hash: Mapped[str] = mapped_column(String(64), default="__global__")
     data_pool: Mapped[str | None] = mapped_column(String(128))
     reliability_score: Mapped[float] = mapped_column(Float)

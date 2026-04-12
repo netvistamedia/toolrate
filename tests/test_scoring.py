@@ -124,7 +124,8 @@ class TestAllFailure:
         result = await compute_score(db, tool, "__global__")
 
         assert len(result.common_pitfalls) > 0
-        assert "timeout" in result.common_pitfalls[0]
+        assert result.common_pitfalls[0].category == "timeout"
+        assert result.common_pitfalls[0].count > 0
         assert len(result.recommended_mitigations) > 0
 
 
@@ -219,7 +220,7 @@ class TestMultipleErrorCategories:
         await db.commit()
         result = await compute_score(db, tool, "__global__")
 
-        pitfall_text = " ".join(result.common_pitfalls)
-        assert "timeout" in pitfall_text
-        assert "rate_limit" in pitfall_text
-        assert "auth_failure" in pitfall_text
+        pitfall_categories = [p.category for p in result.common_pitfalls]
+        assert "timeout" in pitfall_categories
+        assert "rate_limit" in pitfall_categories
+        assert "auth_failure" in pitfall_categories

@@ -1,10 +1,12 @@
-import hashlib
+import asyncio
 import uuid as _uuid
 
 from fastapi import APIRouter
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from app.config import settings
+from app.core.security import context_hash as _context_hash
 from app.dependencies import Db, RedisClient, AuthenticatedKey
 from app.models.tool import Tool
 from app.schemas.assess import AssessRequest, AssessResponse
@@ -14,10 +16,14 @@ from app.services.scoring import compute_score
 router = APIRouter()
 
 
-def _context_hash(context: str) -> str:
-    if not context:
-        return "__global__"
-    return hashlib.sha256(context.encode()).hexdigest()[:16]
+class BatchAssessItem(BaseModel):
+    tool_identifier: str = Field(..., max_length=512)
+    context: str = Field("", max_length=1024)
+
+
+class BatchAssessRequest(BaseModel):
+    tools: list[BatchAssessItem] = Field(..., min_length=1, max_length=20,
+                                         description="Up to 20 tools to assess in parallel")
 
 
 @router.post("/assess", response_model=AssessResponse, tags=["Assessment"],
@@ -50,7 +56,7 @@ async def assess_tool(
 
     # If tool doesn't exist, return cold start response
     if not tool:
-        return compute_score.__wrapped__ if False else await _cold_start(body, db, redis, ctx_hash, data_pool)
+        return await _cold_start(body, db, redis, ctx_hash, data_pool)
 
     # Check cache
     cached = await get_cached_score(redis, str(tool.id), ctx_hash, data_pool)
@@ -67,6 +73,32 @@ async def assess_tool(
     return response
 
 
+@router.post("/assess/batch", tags=["Assessment"],
+             summary="Batch assess multiple tools",
+             description="Assess up to 20 tools in a single request. Each tool is scored independently. "
+                         "Useful for evaluating a full fallback chain upfront.")
+async def batch_assess_tools(
+    body: BatchAssessRequest,
+    db: Db,
+    redis: RedisClient,
+    api_key: AuthenticatedKey,
+):
+    async def _assess_one(item: BatchAssessItem) -> dict:
+        req = AssessRequest(tool_identifier=item.tool_identifier, context=item.context)
+        try:
+            result = await assess_tool(req, db, redis, api_key)
+            return {"tool_identifier": item.tool_identifier, "result": result}
+        except Exception as e:
+            return {"tool_identifier": item.tool_identifier, "error": str(e)}
+
+    # Run assessments sequentially (they share the same DB session)
+    results = []
+    for item in body.tools:
+        results.append(await _assess_one(item))
+
+    return {"assessments": results, "count": len(results)}
+
+
 async def _cold_start(body: AssessRequest, db: Db, redis: RedisClient, ctx_hash: str, data_pool: str | None):
     """Handle assessment for unknown tools — try LLM assessment, fall back to Bayesian prior."""
     from app.services.report_ingest import upsert_tool
@@ -79,13 +111,23 @@ async def _cold_start(body: AssessRequest, db: Db, redis: RedisClient, ctx_hash:
     await redis.set(f"tool:{body.tool_identifier}", str(tool.id), ex=3600)
 
     # Try on-demand LLM assessment for an intelligent first response
+    # Use a Redis lock to prevent concurrent LLM calls for the same tool
     if settings.anthropic_api_key:
-        assessment = await assess_tool_with_llm(body.tool_identifier, context=body.context)
-        if assessment:
-            await create_tool_from_assessment(db, tool, assessment)
-            # Now compute a real score from the generated reports
-            response = await compute_score(db, tool, ctx_hash, data_pool)
-            await set_cached_score(redis, str(tool.id), ctx_hash, data_pool, response, settings.cache_ttl_cold)
-            return response
+        lock_key = f"llm_assess_lock:{body.tool_identifier}"
+        acquired = await redis.set(lock_key, "1", ex=60, nx=True)
+        if acquired:
+            assessment = await assess_tool_with_llm(body.tool_identifier, context=body.context)
+            if assessment:
+                await create_tool_from_assessment(db, tool, assessment)
+                response = await compute_score(db, tool, ctx_hash, data_pool)
+                await set_cached_score(redis, str(tool.id), ctx_hash, data_pool, response, settings.cache_ttl_cold)
+                return response
+        else:
+            # Another request is already running LLM assessment — wait briefly and check cache
+            import asyncio
+            await asyncio.sleep(2)
+            cached = await get_cached_score(redis, str(tool.id), ctx_hash, data_pool)
+            if cached:
+                return cached
 
-    return _cold_start_response(datetime.now(timezone.utc))
+    return _cold_start_response(datetime.now(timezone.utc), tool.category)

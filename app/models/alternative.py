@@ -10,6 +10,6 @@ class Alternative(Base):
     __tablename__ = "alternatives"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    tool_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tools.id"), nullable=False)
-    alternative_tool_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tools.id"), nullable=False)
+    tool_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"), nullable=False)
+    alternative_tool_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"), nullable=False)
     relevance_score: Mapped[float] = mapped_column(Float, default=0.5)

@@ -6,7 +6,7 @@ import redis.asyncio as aioredis
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse
 
 from app.config import settings
 from app.db.session import engine
@@ -85,16 +85,21 @@ app = FastAPI(
     ],
 )
 
-# CORS
+# CORS — restrict to own domains
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["GET", "POST"],
-    allow_headers=["*"],
+    allow_origins=[
+        "https://nemoflow.ai",
+        "https://www.nemoflow.ai",
+        "https://api.nemoflow.ai",
+    ],
+    allow_methods=["GET", "POST", "DELETE"],
+    allow_headers=["X-Api-Key", "Content-Type"],
+    max_age=600,
 )
 
 
-# Request logging + timing
+# Security headers + request logging + timing
 @app.middleware("http")
 async def log_requests(request: Request, call_next):
     start = time.perf_counter()
@@ -108,6 +113,14 @@ async def log_requests(request: Request, call_next):
         duration_ms,
     )
     response.headers["X-Response-Time-Ms"] = str(duration_ms)
+    # Rate limit headers (set during auth in dependencies.py)
+    if hasattr(request.state, "rate_limit"):
+        response.headers["X-RateLimit-Limit"] = str(request.state.rate_limit)
+        response.headers["X-RateLimit-Remaining"] = str(request.state.rate_remaining)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
 
 
@@ -388,6 +401,37 @@ a{color:#f07019;text-decoration:none;font-weight:600}a:hover{text-decoration:und
 <body><div class="card"><h1>Checkout Cancelled</h1>
 <p>No charges were made. You can upgrade anytime.</p>
 <p style="margin-top:1.5rem"><a href="/upgrade">&larr; Try again</a> &nbsp;&middot;&nbsp; <a href="/">Back to NemoFlow</a></p></div></body></html>"""
+
+
+@app.get("/llms.txt", include_in_schema=False, response_class=PlainTextResponse)
+async def llms_txt():
+    from app.llms import LLMS_TXT
+    return LLMS_TXT
+
+
+@app.get("/llms-full.txt", include_in_schema=False, response_class=PlainTextResponse)
+async def llms_full_txt():
+    from app.llms import LLMS_FULL_TXT
+    return LLMS_FULL_TXT
+
+
+@app.get("/robots.txt", include_in_schema=False, response_class=PlainTextResponse)
+async def robots_txt():
+    from app.llms import ROBOTS_TXT
+    return ROBOTS_TXT
+
+
+@app.get("/sitemap.xml", include_in_schema=False, response_class=PlainTextResponse)
+async def sitemap_xml():
+    return """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://api.nemoflow.ai/</loc><priority>1.0</priority></url>
+  <url><loc>https://api.nemoflow.ai/docs</loc><priority>0.9</priority></url>
+  <url><loc>https://api.nemoflow.ai/redoc</loc><priority>0.9</priority></url>
+  <url><loc>https://api.nemoflow.ai/register</loc><priority>0.8</priority></url>
+  <url><loc>https://api.nemoflow.ai/llms.txt</loc><priority>0.7</priority></url>
+  <url><loc>https://api.nemoflow.ai/llms-full.txt</loc><priority>0.7</priority></url>
+</urlset>"""
 
 
 @app.get("/health")

@@ -11,7 +11,7 @@ class Webhook(Base):
     __tablename__ = "webhooks"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    api_key_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("api_keys.id"), nullable=False, index=True)
+    api_key_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("api_keys.id", ondelete="CASCADE"), nullable=False, index=True)
     url: Mapped[str] = mapped_column(String(2048), nullable=False)
     event: Mapped[str] = mapped_column(String(64), nullable=False, default="score.change")
     tool_identifier: Mapped[str | None] = mapped_column(String(512), doc="If set, only fires for this tool")

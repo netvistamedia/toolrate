@@ -1,19 +1,12 @@
-import hashlib
-
 from redis.asyncio import Redis
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.core.security import context_hash as _context_hash
 from app.models.report import ExecutionReport
 from app.models.tool import Tool
-
-
-def _context_hash(context: str) -> str:
-    if not context:
-        return "__global__"
-    return hashlib.sha256(context.encode()).hexdigest()[:16]
 
 
 async def upsert_tool(db: AsyncSession, identifier: str) -> Tool:
@@ -80,7 +73,7 @@ async def ingest_report(
 
     # Read old cached score BEFORE commit (avoids race with cache invalidation)
     tool_id_str = str(tool.id)
-    global_cache_key = f"score:{tool_id_str}:__global__:{data_pool or ''}"
+    global_cache_key = f"score:{tool_id_str}:__global__:{data_pool or '__default__'}"
     old_score_raw = await redis.get(global_cache_key)
     old_score = None
     if old_score_raw:
@@ -93,7 +86,7 @@ async def ingest_report(
     await db.commit()
 
     # Invalidate cache
-    await redis.delete(f"score:{tool_id_str}:{ctx_hash}:{data_pool or ''}")
+    await redis.delete(f"score:{tool_id_str}:{ctx_hash}:{data_pool or '__default__'}")
     await redis.delete(global_cache_key)
 
     # Dispatch webhooks if score changed significantly

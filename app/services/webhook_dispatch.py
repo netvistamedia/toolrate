@@ -12,7 +12,7 @@ import logging
 from datetime import datetime, timezone
 
 import httpx
-from sqlalchemy import select, or_, update
+from sqlalchemy import case, select, or_, update
 
 from app.models.webhook import Webhook
 
@@ -108,15 +108,16 @@ async def _deliver(webhook_id, url: str, secret: str, payload: dict):
                 .values(failure_count=0, last_triggered_at=datetime.now(timezone.utc))
             )
         else:
+            # Increment failure count and deactivate if >= 10 in a single atomic UPDATE
             await db.execute(
                 update(Webhook)
                 .where(Webhook.id == webhook_id)
-                .values(failure_count=Webhook.failure_count + 1)
-            )
-            # Deactivate after 10 consecutive failures
-            await db.execute(
-                update(Webhook)
-                .where(Webhook.id == webhook_id, Webhook.failure_count >= 10)
-                .values(is_active=False)
+                .values(
+                    failure_count=Webhook.failure_count + 1,
+                    is_active=case(
+                        (Webhook.failure_count + 1 >= 10, False),
+                        else_=Webhook.is_active,
+                    ),
+                )
             )
         await db.commit()

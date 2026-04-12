@@ -11,7 +11,7 @@ class ExecutionReport(Base):
     __tablename__ = "execution_reports"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    tool_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tools.id"), nullable=False, index=True)
+    tool_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"), nullable=False, index=True)
     success: Mapped[bool] = mapped_column(Boolean, nullable=False)
     error_category: Mapped[str | None] = mapped_column(String(128))
     latency_ms: Mapped[int | None] = mapped_column(Integer)
