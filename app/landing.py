@@ -241,12 +241,6 @@ body::after {
 
 .hero-content { flex: 1; }
 
-.hero-mascot {
-  flex-shrink: 0;
-  width: 260px;
-  filter: drop-shadow(0 20px 40px rgba(10,149,253,0.15));
-}
-
 .hero-eyebrow {
   font-family: var(--mono);
   font-size: 0.7rem;
@@ -839,8 +833,7 @@ body::after {
 
 /* ── Responsive ── */
 @media (max-width: 768px) {
-  .hero { flex-direction: column-reverse; text-align: center; padding: 3rem 0 2.5rem; }
-  .hero-mascot { width: 180px; }
+  .hero { flex-direction: column; text-align: center; padding: 3rem 0 2.5rem; }
   .hero-sub { margin-left: auto; margin-right: auto; }
   .hero-actions { justify-content: center; }
   .readout { grid-template-columns: repeat(2, 1fr); }
@@ -893,7 +886,6 @@ body::after {
       <a href="https://github.com/netvistamedia/nemoflow" class="btn btn-ghost">View on GitHub</a>
     </div>
   </div>
-  <img src="https://nemoflow.com/nemo-tool-rating.webp" alt="ToolRate AI Robot" class="hero-mascot">
 </section>
 
 <!-- Readout -->
