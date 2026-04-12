@@ -33,7 +33,14 @@ LANDING_HTML = r"""<!DOCTYPE html>
       "name": "Free",
       "price": "0",
       "priceCurrency": "USD",
-      "description": "100 API calls per day, all endpoints, community data pool"
+      "description": "100 assessments per day, public data pool, all endpoints"
+    },
+    {
+      "@type": "Offer",
+      "name": "Pay-as-you-go",
+      "price": "0.008",
+      "priceCurrency": "USD",
+      "description": "First 100 assessments/day free, then $0.008 each. No monthly commitment — best for autonomous agents."
     },
     {
       "@type": "Offer",
@@ -41,7 +48,13 @@ LANDING_HTML = r"""<!DOCTYPE html>
       "price": "29",
       "priceCurrency": "USD",
       "billingIncrement": "P1M",
-      "description": "10,000 API calls per day, webhook alerts, priority support"
+      "description": "$29 per month for 10,000 assessments, webhook alerts, priority support"
+    },
+    {
+      "@type": "Offer",
+      "name": "Enterprise / Platform",
+      "priceCurrency": "USD",
+      "description": "Custom pricing for AI platforms. Private isolated data pool, SSO, 99.99% SLA, white-label and embedded option."
     }
   ],
   "creator": {
@@ -526,9 +539,9 @@ body::after {
 
 .pricing-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
-  max-width: 680px;
+  max-width: 1020px;
   margin: 0 auto;
 }
 
@@ -546,7 +559,7 @@ body::after {
 }
 
 .pricing-card.featured::before {
-  content: 'POPULAR';
+  content: 'BEST FOR AGENTS';
   position: absolute;
   top: -0.55rem;
   left: 1.5rem;
@@ -654,7 +667,7 @@ body::after {
   .readout { grid-template-columns: repeat(2, 1fr); }
   .narrative { grid-template-columns: 1fr; }
   .features-grid { grid-template-columns: 1fr; }
-  .pricing-grid { grid-template-columns: 1fr; }
+  .pricing-grid { grid-template-columns: 1fr; max-width: 420px; }
   .topbar { flex-direction: column; gap: 0.75rem; }
   .footer { flex-direction: column; gap: 0.75rem; text-align: center; }
   .code-header { flex-direction: column; gap: 0.75rem; align-items: flex-start; }
@@ -672,6 +685,7 @@ body::after {
     <span class="topbar-tag">v0.1</span>
   </div>
   <nav class="topbar-links">
+    <a href="/pricing">Pricing</a>
     <a href="/docs">Docs</a>
     <a href="/redoc">API Reference</a>
     <a href="https://github.com/netvistamedia/nemoflow">GitHub</a>
@@ -831,36 +845,52 @@ curl -X POST https://api.nemoflow.ai/v1/report \
 </section>
 
 <!-- Pricing -->
-<section class="pricing">
+<section class="pricing" id="pricing">
   <div class="pricing-header">
     <h2>Simple pricing</h2>
+    <p style="font-size:0.85rem;color:var(--text-dim);margin-top:0.5rem;font-weight:300">Start free. Scale with pay-as-you-go. Flat-rate when you need it. <a href="/pricing" style="color:var(--orange)">See all plans &rarr;</a></p>
   </div>
   <div class="pricing-grid">
     <div class="pricing-card">
       <div class="pricing-tier">Free</div>
       <div class="pricing-price">$0 <span>/ forever</span></div>
-      <p class="pricing-desc">For testing and small projects</p>
+      <p class="pricing-desc">For testing and side projects</p>
       <ul class="pricing-features">
-        <li>100 API calls / day</li>
-        <li>All endpoints included</li>
-        <li>Community data pool</li>
+        <li>100 assessments / day</li>
+        <li>Public data pool</li>
         <li>Python &amp; TypeScript SDKs</li>
+        <li>Standard support</li>
       </ul>
       <a href="/register" class="btn btn-ghost" style="width:100%;justify-content:center">Create Free Key</a>
     </div>
     <div class="pricing-card featured">
+      <div class="pricing-tier">Pay-as-you-go</div>
+      <div class="pricing-price">$0.008 <span>/ assessment</span></div>
+      <p class="pricing-desc">Best for autonomous agents and bots</p>
+      <ul class="pricing-features">
+        <li>First 100 / day free</li>
+        <li>$0.008 per assessment after</li>
+        <li>No monthly commitment</li>
+        <li>Webhook alerts included</li>
+      </ul>
+      <a href="/upgrade?plan=payg" class="btn btn-primary" style="width:100%;justify-content:center">Start Pay-as-you-go</a>
+    </div>
+    <div class="pricing-card">
       <div class="pricing-tier">Pro</div>
       <div class="pricing-price">$29 <span>/ month</span></div>
-      <p class="pricing-desc">For production agent workloads</p>
+      <p class="pricing-desc">Flat rate for heavy usage</p>
       <ul class="pricing-features">
-        <li>10,000 API calls / day</li>
-        <li>All endpoints included</li>
-        <li>Webhook alerts</li>
+        <li>10,000 assessments / month</li>
         <li>Priority support</li>
+        <li>Higher rate limits</li>
+        <li>Webhook alerts</li>
       </ul>
-      <a href="/upgrade" class="btn btn-primary" style="width:100%;justify-content:center">Upgrade to Pro</a>
+      <a href="/upgrade?plan=pro" class="btn btn-ghost" style="width:100%;justify-content:center">Upgrade to Pro</a>
     </div>
   </div>
+  <p style="text-align:center;margin-top:2rem;font-size:0.82rem;color:var(--text-dim)">
+    Building an AI platform? <a href="/pricing#contact-sales" style="color:var(--orange);font-weight:500">Talk to sales about Enterprise →</a>
+  </p>
 </section>
 
 </main>

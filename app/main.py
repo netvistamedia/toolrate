@@ -56,8 +56,9 @@ X-Api-Key: nf_live_your_key_here
 
 | Tier | Daily Limit |
 |------|------------|
-| Free | 100 calls |
-| Pro | 10,000 calls |
+| Free | 100 assessments / day |
+| Pay-as-you-go | 100 free / day, then $0.008 per assessment |
+| Pro | 10,000 assessments / month ($29/mo flat) |
 | Enterprise | Custom |
 
 ## SDKs
@@ -211,7 +212,7 @@ input::placeholder{color:#5a5f75}
     <p class="warning">Save this key now — it cannot be retrieved later. A copy has been sent to your email.</p>
     <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #282c40">
       <p style="font-size:0.82rem;color:#d4d8e8;margin-bottom:0.75rem">Need more than 100 calls/day?</p>
-      <a href="/upgrade" class="btn" style="display:block;text-align:center;text-decoration:none;margin-top:0">Upgrade to Pro — $29/mo</a>
+      <a href="/pricing" class="btn" style="display:block;text-align:center;text-decoration:none;margin-top:0">See pricing — PAYG $0.008/call or Pro $29/mo</a>
     </div>
   </div>
 
@@ -271,55 +272,89 @@ function copyKey() {
 </html>"""
 
 
+@app.get("/pricing", include_in_schema=False, response_class=HTMLResponse)
+async def pricing_page():
+    from app.pricing_page import PRICING_HTML
+    return PRICING_HTML
+
+
 @app.get("/upgrade", include_in_schema=False, response_class=HTMLResponse)
-async def upgrade_page():
-    return """<!DOCTYPE html>
+async def upgrade_page(plan: str = "payg"):
+    if plan not in ("payg", "pro"):
+        plan = "payg"
+
+    if plan == "payg":
+        title = "Start Pay-as-you-go"
+        sub = "100 free assessments every day, then $0.008 each. No monthly commitment."
+        badge = "PAYG"
+        price_html = '$0.008 <span>/ assessment</span>'
+        features = [
+            "First 100 assessments / day free",
+            "$0.008 per assessment after that",
+            "Webhook alerts included",
+            "Higher rate limits",
+            "Pay only for what you use",
+        ]
+    else:
+        title = "Upgrade to Pro"
+        sub = "10,000 assessments per month at a flat $29/month."
+        badge = "PRO"
+        price_html = '$29 <span>/ month</span>'
+        features = [
+            "10,000 assessments / month",
+            "Priority email support",
+            "Webhook score alerts",
+            "Higher rate limits",
+            "Cancel anytime",
+        ]
+
+    features_html = "".join(f"<li>{f}</li>" for f in features)
+
+    return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NemoFlow — Upgrade to Pro</title>
+<title>NemoFlow — {title}</title>
 <link rel="icon" href="https://nemoflow.ai/nemoflow-logo.webp" type="image/webp">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Poppins','Segoe UI',Arial,sans-serif;background:#0a0b10;color:#d4d8e8;min-height:100vh;display:flex;justify-content:center;align-items:center}
-.card{max-width:480px;width:100%;margin:2rem;padding:2.5rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}
-h1{font-size:1.5rem;font-weight:700;color:#f0f2f8;margin-bottom:0.4rem}
-.sub{font-size:0.85rem;color:#9299b0;margin-bottom:2rem;line-height:1.5}
-.plan{background:#141620;border:1px solid #f07019;border-radius:12px;padding:1.5rem;margin-bottom:2rem;position:relative}
-.plan::before{content:'PRO';position:absolute;top:-0.5rem;left:1.25rem;font-size:0.6rem;font-weight:700;letter-spacing:0.08em;color:#fff;background:#f07019;padding:0.15rem 0.5rem;border-radius:4px}
-.plan-price{font-size:2rem;font-weight:700;color:#f0f2f8;margin-bottom:0.25rem}
-.plan-price span{font-size:0.85rem;font-weight:300;color:#9299b0}
-.plan-features{list-style:none;margin-top:1rem}
-.plan-features li{font-size:0.82rem;color:#d4d8e8;padding:0.35rem 0;display:flex;align-items:center;gap:0.5rem}
-.plan-features li::before{content:'+';color:#f07019;font-weight:700}
-label{display:block;font-size:0.78rem;font-weight:500;color:#9299b0;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em}
-input{width:100%;padding:0.75rem 1rem;background:#141620;border:1px solid #282c40;border-radius:8px;color:#f0f2f8;font-family:'Fira Code',monospace;font-size:0.82rem;outline:none;transition:border-color 0.2s}
-input:focus{border-color:#f07019}
-input::placeholder{color:#5a5f75}
-.btn{width:100%;padding:0.8rem;margin-top:1.25rem;background:#f07019;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all 0.2s}
-.btn:hover{background:#e0650f;box-shadow:0 0 30px rgba(240,112,25,0.2)}
-.btn:disabled{opacity:0.5;cursor:not-allowed}
-.error{display:none;margin-top:1rem;padding:0.75rem 1rem;background:rgba(240,90,90,0.08);border:1px solid rgba(240,90,90,0.2);border-radius:8px;font-size:0.82rem;color:#f05a5a}
-.links{display:flex;justify-content:space-between;margin-top:1.5rem}
-.links a{font-size:0.8rem;color:#9299b0;text-decoration:none}
-.links a:hover{color:#f07019}
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{font-family:'Poppins','Segoe UI',Arial,sans-serif;background:#0a0b10;color:#d4d8e8;min-height:100vh;display:flex;justify-content:center;align-items:center}}
+.card{{max-width:480px;width:100%;margin:2rem;padding:2.5rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}}
+h1{{font-size:1.5rem;font-weight:700;color:#f0f2f8;margin-bottom:0.4rem}}
+.sub{{font-size:0.85rem;color:#9299b0;margin-bottom:2rem;line-height:1.5}}
+.plan{{background:#141620;border:1px solid #f07019;border-radius:12px;padding:1.5rem;margin-bottom:2rem;position:relative}}
+.plan::before{{content:'{badge}';position:absolute;top:-0.5rem;left:1.25rem;font-size:0.6rem;font-weight:700;letter-spacing:0.08em;color:#fff;background:#f07019;padding:0.15rem 0.5rem;border-radius:4px}}
+.plan-price{{font-size:2rem;font-weight:700;color:#f0f2f8;margin-bottom:0.25rem}}
+.plan-price span{{font-size:0.85rem;font-weight:300;color:#9299b0}}
+.plan-features{{list-style:none;margin-top:1rem}}
+.plan-features li{{font-size:0.82rem;color:#d4d8e8;padding:0.35rem 0;display:flex;align-items:center;gap:0.5rem}}
+.plan-features li::before{{content:'+';color:#f07019;font-weight:700}}
+label{{display:block;font-size:0.78rem;font-weight:500;color:#9299b0;margin-bottom:0.4rem;text-transform:uppercase;letter-spacing:0.05em}}
+input{{width:100%;padding:0.75rem 1rem;background:#141620;border:1px solid #282c40;border-radius:8px;color:#f0f2f8;font-family:'Fira Code',monospace;font-size:0.82rem;outline:none;transition:border-color 0.2s}}
+input:focus{{border-color:#f07019}}
+input::placeholder{{color:#5a5f75}}
+.btn{{width:100%;padding:0.8rem;margin-top:1.25rem;background:#f07019;color:#fff;border:none;border-radius:8px;font-family:inherit;font-size:0.9rem;font-weight:700;cursor:pointer;transition:all 0.2s}}
+.btn:hover{{background:#e0650f;box-shadow:0 0 30px rgba(240,112,25,0.2)}}
+.btn:disabled{{opacity:0.5;cursor:not-allowed}}
+.error{{display:none;margin-top:1rem;padding:0.75rem 1rem;background:rgba(240,90,90,0.08);border:1px solid rgba(240,90,90,0.2);border-radius:8px;font-size:0.82rem;color:#f05a5a}}
+.links{{display:flex;justify-content:space-between;margin-top:1.5rem;flex-wrap:wrap;gap:0.5rem}}
+.links a{{font-size:0.78rem;color:#9299b0;text-decoration:none}}
+.links a:hover{{color:#f07019}}
+.switch{{text-align:center;font-size:0.78rem;color:#9299b0;margin-top:0.75rem}}
+.switch a{{color:#f07019;text-decoration:none;font-weight:500}}
 </style>
 </head>
 <body>
 <div class="card">
-  <h1>Upgrade to Pro</h1>
-  <p class="sub">Unlock 10,000 daily API calls for your production agents.</p>
+  <h1>{title}</h1>
+  <p class="sub">{sub}</p>
 
   <div class="plan">
-    <div class="plan-price">$29 <span>/ month</span></div>
+    <div class="plan-price">{price_html}</div>
     <ul class="plan-features">
-      <li>10,000 API calls / day</li>
-      <li>All endpoints included</li>
-      <li>Webhook score alerts</li>
-      <li>Priority support</li>
-      <li>Cancel anytime</li>
+      {features_html}
     </ul>
   </div>
 
@@ -331,14 +366,18 @@ input::placeholder{color:#5a5f75}
 
   <div class="error" id="error"></div>
 
+  <p class="switch">
+    { 'Prefer the flat $29/month Pro plan? <a href="/upgrade?plan=pro">Switch</a>' if plan == 'payg' else 'Prefer pay-as-you-go? <a href="/upgrade?plan=payg">Switch</a>' }
+  </p>
+
   <div class="links">
-    <a href="/">&larr; Back to NemoFlow</a>
+    <a href="/pricing">&larr; Back to Pricing</a>
     <a href="/register">Need an API key first?</a>
   </div>
 </div>
 
 <script>
-async function handleUpgrade(e) {
+async function handleUpgrade(e) {{
   e.preventDefault();
   var btn = document.getElementById('submitBtn');
   var err = document.getElementById('error');
@@ -346,47 +385,62 @@ async function handleUpgrade(e) {
   btn.disabled = true;
   btn.textContent = 'Redirecting to Stripe...';
 
-  try {
-    var resp = await fetch('/v1/billing/checkout', {
+  try {{
+    var resp = await fetch('/v1/billing/checkout?plan={plan}', {{
       method: 'POST',
-      headers: {
+      headers: {{
         'Content-Type': 'application/json',
         'X-Api-Key': document.getElementById('apiKey').value.trim()
-      }
-    });
+      }}
+    }});
     var data = await resp.json();
 
-    if (!resp.ok) {
+    if (!resp.ok) {{
       err.textContent = data.detail || 'Invalid API key or billing not available.';
       err.style.display = 'block';
       btn.disabled = false;
       btn.textContent = 'Continue to Payment';
       return;
-    }
+    }}
 
     window.location.href = data.checkout_url;
-  } catch(e) {
+  }} catch(e) {{
     err.textContent = 'Network error. Please try again.';
     err.style.display = 'block';
     btn.disabled = false;
     btn.textContent = 'Continue to Payment';
-  }
-}
+  }}
+}}
 </script>
 </body>
 </html>"""
 
 
 @app.get("/billing/success", include_in_schema=False, response_class=HTMLResponse)
-async def billing_success():
-    return """<!DOCTYPE html><html><head><meta charset="utf-8"><title>NemoFlow — Welcome to Pro</title>
+async def billing_success(plan: str = "pro"):
+    if plan == "payg":
+        heading = "You're on Pay-as-you-go"
+        body_html = (
+            '<p>Your API key is now on the Pay-as-you-go plan. The first '
+            '<strong style="color:#f0f2f8">100 assessments every day</strong> '
+            'are free, and any further calls are billed at '
+            '<strong style="color:#f0f2f8">$0.008 each</strong>. Usage resets at midnight UTC.</p>'
+        )
+    else:
+        heading = "Welcome to Pro"
+        body_html = (
+            '<p>Your API key has been upgraded to '
+            '<strong style="color:#f0f2f8">10,000 assessments per month</strong>. '
+            'The change is effective immediately.</p>'
+        )
+    return f"""<!DOCTYPE html><html><head><meta charset="utf-8"><title>NemoFlow — {heading}</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Poppins',sans-serif;background:#0a0b10;color:#d4d8e8;display:flex;justify-content:center;align-items:center;min-height:100vh}
-.card{text-align:center;max-width:480px;padding:3rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}
-h1{font-size:1.5rem;color:#f07019;margin-bottom:1rem}p{color:#9299b0;line-height:1.6;font-size:0.9rem}
-a{color:#f07019;text-decoration:none;font-weight:600}a:hover{text-decoration:underline}</style></head>
-<body><div class="card"><h1>Welcome to Pro!</h1>
-<p>Your API key has been upgraded to <strong style="color:#f0f2f8">10,000 daily calls</strong>. The change is effective immediately.</p>
+<style>*{{margin:0;padding:0;box-sizing:border-box}}body{{font-family:'Poppins',sans-serif;background:#0a0b10;color:#d4d8e8;display:flex;justify-content:center;align-items:center;min-height:100vh}}
+.card{{text-align:center;max-width:480px;padding:3rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}}
+h1{{font-size:1.5rem;color:#f07019;margin-bottom:1rem}}p{{color:#9299b0;line-height:1.6;font-size:0.9rem}}
+a{{color:#f07019;text-decoration:none;font-weight:600}}a:hover{{text-decoration:underline}}</style></head>
+<body><div class="card"><h1>{heading}</h1>
+{body_html}
 <p style="margin-top:1.5rem"><a href="/docs">Go to API Docs &rarr;</a></p></div></body></html>"""
 
 
@@ -428,6 +482,7 @@ async def sitemap_xml():
   <url><loc>https://api.nemoflow.ai/</loc><priority>1.0</priority></url>
   <url><loc>https://api.nemoflow.ai/docs</loc><priority>0.9</priority></url>
   <url><loc>https://api.nemoflow.ai/redoc</loc><priority>0.9</priority></url>
+  <url><loc>https://api.nemoflow.ai/pricing</loc><priority>0.9</priority></url>
   <url><loc>https://api.nemoflow.ai/register</loc><priority>0.8</priority></url>
   <url><loc>https://api.nemoflow.ai/llms.txt</loc><priority>0.7</priority></url>
   <url><loc>https://api.nemoflow.ai/llms-full.txt</loc><priority>0.7</priority></url>

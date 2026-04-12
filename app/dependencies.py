@@ -5,6 +5,7 @@ from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.core.exceptions import InvalidApiKey, RateLimitExceeded
 from app.core.security import hash_api_key
 from app.db.session import async_session
@@ -29,7 +30,6 @@ async def get_api_key(
 ) -> ApiKey:
     key_hash = hash_api_key(x_api_key)
 
-    # Check API key
     result = await db.execute(
         select(ApiKey).where(ApiKey.key_hash == key_hash, ApiKey.is_active == True)  # noqa: E712
     )
@@ -37,19 +37,34 @@ async def get_api_key(
     if not api_key:
         raise InvalidApiKey()
 
-    # Check IP rate limit
+    # Per-IP burst protection
     client_ip = request.client.host if request.client else "unknown"
     if not await check_ip_rate_limit(redis, client_ip):
         raise RateLimitExceeded()
 
-    # Check daily rate limit
-    allowed, current_count = await check_rate_limit(redis, key_hash, api_key.daily_limit)
+    # Primary quota counter — period + hard limit depend on the tier
+    period = api_key.billing_period or "daily"
+    allowed, current_count = await check_rate_limit(
+        redis, key_hash, api_key.daily_limit, period
+    )
     if not allowed:
         raise RateLimitExceeded()
 
-    # Store rate limit info for response headers
+    # PAYG: ALSO read the daily counter to decide whether this call is "free"
+    # or "metered overage". The primary counter above is the daily hard safety
+    # cap; the free-grant check is orthogonal.
+    request.state.is_payg_overage = False
+    if api_key.tier == "payg":
+        free_grant = settings.payg_free_daily_calls
+        # current_count here is daily — PAYG uses billing_period=daily for the
+        # safety cap, so we can reuse it.
+        if current_count > free_grant:
+            request.state.is_payg_overage = True
+
+    # Rate limit headers — Pro shows the monthly window, others show daily.
     request.state.rate_limit = api_key.daily_limit
     request.state.rate_remaining = max(0, api_key.daily_limit - current_count)
+    request.state.rate_period = period
 
     return api_key
 

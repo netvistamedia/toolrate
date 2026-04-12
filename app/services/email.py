@@ -51,7 +51,7 @@ print(score.reliability_score)  <span style="color:#666"># e.g. 94.2</span></cod
   <div style="margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid #e9ecef">
     <p style="margin:0 0 0.5rem"><strong>Useful links</strong></p>
     <p style="margin:0.25rem 0"><a href="https://api.nemoflow.ai/docs" style="color:#7b61ff">API Documentation</a></p>
-    <p style="margin:0.25rem 0"><a href="https://api.nemoflow.ai/v1/billing/checkout" style="color:#7b61ff">Upgrade to Pro</a> — 10,000 daily calls for $29/mo</p>
+    <p style="margin:0.25rem 0"><a href="https://api.nemoflow.ai/pricing" style="color:#7b61ff">See pricing</a> — Pay-as-you-go at $0.008/call or Pro at $29/month</p>
     <p style="margin:0.25rem 0"><a href="https://github.com/netvistamedia/nemoflow" style="color:#7b61ff">GitHub</a></p>
   </div>
 

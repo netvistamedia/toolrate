@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from typing import Literal
 
 from redis.asyncio import Redis
 
@@ -15,17 +16,37 @@ end
 return count
 """
 
+Period = Literal["daily", "monthly"]
+
 
 async def _incr_with_ttl(redis: Redis, key: str, ttl_seconds: int) -> int:
     return await redis.eval(_INCR_WITH_TTL_LUA, 1, key, ttl_seconds)
 
 
-async def check_rate_limit(redis: Redis, key_hash: str, daily_limit: int) -> tuple[bool, int]:
-    """Check if the API key has exceeded its daily limit.
+def _period_key(key_hash: str, period: Period) -> tuple[str, int]:
+    now = datetime.now(timezone.utc)
+    if period == "monthly":
+        return (
+            f"rl:{key_hash}:m:{now.strftime('%Y-%m')}",
+            40 * 24 * 3600,  # ~40 days
+        )
+    return (
+        f"rl:{key_hash}:{now.strftime('%Y-%m-%d')}",
+        90000,  # 25 hours
+    )
+
+
+async def check_rate_limit(
+    redis: Redis,
+    key_hash: str,
+    limit: int,
+    period: Period = "daily",
+) -> tuple[bool, int]:
+    """Check if the API key has exceeded its quota for the period.
     Returns (allowed, current_count)."""
-    date_key = f"rl:{key_hash}:{datetime.now(timezone.utc).strftime('%Y-%m-%d')}"
-    count = await _incr_with_ttl(redis, date_key, 90000)  # 25 hours
-    return count <= daily_limit, count
+    rkey, ttl = _period_key(key_hash, period)
+    count = await _incr_with_ttl(redis, rkey, ttl)
+    return count <= limit, count
 
 
 async def check_ip_rate_limit(redis: Redis, client_ip: str) -> bool:
@@ -33,3 +54,10 @@ async def check_ip_rate_limit(redis: Redis, client_ip: str) -> bool:
     ip_key = f"rl:ip:{client_ip}"
     count = await _incr_with_ttl(redis, ip_key, 60)
     return count <= settings.per_ip_per_minute
+
+
+async def current_usage(redis: Redis, key_hash: str, period: Period = "daily") -> int:
+    """Read (without incrementing) the current period usage. Returns 0 if unset."""
+    rkey, _ = _period_key(key_hash, period)
+    val = await redis.get(rkey)
+    return int(val) if val else 0

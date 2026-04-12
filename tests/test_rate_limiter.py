@@ -68,28 +68,28 @@ class TestCheckRateLimit:
     @pytest.mark.asyncio
     async def test_allows_up_to_limit(self, redis):
         for i in range(1, 6):
-            allowed, count = await check_rate_limit(redis, "hash-abc", daily_limit=5)
+            allowed, count = await check_rate_limit(redis, "hash-abc", limit=5)
             assert allowed is True
             assert count == i
 
     @pytest.mark.asyncio
     async def test_blocks_over_limit(self, redis):
         for _ in range(5):
-            await check_rate_limit(redis, "hash-abc", daily_limit=5)
-        allowed, count = await check_rate_limit(redis, "hash-abc", daily_limit=5)
+            await check_rate_limit(redis, "hash-abc", limit=5)
+        allowed, count = await check_rate_limit(redis, "hash-abc", limit=5)
         assert allowed is False
         assert count == 6
 
     @pytest.mark.asyncio
     async def test_separate_keys_have_separate_counters(self, redis):
-        await check_rate_limit(redis, "hash-a", daily_limit=10)
-        await check_rate_limit(redis, "hash-a", daily_limit=10)
-        _, count_b = await check_rate_limit(redis, "hash-b", daily_limit=10)
+        await check_rate_limit(redis, "hash-a", limit=10)
+        await check_rate_limit(redis, "hash-a", limit=10)
+        _, count_b = await check_rate_limit(redis, "hash-b", limit=10)
         assert count_b == 1
 
     @pytest.mark.asyncio
     async def test_key_has_day_scoped_ttl(self, redis):
-        await check_rate_limit(redis, "hash-abc", daily_limit=5)
+        await check_rate_limit(redis, "hash-abc", limit=5)
         # There should be exactly one rate-limit key with a TTL around 25h
         keys = await redis.keys("rl:hash-abc:*")
         assert len(keys) == 1

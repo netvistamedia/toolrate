@@ -11,6 +11,7 @@ from app.dependencies import Db, RedisClient, AuthenticatedKey
 from app.models.tool import Tool
 from app.schemas.assess import AssessRequest, AssessResponse
 from app.services.cache import get_cached_score, set_cached_score
+from app.services.payg_meter import record_assessment
 from app.services.scoring import compute_score
 
 router = APIRouter()
@@ -36,6 +37,10 @@ async def assess_tool(
     redis: RedisClient,
     api_key: AuthenticatedKey,
 ):
+    # Billable unit — record first so PAYG overage metering is counted even
+    # on cached responses (the agent still got a valid score).
+    await record_assessment(redis, api_key)
+
     ctx_hash = _context_hash(body.context)
     data_pool = api_key.data_pool
 

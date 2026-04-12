@@ -60,13 +60,17 @@ X-Api-Key: nf_live_your_key_here
 
 Get a free API key at https://api.nemoflow.ai/register (100 calls/day, no credit card).
 
-## Rate Limits
+## Rate Limits & Plans
 
-| Tier       | Daily Limit  | Price      |
-|------------|-------------|------------|
-| Free       | 100 calls   | $0/forever |
-| Pro        | 10,000 calls| $29/month  |
-| Enterprise | Custom      | Contact us |
+| Tier            | Quota                            | Price                         |
+|-----------------|----------------------------------|-------------------------------|
+| Free            | 100 assessments / day            | $0 forever                    |
+| Pay-as-you-go   | 100/day free, then $0.008 each   | No commitment — billed monthly |
+| Pro             | 10,000 assessments / month       | $29 / month flat              |
+| Enterprise      | Custom                           | Contact sales                 |
+
+Pay-as-you-go is the recommended plan for most autonomous agents: no
+subscription, scales to zero, and the first 100 assessments every day are on us.
 
 ## SDKs
 
