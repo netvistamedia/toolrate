@@ -503,7 +503,7 @@ async function submitSales(e) {
     setTimeout(function(){ btn.disabled = false; btn.textContent = oldText; }, 3000);
   } catch (err) {
     status.className = 'form-status err';
-    status.textContent = 'Network error — please try again or email sales@toolrate.ai directly.';
+    status.textContent = 'Network error — please try again or email bleep@toolrate.ai directly.';
     btn.disabled = false;
     btn.textContent = oldText;
   }

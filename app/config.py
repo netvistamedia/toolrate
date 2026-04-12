@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     # Email (SendGrid)
     sendgrid_api_key: str = ""
     sendgrid_from_email: str = "bleep@toolrate.ai"
-    sales_inbox_email: str = "sales@toolrate.ai"
+    sales_inbox_email: str = "bleep@toolrate.ai"
 
     # Stripe billing
     stripe_secret_key: str = ""

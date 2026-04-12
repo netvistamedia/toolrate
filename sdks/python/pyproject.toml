@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
 authors = [
-    {name = "ToolRate", email = "hello@toolrate.ai"},
+    {name = "ToolRate", email = "bleep@toolrate.ai"},
 ]
 keywords = ["ai", "agents", "reliability", "tools", "llm", "api"]
 classifiers = [
