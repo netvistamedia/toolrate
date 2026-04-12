@@ -382,6 +382,183 @@ body::after {
   line-height: 1.7;
 }
 
+/* ── Jurisdiction Intelligence ── */
+.jurisdiction {
+  position: relative;
+  margin-bottom: 5rem;
+  padding: 2.75rem 2.5rem;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 0% 0%, rgba(52, 211, 153, 0.06) 0%, transparent 55%),
+    radial-gradient(circle at 100% 100%, rgba(240, 112, 25, 0.08) 0%, transparent 55%),
+    var(--surface);
+  border: 1px solid var(--border-bright);
+  overflow: hidden;
+  animation: fadeUp 0.7s ease-out 0.4s both;
+}
+
+.jurisdiction::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--green), var(--orange) 50%, var(--red));
+}
+
+.jurisdiction-head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.jurisdiction-icon {
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(240, 112, 25, 0.12));
+  border: 1px solid var(--border-bright);
+  font-size: 1.6rem;
+}
+
+.jurisdiction-badge {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--orange);
+  background: var(--orange-dim);
+  border: 1px solid rgba(240, 112, 25, 0.25);
+  padding: 0.2rem 0.55rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.jurisdiction h2 {
+  font-size: 1.7rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  flex: 1 1 auto;
+}
+
+.jurisdiction-lead {
+  font-size: 1rem;
+  font-weight: 300;
+  color: var(--text);
+  line-height: 1.65;
+  max-width: 720px;
+  margin-bottom: 2rem;
+}
+
+.jurisdiction-tiers {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 2.25rem;
+}
+
+.tier {
+  padding: 1.1rem 1.25rem;
+  border-radius: 10px;
+  background: rgba(10, 11, 16, 0.5);
+  border: 1px solid var(--border);
+  position: relative;
+}
+
+.tier-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 0.5rem;
+  vertical-align: middle;
+}
+
+.tier-eu { border-color: rgba(52, 211, 153, 0.3); }
+.tier-eu .tier-dot { background: var(--green); box-shadow: 0 0 10px rgba(52, 211, 153, 0.5); }
+.tier-mid { border-color: rgba(240, 112, 25, 0.3); }
+.tier-mid .tier-dot { background: var(--orange); box-shadow: 0 0 10px var(--orange-glow); }
+.tier-high { border-color: rgba(240, 90, 90, 0.3); }
+.tier-high .tier-dot { background: var(--red); box-shadow: 0 0 10px rgba(240, 90, 90, 0.45); }
+
+.tier-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-bright);
+  margin-bottom: 0.35rem;
+}
+
+.tier p {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  line-height: 1.55;
+  font-weight: 300;
+}
+
+.jurisdiction-benefits-title {
+  font-size: 0.72rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--orange);
+  margin-bottom: 0.9rem;
+}
+
+.jurisdiction-benefits {
+  list-style: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.7rem 1.5rem;
+  margin-bottom: 1.75rem;
+}
+
+.jurisdiction-benefits li {
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.55;
+  font-weight: 300;
+  padding-left: 1.3rem;
+  position: relative;
+}
+
+.jurisdiction-benefits li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: var(--orange);
+  font-weight: 600;
+}
+
+.jurisdiction-benefits li strong {
+  color: var(--text-bright);
+  font-weight: 500;
+}
+
+.jurisdiction-punch {
+  font-size: 0.92rem;
+  color: var(--text-dim);
+  line-height: 1.7;
+  font-weight: 300;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  max-width: 780px;
+}
+
+.jurisdiction-punch strong {
+  color: var(--orange);
+  font-weight: 600;
+}
+
 /* ── Code ── */
 .code-section {
   margin-bottom: 5rem;
@@ -666,6 +843,10 @@ body::after {
   .hero-actions { justify-content: center; }
   .readout { grid-template-columns: repeat(2, 1fr); }
   .narrative { grid-template-columns: 1fr; }
+  .jurisdiction { padding: 2rem 1.5rem; }
+  .jurisdiction h2 { font-size: 1.35rem; }
+  .jurisdiction-tiers { grid-template-columns: 1fr; }
+  .jurisdiction-benefits { grid-template-columns: 1fr; }
   .features-grid { grid-template-columns: 1fr; }
   .pricing-grid { grid-template-columns: 1fr; max-width: 420px; }
   .topbar { flex-direction: column; gap: 0.75rem; }
@@ -746,6 +927,46 @@ body::after {
     <p>NemoFlow scores every tool in real time based on the collective experience of thousands of agents. Check the score, pick the best option first, fall back intelligently.</p>
   </div>
 </div>
+
+<!-- Jurisdiction Intelligence -->
+<section class="jurisdiction">
+  <div class="jurisdiction-head">
+    <div class="jurisdiction-icon">🌍</div>
+    <h2>Jurisdiction Intelligence</h2>
+    <span class="jurisdiction-badge">Exclusive to NemoFlow</span>
+  </div>
+  <p class="jurisdiction-lead">
+    Know the real data residency risk <em>before</em> your agent makes the call.
+    Every tool is tagged with its true hosting jurisdiction and GDPR risk &mdash; with a confidence level included.
+  </p>
+
+  <div class="jurisdiction-tiers">
+    <div class="tier tier-eu">
+      <div class="tier-label"><span class="tier-dot"></span>EU-hosted</div>
+      <p>Clearly marked as GDPR-compliant with low residency risk.</p>
+    </div>
+    <div class="tier tier-mid">
+      <div class="tier-label"><span class="tier-dot"></span>US &amp; Other Regions</div>
+      <p>Accurate risk level shown so your agent can weigh it in real time.</p>
+    </div>
+    <div class="tier tier-high">
+      <div class="tier-label"><span class="tier-dot"></span>High-risk Jurisdictions</div>
+      <p>Explicitly flagged &mdash; never quietly routed through.</p>
+    </div>
+  </div>
+
+  <div class="jurisdiction-benefits-title">Benefits for every agent</div>
+  <ul class="jurisdiction-benefits">
+    <li><strong>Privacy-first agents</strong> automatically prefer EU tools for sensitive data.</li>
+    <li><strong>Compliance-aware agents</strong> enforce rules like “never use non-GDPR tools for customer data.”</li>
+    <li><strong>Global agents</strong> get instant risk scoring and smart fallbacks to the best alternative.</li>
+    <li><strong>Enterprise teams</strong> prove data sovereignty to auditors with one query.</li>
+  </ul>
+
+  <p class="jurisdiction-punch">
+    Your agent no longer guesses whether Stripe, OpenAI, Tavily or Supabase is safe for a regulated workflow &mdash; it <strong>knows</strong>, with confidence level included.
+  </p>
+</section>
 
 <!-- Code -->
 <section class="code-section">
