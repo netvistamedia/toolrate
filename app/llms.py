@@ -105,9 +105,9 @@ npm install nemoflow
 ```
 
 ```typescript
-import { NemoFlowClient } from "nemoflow";
+import { ToolRate } from "nemoflow";
 
-const client = new NemoFlowClient("nf_live_...");
+const client = new ToolRate("nf_live_...");
 
 const score = await client.assess("https://api.stripe.com/v1/charges");
 

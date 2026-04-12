@@ -498,25 +498,25 @@ a{color:#0a95fd;text-decoration:none;font-weight:600}a:hover{text-decoration:und
 <p style="margin-top:1.5rem"><a href="/upgrade">&larr; Try again</a> &nbsp;&middot;&nbsp; <a href="/">Back to ToolRate</a></p></div></body></html>"""
 
 
-@app.get("/llms.txt", include_in_schema=False, response_class=PlainTextResponse)
+@app.api_route("/llms.txt", methods=["GET", "HEAD"], include_in_schema=False, response_class=PlainTextResponse)
 async def llms_txt():
     from app.llms import LLMS_TXT
     return LLMS_TXT
 
 
-@app.get("/llms-full.txt", include_in_schema=False, response_class=PlainTextResponse)
+@app.api_route("/llms-full.txt", methods=["GET", "HEAD"], include_in_schema=False, response_class=PlainTextResponse)
 async def llms_full_txt():
     from app.llms import LLMS_FULL_TXT
     return LLMS_FULL_TXT
 
 
-@app.get("/robots.txt", include_in_schema=False, response_class=PlainTextResponse)
+@app.api_route("/robots.txt", methods=["GET", "HEAD"], include_in_schema=False, response_class=PlainTextResponse)
 async def robots_txt():
     from app.llms import ROBOTS_TXT
     return ROBOTS_TXT
 
 
-@app.get("/sitemap.xml", include_in_schema=False, response_class=PlainTextResponse)
+@app.api_route("/sitemap.xml", methods=["GET", "HEAD"], include_in_schema=False, response_class=PlainTextResponse)
 async def sitemap_xml():
     return """<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
