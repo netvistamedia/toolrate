@@ -340,43 +340,54 @@ body::after {
 .readout {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: var(--border);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  overflow: hidden;
-  margin-top: -0.5rem;
+  gap: 1rem;
+  margin-top: -0.25rem;
   margin-bottom: 5rem;
-  box-shadow: 0 20px 60px rgba(10, 149, 253, 0.08);
   animation: fadeUp 0.7s ease-out 0.25s both;
 }
 
 .readout-cell {
   background: var(--surface);
-  padding: 1.75rem 1.5rem;
+  border: 1px solid var(--border-bright);
+  border-radius: 14px;
+  padding: 2rem 1.5rem;
   text-align: center;
-  transition: background 0.3s;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
-.readout-cell:hover { background: var(--surface-2); }
+.readout-cell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(47, 207, 250, 0.05) 0%, transparent 60%);
+  pointer-events: none;
+}
+.readout-cell:hover {
+  transform: translateY(-2px);
+  border-color: var(--brand-mid);
+  box-shadow: 0 12px 32px rgba(10, 149, 253, 0.12);
+}
 
 .readout-value {
   font-family: var(--mono);
-  font-size: 1.65rem;
+  font-size: 1.85rem;
   font-weight: 600;
   background: var(--brand-gradient);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
+  line-height: 1;
 }
 
 .readout-label {
-  font-size: 0.7rem;
-  font-weight: 400;
+  font-size: 0.68rem;
+  font-weight: 500;
   color: var(--text-dim);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-top: 0.35rem;
+  letter-spacing: 0.12em;
+  margin-top: 0.6rem;
 }
 
 /* ── Narrative (Problem / Solution) ── */
@@ -948,8 +959,7 @@ body::after {
     <p class="hero-sub">
       AI agents waste tokens and time retrying flaky, slow, or non-compliant tools.
       ToolRate gives your agents <strong>objective reliability ratings and smart
-      recommendations</strong> based on thousands of real agent executions &mdash; so they
-      pick the right tool the first time.
+      recommendations</strong> &mdash; based on thousands of real agent executions.
     </p>
     <p class="hero-kicker"><strong>Know before you call.</strong></p>
     <div class="hero-actions">
@@ -1001,35 +1011,36 @@ body::after {
     <span class="jurisdiction-badge">Exclusive to ToolRate</span>
   </div>
   <p class="jurisdiction-lead">
-    Know the real data residency risk <em>before</em> your agent makes the call.
-    Every tool is tagged with its true hosting jurisdiction and GDPR risk &mdash; with a confidence level included.
+    The only reliability API that tells you <em>where</em> every tool actually runs. Every
+    listing is tagged with its true hosting jurisdiction, GDPR posture, and a confidence
+    score &mdash; so your agent never makes a compliance bet it can&rsquo;t back up.
   </p>
 
   <div class="jurisdiction-tiers">
     <div class="tier tier-eu">
       <div class="tier-label"><span class="tier-dot"></span>EU-hosted</div>
-      <p>Clearly marked as GDPR-compliant with low residency risk.</p>
+      <p>Verified GDPR-compliant with low residency risk. Safe for sensitive workloads.</p>
     </div>
     <div class="tier tier-mid">
       <div class="tier-label"><span class="tier-dot"></span>US &amp; Other Regions</div>
-      <p>Accurate risk level shown so your agent can weigh it in real time.</p>
+      <p>Exact risk level exposed so your agent weighs it in real time against the alternatives.</p>
     </div>
     <div class="tier tier-high">
       <div class="tier-label"><span class="tier-dot"></span>High-risk Jurisdictions</div>
-      <p>Explicitly flagged &mdash; never quietly routed through.</p>
+      <p>Explicitly flagged. Never silently routed through a regulated pipeline.</p>
     </div>
   </div>
 
-  <div class="jurisdiction-benefits-title">Benefits for every agent</div>
+  <div class="jurisdiction-benefits-title">Built into every response</div>
   <ul class="jurisdiction-benefits">
-    <li><strong>Privacy-first agents</strong> automatically prefer EU tools for sensitive data.</li>
-    <li><strong>Compliance-aware agents</strong> enforce rules like “never use non-GDPR tools for customer data.”</li>
-    <li><strong>Global agents</strong> get instant risk scoring and smart fallbacks to the best alternative.</li>
-    <li><strong>Enterprise teams</strong> prove data sovereignty to auditors with one query.</li>
+    <li><strong>EU-first routing</strong> &mdash; sensitive calls land in GDPR territory, automatically.</li>
+    <li><strong>Policy enforcement</strong> &mdash; block non-compliant tools before the request ever leaves your agent.</li>
+    <li><strong>Smart fallbacks</strong> &mdash; when a high-risk tool is the only option, get a cleaner alternative in the same call.</li>
+    <li><strong>Audit-ready sovereignty</strong> &mdash; prove where every customer byte lives with a single query.</li>
   </ul>
 
   <p class="jurisdiction-punch">
-    Your agent no longer guesses whether Stripe, OpenAI, Tavily or Supabase is safe for a regulated workflow &mdash; it <strong>knows</strong>, with confidence level included.
+    Your agent no longer guesses whether Stripe, OpenAI, Tavily, or Supabase is safe for a regulated workflow &mdash; it <strong>knows</strong>, with the confidence score included in every assessment.
   </p>
 </section>
 
