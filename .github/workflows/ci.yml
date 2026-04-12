@@ -19,7 +19,9 @@ jobs:
           cache: pip
 
       - name: Install dependencies
-        run: pip install .[dev]
+        run: |
+          pip install .[dev]
+          pip install -e sdks/python
 
       - name: Run tests
         run: python -m pytest tests/ -v
