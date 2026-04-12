@@ -5,25 +5,25 @@ LANDING_HTML = r"""<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NemoFlow — Reliability Oracle for AI Agents</title>
-<meta name="description" content="NemoFlow rates AI tools so that you or your agents pick the right tool from the start. Save time, tokens, energy, and money.">
-<meta property="og:title" content="NemoFlow — Pick the Right Tool from the Start">
-<meta property="og:description" content="AI picks a tool, it fails, swaps for another — costing time and tokens. NemoFlow rates 600+ tools so agents pick the right one from the start.">
-<meta property="og:image" content="https://nemoflow.ai/nemoflow-logo.webp">
-<meta property="og:url" content="https://api.nemoflow.ai">
+<title>ToolRate — Reliability Oracle for AI Agents</title>
+<meta name="description" content="ToolRate rates AI tools so that you or your agents pick the right tool from the start. Save time, tokens, energy, and money.">
+<meta property="og:title" content="ToolRate — Pick the Right Tool from the Start">
+<meta property="og:description" content="AI picks a tool, it fails, swaps for another — costing time and tokens. ToolRate rates 600+ tools so agents pick the right one from the start.">
+<meta property="og:image" content="https://toolrate.ai/toolrate-logo.webp">
+<meta property="og:url" content="https://api.toolrate.ai">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="NemoFlow — Reliability Oracle for AI Agents">
+<meta name="twitter:title" content="ToolRate — Reliability Oracle for AI Agents">
 <meta name="twitter:description" content="Rate 600+ AI tools. One line of code. Auto-fallback. Built by agents, for agents.">
-<meta name="twitter:image" content="https://nemoflow.ai/nemoflow-logo.webp">
-<link rel="canonical" href="https://api.nemoflow.ai">
-<link rel="icon" href="https://nemoflow.ai/nemoflow-favicon.png" type="image/png">
+<meta name="twitter:image" content="https://toolrate.ai/toolrate-logo.webp">
+<link rel="canonical" href="https://api.toolrate.ai">
+<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  "name": "NemoFlow",
-  "url": "https://api.nemoflow.ai",
+  "name": "ToolRate",
+  "url": "https://api.toolrate.ai",
   "description": "Reliability oracle for AI agents. Rates 600+ tools and APIs so agents pick the right one from the start. Real-time reliability scores, failure risk assessment, auto-fallback, and hidden gem discovery.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Any",
@@ -59,8 +59,8 @@ LANDING_HTML = r"""<!DOCTYPE html>
   ],
   "creator": {
     "@type": "Organization",
-    "name": "NemoFlow",
-    "url": "https://nemoflow.ai"
+    "name": "ToolRate",
+    "url": "https://toolrate.ai"
   },
   "featureList": [
     "Real-time reliability scoring for 600+ tools and APIs",
@@ -862,7 +862,7 @@ body::after {
 <!-- Top bar -->
 <header class="topbar">
   <div class="topbar-left">
-    <img src="https://nemoflow.ai/nemoflow-logo.webp" alt="NemoFlow" style="height:32px">
+    <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" style="height:32px">
     <span class="topbar-tag">v0.1</span>
   </div>
   <nav class="topbar-links">
@@ -884,14 +884,14 @@ body::after {
     <h1>Pick the <span>right tool</span><br>from the start</h1>
     <p class="hero-sub">
       AI agents pick tools, they fail, swap for another &mdash; costing time, tokens, and money.
-      NemoFlow rates 600+ tools so your agents pick correctly the first time.
+      ToolRate rates 600+ tools so your agents pick correctly the first time.
     </p>
     <div class="hero-actions">
       <a href="/docs" class="btn btn-primary">Get Started Free</a>
       <a href="https://github.com/netvistamedia/nemoflow" class="btn btn-ghost">View on GitHub</a>
     </div>
   </div>
-  <img src="https://nemoflow.com/nemo-tool-rating.webp" alt="NemoFlow AI Robot" class="hero-mascot">
+  <img src="https://nemoflow.com/nemo-tool-rating.webp" alt="ToolRate AI Robot" class="hero-mascot">
 </section>
 
 <!-- Readout -->
@@ -924,7 +924,7 @@ body::after {
   <div class="narrative-card narrative-solution">
     <div class="narrative-badge"><span class="narrative-dot"></span> The Solution</div>
     <h3>One call before every tool call</h3>
-    <p>NemoFlow scores every tool in real time based on the collective experience of thousands of agents. Check the score, pick the best option first, fall back intelligently.</p>
+    <p>ToolRate scores every tool in real time based on the collective experience of thousands of agents. Check the score, pick the best option first, fall back intelligently.</p>
   </div>
 </div>
 
@@ -933,7 +933,7 @@ body::after {
   <div class="jurisdiction-head">
     <div class="jurisdiction-icon">🌍</div>
     <h2>Jurisdiction Intelligence</h2>
-    <span class="jurisdiction-badge">Exclusive to NemoFlow</span>
+    <span class="jurisdiction-badge">Exclusive to ToolRate</span>
   </div>
   <p class="jurisdiction-lead">
     Know the real data residency risk <em>before</em> your agent makes the call.
@@ -1011,13 +1011,13 @@ result = <span class="fn">guard</span>(client, <span class="str">"https://api.st
   ]}
 );</pre></div>
     <div id="tab-curl" class="code-panel"><pre><span class="cm"># Assess a tool</span>
-curl -X POST https://api.nemoflow.ai/v1/assess \
+curl -X POST https://api.toolrate.ai/v1/assess \
   -H <span class="str">"X-Api-Key: nf_live_..."</span> \
   -H <span class="str">"Content-Type: application/json"</span> \
   -d <span class="str">'{"tool_identifier": "https://api.stripe.com/v1/charges"}'</span>
 
 <span class="cm"># Report a result</span>
-curl -X POST https://api.nemoflow.ai/v1/report \
+curl -X POST https://api.toolrate.ai/v1/report \
   -H <span class="str">"X-Api-Key: nf_live_..."</span> \
   -H <span class="str">"Content-Type: application/json"</span> \
   -d <span class="str">'{"tool_identifier": "https://api.stripe.com/v1/charges",

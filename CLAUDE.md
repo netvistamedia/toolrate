@@ -1,8 +1,8 @@
-# NemoFlow — Developer Guide
+# ToolRate — Developer Guide
 
 ## What is this
 
-NemoFlow is a reliability oracle for AI agents. It rates 600+ tools/APIs so agents pick the right one from the start. Live at https://api.nemoflow.ai.
+ToolRate is a reliability oracle for AI agents. It rates 600+ tools/APIs so agents pick the right one from the start. Live at https://api.toolrate.ai.
 
 ## Stack
 

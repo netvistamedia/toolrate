@@ -1,7 +1,7 @@
 /**
- * NemoFlow + Vercel AI SDK Integration Example
+ * ToolRate + Vercel AI SDK Integration Example
  * ==============================================
- * A TypeScript server that uses the Vercel AI SDK with NemoFlow reliability
+ * A TypeScript server that uses the Vercel AI SDK with ToolRate reliability
  * checks on every tool call. Demonstrates the assess -> execute -> report
  * loop and the guard() pattern for automatic fallback.
  *
@@ -19,24 +19,24 @@
 import { generateText, tool } from "ai";
 import { openai } from "@ai-sdk/openai";
 import { z } from "zod";
-import { NemoFlow } from "nemoflow";
+import { ToolRate } from "nemoflow";
 
 // ---------------------------------------------------------------------------
-// 1. Initialize NemoFlow client
+// 1. Initialize ToolRate client
 // ---------------------------------------------------------------------------
 
-const nemo = new NemoFlow(process.env.NEMOFLOW_API_KEY ?? "nf_live_your_key_here");
+const nemo = new ToolRate(process.env.NEMOFLOW_API_KEY ?? "nf_live_your_key_here");
 
 // ---------------------------------------------------------------------------
-// 2. Helper: wrap any async function with NemoFlow assess -> execute -> report
+// 2. Helper: wrap any async function with ToolRate assess -> execute -> report
 //
 // This is the core pattern. For every external tool call your agent makes:
 //   a) Assess the tool's reliability score
 //   b) Execute the call and measure latency
-//   c) Report the outcome back to NemoFlow
+//   c) Report the outcome back to ToolRate
 // ---------------------------------------------------------------------------
 
-async function withNemoFlow<T>(
+async function withToolRate<T>(
   toolIdentifier: string,
   fn: () => Promise<T>,
   context: string = "",
@@ -44,12 +44,12 @@ async function withNemoFlow<T>(
   // ASSESS: Check reliability before calling
   const assessment = await nemo.assess({ toolIdentifier, context });
   console.log(
-    `  [NemoFlow] ${toolIdentifier}: reliability ${assessment.reliabilityScore}/100 ` +
+    `  [ToolRate] ${toolIdentifier}: reliability ${assessment.reliabilityScore}/100 ` +
       `(confidence: ${assessment.confidence})`,
   );
 
   if (assessment.commonPitfalls.length > 0) {
-    console.log(`  [NemoFlow] Pitfalls: ${assessment.commonPitfalls.join(", ")}`);
+    console.log(`  [ToolRate] Pitfalls: ${assessment.commonPitfalls.join(", ")}`);
   }
 
   // EXECUTE: Call the tool and measure latency
@@ -86,19 +86,19 @@ async function withNemoFlow<T>(
 }
 
 // ---------------------------------------------------------------------------
-// 3. Define Vercel AI SDK tools with NemoFlow reliability checks
+// 3. Define Vercel AI SDK tools with ToolRate reliability checks
 // ---------------------------------------------------------------------------
 
 const searchTool = tool({
   description:
     "Search the web for current information. Each call is checked for " +
-    "reliability by NemoFlow and results are reported back.",
+    "reliability by ToolRate and results are reported back.",
   parameters: z.object({
     query: z.string().describe("The search query"),
   }),
   execute: async ({ query }) => {
     // Using the guard() pattern for automatic fallback:
-    // If the primary search API fails, NemoFlow automatically tries the
+    // If the primary search API fails, ToolRate automatically tries the
     // fallback, reports both outcomes, and returns the first success.
     return nemo.guard<string>(
       "https://serpapi.com/search",
@@ -126,14 +126,14 @@ const searchTool = tool({
 const weatherTool = tool({
   description:
     "Get the current weather for a city. Reliability is assessed " +
-    "via NemoFlow before each call.",
+    "via ToolRate before each call.",
   parameters: z.object({
     city: z.string().describe("The city name"),
   }),
   execute: async ({ city }) => {
     // Using the manual assess -> execute -> report pattern
     // for full control over the flow
-    return withNemoFlow(
+    return withToolRate(
       "https://api.openweathermap.org/data/2.5/weather",
       async () => {
         // In production: call OpenWeatherMap API
@@ -146,7 +146,7 @@ const weatherTool = tool({
 
 const stockTool = tool({
   description:
-    "Get the current stock price for a ticker symbol. NemoFlow checks " +
+    "Get the current stock price for a ticker symbol. ToolRate checks " +
     "the API health before calling and reports latency afterward.",
   parameters: z.object({
     ticker: z.string().describe("The stock ticker symbol (e.g., AAPL)"),
@@ -182,7 +182,7 @@ const stockTool = tool({
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  console.log("=== NemoFlow + Vercel AI SDK ===\n");
+  console.log("=== ToolRate + Vercel AI SDK ===\n");
 
   const { text, toolCalls, toolResults } = await generateText({
     model: openai("gpt-4o"),
@@ -211,10 +211,10 @@ async function main(): Promise<void> {
   console.log(text);
 
   // ---------------------------------------------------------------------------
-  // 5. Post-run: Use NemoFlow discovery to optimize tool selection
+  // 5. Post-run: Use ToolRate discovery to optimize tool selection
   // ---------------------------------------------------------------------------
 
-  console.log("\n=== NemoFlow Discovery Insights ===\n");
+  console.log("\n=== ToolRate Discovery Insights ===\n");
 
   // Find hidden gems: tools the community found reliable as fallbacks
   const gems = await nemo.discoverHiddenGems({ category: "search", limit: 3 });

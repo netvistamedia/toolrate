@@ -1,30 +1,30 @@
 <p align="center">
-  <img src="https://nemoflow.ai/nemoflow-logo.webp" alt="NemoFlow" width="80">
+  <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" width="80">
 </p>
 
-<h1 align="center">NemoFlow</h1>
+<h1 align="center">ToolRate</h1>
 
 <p align="center">
   <strong>Stop your AI agents from calling tools that are about to fail.</strong>
 </p>
 
 <p align="center">
-  <a href="https://api.nemoflow.ai">API</a> &nbsp;|&nbsp;
-  <a href="https://api.nemoflow.ai/docs">Docs</a> &nbsp;|&nbsp;
-  <a href="https://api.nemoflow.ai/register">Get API Key</a>
+  <a href="https://api.toolrate.ai">API</a> &nbsp;|&nbsp;
+  <a href="https://api.toolrate.ai/docs">Docs</a> &nbsp;|&nbsp;
+  <a href="https://api.toolrate.ai/register">Get API Key</a>
 </p>
 
 ---
 
-NemoFlow is a reliability oracle for AI agents. It scores 600+ tools and APIs in real time so your agent picks the right one *before* wasting a call on a failing endpoint. One line wraps any tool call with assess-before, report-after, and automatic fallback.
+ToolRate is a reliability oracle for AI agents. It scores 600+ tools and APIs in real time so your agent picks the right one *before* wasting a call on a failing endpoint. One line wraps any tool call with assess-before, report-after, and automatic fallback.
 
 <p align="center">
-  <img src="https://nemoflow.com/nemo-tool-rating.webp" alt="NemoFlow mascot rating tools" width="360">
+  <img src="https://nemoflow.com/nemo-tool-rating.webp" alt="ToolRate mascot rating tools" width="360">
 </p>
 
 ## The problem
 
-AI agents fail **60-80% of the time** on external tool calls. Timeouts, rate limits, auth failures, flaky APIs. Your agent retries blindly, burns tokens, and still fails. NemoFlow gives it the information it needs to make smarter choices.
+AI agents fail **60-80% of the time** on external tool calls. Timeouts, rate limits, auth failures, flaky APIs. Your agent retries blindly, burns tokens, and still fails. ToolRate gives it the information it needs to make smarter choices.
 
 ## One line of code
 
@@ -42,9 +42,9 @@ result = guard(client, "https://api.openai.com/v1/chat/completions",
 **TypeScript**
 
 ```typescript
-import { NemoFlow } from "nemoflow";
+import { ToolRate } from "nemoflow";
 
-const nemo = new NemoFlow("nf_live_...");
+const nemo = new ToolRate("nf_live_...");
 
 const result = await nemo.guard(
   "https://api.openai.com/v1/chat/completions",
@@ -96,7 +96,7 @@ npm install nemoflow        # TypeScript / Node.js
 **1. Get an API key** (free, no credit card):
 
 ```
-https://api.nemoflow.ai/register
+https://api.toolrate.ai/register
 ```
 
 **2. Assess a tool:**
@@ -137,7 +137,7 @@ If the primary tool's score is below `min_score`, guard skips straight to the hi
 |---------|-------------|
 | **Reliability scoring** | Bayesian-smoothed, recency-weighted scores for 600+ tools. New tools start at ~83% and converge after ~25 reports. |
 | **guard() wrapper** | One-line wrapper that assesses, executes, reports, and falls back automatically. Available in Python and TypeScript. |
-| **On-demand LLM assessment** | Unknown tool? NemoFlow uses Claude Sonnet to generate an instant reliability assessment from 10 LLM sources. |
+| **On-demand LLM assessment** | Unknown tool? ToolRate uses Claude Sonnet to generate an instant reliability assessment from 10 LLM sources. |
 | **Hidden gems** | Discover tools that are rarely the first choice but consistently succeed as fallbacks. |
 | **Fallback chains** | See what agents actually switch to when a tool fails, ranked by success rate. |
 | **Webhooks** | Get notified when a tool's reliability score changes significantly. |
@@ -168,7 +168,7 @@ If the primary tool's score is below `min_score`, guard skips straight to the hi
 
 All endpoints (except register and health) require an `X-Api-Key` header.
 
-Full interactive documentation: **[api.nemoflow.ai/docs](https://api.nemoflow.ai/docs)**
+Full interactive documentation: **[api.toolrate.ai/docs](https://api.toolrate.ai/docs)**
 
 ## Pricing
 
@@ -176,7 +176,7 @@ Full interactive documentation: **[api.nemoflow.ai/docs](https://api.nemoflow.ai
 |------|-----------|-------|
 | Free | 100 calls/day | $0 |
 | Pro | 10,000 calls/day | $29/mo |
-| Enterprise | Custom | [Contact us](https://nemoflow.ai) |
+| Enterprise | Custom | [Contact us](https://toolrate.ai) |
 
 ## Stack
 

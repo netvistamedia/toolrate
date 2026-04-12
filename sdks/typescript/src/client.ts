@@ -1,5 +1,5 @@
 import {
-  type NemoFlowOptions,
+  type ToolRateOptions,
   type AssessParams,
   type AssessResponse,
   type BatchAssessItem,
@@ -16,18 +16,18 @@ import {
   type WebhookListResponse,
   type RotateKeyResponse,
   type GuardOptions,
-  NemoFlowError,
+  ToolRateError,
 } from "./types.js";
 
-const DEFAULT_BASE_URL = "https://api.nemoflow.ai";
+const DEFAULT_BASE_URL = "https://api.toolrate.ai";
 
-export class NemoFlow {
+export class ToolRate {
   private readonly apiKey: string;
   private readonly baseUrl: string;
 
-  constructor(apiKey: string, options?: NemoFlowOptions) {
+  constructor(apiKey: string, options?: ToolRateOptions) {
     if (!apiKey) {
-      throw new Error("An API key is required to create a NemoFlow client.");
+      throw new Error("An API key is required to create a ToolRate client.");
     }
     this.apiKey = apiKey;
     this.baseUrl = (options?.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
@@ -275,10 +275,10 @@ export class NemoFlow {
    * 1. Assesses the tool's reliability score
    * 2. If score < minScore and fallbacks exist, skips to next
    * 3. Executes the tool call
-   * 4. Reports success/failure back to NemoFlow
+   * 4. Reports success/failure back to ToolRate
    * 5. On failure with fallbacks, tries the next option
    *
-   * Pass `fallbacks: "auto"` plus a `resolvers` map to let NemoFlow pick the
+   * Pass `fallbacks: "auto"` plus a `resolvers` map to let ToolRate pick the
    * fallback chain dynamically from real agent journey data — only tools the
    * caller has pre-registered a runner for will be invoked.
    */
@@ -404,7 +404,7 @@ export class NemoFlow {
     throw lastError;
   }
 
-  /** Pick fallback callables by matching NemoFlow's alternatives against user resolvers. */
+  /** Pick fallback callables by matching ToolRate's alternatives against user resolvers. */
   private async resolveAutoFallbacks<T>(
     primaryIdentifier: string,
     primaryAssessment: AssessResponse | undefined,
@@ -468,8 +468,8 @@ export class NemoFlow {
     const responseBody: unknown = await response.json();
 
     if (!response.ok) {
-      throw new NemoFlowError(
-        `NemoFlow API error: ${response.status} ${response.statusText}`,
+      throw new ToolRateError(
+        `ToolRate API error: ${response.status} ${response.statusText}`,
         response.status,
         responseBody,
       );
@@ -487,8 +487,8 @@ export class NemoFlow {
     const responseBody: unknown = await response.json();
 
     if (!response.ok) {
-      throw new NemoFlowError(
-        `NemoFlow API error: ${response.status} ${response.statusText}`,
+      throw new ToolRateError(
+        `ToolRate API error: ${response.status} ${response.statusText}`,
         response.status,
         responseBody,
       );
@@ -506,8 +506,8 @@ export class NemoFlow {
     const responseBody: unknown = await response.json();
 
     if (!response.ok) {
-      throw new NemoFlowError(
-        `NemoFlow API error: ${response.status} ${response.statusText}`,
+      throw new ToolRateError(
+        `ToolRate API error: ${response.status} ${response.statusText}`,
         response.status,
         responseBody,
       );

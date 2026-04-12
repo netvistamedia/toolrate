@@ -224,6 +224,6 @@ async def test_me_page_renders():
         r = await ac.get("/me")
     assert r.status_code == 200
     body = r.text
-    assert "Your NemoFlow account" in body
+    assert "Your ToolRate account" in body
     assert "/v1/me/dashboard" in body  # fetch target wired
     assert "nemoflow_user_key" in body   # localStorage key

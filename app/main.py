@@ -22,20 +22,20 @@ logger = logging.getLogger("nemoflow")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    logger.info("Starting NemoFlow API")
+    logger.info("Starting ToolRate API")
     app.state.redis = aioredis.from_url(
         settings.redis_url, decode_responses=True, max_connections=50
     )
     yield
     await app.state.redis.close()
     await engine.dispose()
-    logger.info("NemoFlow API stopped")
+    logger.info("ToolRate API stopped")
 
 
 DESCRIPTION = """
 **The reliability oracle for AI agents.**
 
-NemoFlow provides real-time reliability scores for external tools and APIs,
+ToolRate provides real-time reliability scores for external tools and APIs,
 based on the collective experience of thousands of AI agents.
 
 ## How it works
@@ -68,13 +68,13 @@ X-Api-Key: nf_live_your_key_here
 """
 
 app = FastAPI(
-    title="NemoFlow",
+    title="ToolRate",
     description=DESCRIPTION,
     version="0.1.0",
     lifespan=lifespan,
     docs_url="/docs",
     redoc_url="/redoc",
-    contact={"name": "NemoFlow", "url": "https://nemoflow.ai"},
+    contact={"name": "ToolRate", "url": "https://toolrate.ai"},
     openapi_tags=[
         {"name": "Auth", "description": "Register for an API key"},
         {"name": "Assessment", "description": "Check tool reliability before calling"},
@@ -90,6 +90,11 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://toolrate.ai",
+        "https://www.toolrate.ai",
+        "https://api.toolrate.ai",
+        # Legacy origins — kept during domain transition so any cached
+        # pages served from the old host still talk to the API.
         "https://nemoflow.ai",
         "https://www.nemoflow.ai",
         "https://api.nemoflow.ai",
@@ -162,8 +167,8 @@ async def register_page():
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NemoFlow — Get Your API Key</title>
-<link rel="icon" href="https://nemoflow.ai/nemoflow-favicon.png" type="image/png">
+<title>ToolRate — Get Your API Key</title>
+<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -217,7 +222,7 @@ input::placeholder{color:#5a5f75}
   </div>
 
   <p class="privacy">Your email is hashed for deduplication only — we never store it in plain text.</p>
-  <a href="/" class="back">&larr; Back to NemoFlow</a>
+  <a href="/" class="back">&larr; Back to ToolRate</a>
 </div>
 
 <script>
@@ -327,8 +332,8 @@ async def upgrade_page(plan: str = "payg"):
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NemoFlow — {title}</title>
-<link rel="icon" href="https://nemoflow.ai/nemoflow-favicon.png" type="image/png">
+<title>ToolRate — {title}</title>
+<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{{margin:0;padding:0;box-sizing:border-box}}
@@ -445,7 +450,7 @@ async def billing_success(plan: str = "pro"):
             '<strong style="color:#f0f2f8">10,000 assessments per month</strong>. '
             'The change is effective immediately.</p>'
         )
-    return f"""<!DOCTYPE html><html><head><meta charset="utf-8"><title>NemoFlow — {heading}</title>
+    return f"""<!DOCTYPE html><html><head><meta charset="utf-8"><title>ToolRate — {heading}</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <style>*{{margin:0;padding:0;box-sizing:border-box}}body{{font-family:'Poppins',sans-serif;background:#0a0b10;color:#d4d8e8;display:flex;justify-content:center;align-items:center;min-height:100vh}}
 .card{{text-align:center;max-width:480px;padding:3rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}}
@@ -458,7 +463,7 @@ a{{color:#f07019;text-decoration:none;font-weight:600}}a:hover{{text-decoration:
 
 @app.get("/billing/cancel", include_in_schema=False, response_class=HTMLResponse)
 async def billing_cancel():
-    return """<!DOCTYPE html><html><head><meta charset="utf-8"><title>NemoFlow — Checkout Cancelled</title>
+    return """<!DOCTYPE html><html><head><meta charset="utf-8"><title>ToolRate — Checkout Cancelled</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
 <style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:'Poppins',sans-serif;background:#0a0b10;color:#d4d8e8;display:flex;justify-content:center;align-items:center;min-height:100vh}
 .card{text-align:center;max-width:480px;padding:3rem;background:#0f1118;border:1px solid #1c1f2e;border-radius:16px}
@@ -466,7 +471,7 @@ h1{font-size:1.5rem;color:#9299b0;margin-bottom:1rem}p{color:#9299b0;line-height
 a{color:#f07019;text-decoration:none;font-weight:600}a:hover{text-decoration:underline}</style></head>
 <body><div class="card"><h1>Checkout Cancelled</h1>
 <p>No charges were made. You can upgrade anytime.</p>
-<p style="margin-top:1.5rem"><a href="/upgrade">&larr; Try again</a> &nbsp;&middot;&nbsp; <a href="/">Back to NemoFlow</a></p></div></body></html>"""
+<p style="margin-top:1.5rem"><a href="/upgrade">&larr; Try again</a> &nbsp;&middot;&nbsp; <a href="/">Back to ToolRate</a></p></div></body></html>"""
 
 
 @app.get("/llms.txt", include_in_schema=False, response_class=PlainTextResponse)
@@ -491,13 +496,13 @@ async def robots_txt():
 async def sitemap_xml():
     return """<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://api.nemoflow.ai/</loc><priority>1.0</priority></url>
-  <url><loc>https://api.nemoflow.ai/docs</loc><priority>0.9</priority></url>
-  <url><loc>https://api.nemoflow.ai/redoc</loc><priority>0.9</priority></url>
-  <url><loc>https://api.nemoflow.ai/pricing</loc><priority>0.9</priority></url>
-  <url><loc>https://api.nemoflow.ai/register</loc><priority>0.8</priority></url>
-  <url><loc>https://api.nemoflow.ai/llms.txt</loc><priority>0.7</priority></url>
-  <url><loc>https://api.nemoflow.ai/llms-full.txt</loc><priority>0.7</priority></url>
+  <url><loc>https://api.toolrate.ai/</loc><priority>1.0</priority></url>
+  <url><loc>https://api.toolrate.ai/docs</loc><priority>0.9</priority></url>
+  <url><loc>https://api.toolrate.ai/redoc</loc><priority>0.9</priority></url>
+  <url><loc>https://api.toolrate.ai/pricing</loc><priority>0.9</priority></url>
+  <url><loc>https://api.toolrate.ai/register</loc><priority>0.8</priority></url>
+  <url><loc>https://api.toolrate.ai/llms.txt</loc><priority>0.7</priority></url>
+  <url><loc>https://api.toolrate.ai/llms-full.txt</loc><priority>0.7</priority></url>
 </urlset>"""
 
 

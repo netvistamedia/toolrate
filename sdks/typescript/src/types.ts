@@ -1,5 +1,5 @@
-/** Options for configuring the NemoFlow client. */
-export interface NemoFlowOptions {
+/** Options for configuring the ToolRate client. */
+export interface ToolRateOptions {
   /** Override the default API base URL. */
   baseUrl?: string;
 }
@@ -197,13 +197,13 @@ export interface GuardOptions<T> {
   minScore?: number;
   /**
    * Fallback tools to try on failure, in order.
-   * Pass an explicit array, or `"auto"` to have NemoFlow pick fallbacks
+   * Pass an explicit array, or `"auto"` to have ToolRate pick fallbacks
    * dynamically from the primary tool's top alternatives and fallback-chain
    * data. `"auto"` requires `resolvers`.
    */
   fallbacks?: Array<{ toolIdentifier: string; fn: () => Promise<T> }> | "auto";
   /**
-   * Mapping of tool identifier → runner. When `fallbacks="auto"`, NemoFlow
+   * Mapping of tool identifier → runner. When `fallbacks="auto"`, ToolRate
    * matches candidate alternatives against these keys and only tries tools
    * the caller has pre-registered a runner for.
    */
@@ -214,13 +214,13 @@ export interface GuardOptions<T> {
 
 // ── Errors ──────────────────────────────────────────────────────────
 
-export class NemoFlowError extends Error {
+export class ToolRateError extends Error {
   public readonly status: number;
   public readonly body: unknown;
 
   constructor(message: string, status: number, body: unknown) {
     super(message);
-    this.name = "NemoFlowError";
+    this.name = "ToolRateError";
     this.status = status;
     this.body = body;
   }

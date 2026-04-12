@@ -1,8 +1,8 @@
 """
-NemoFlow + CrewAI Integration Example
+ToolRate + CrewAI Integration Example
 =======================================
-A CrewAI crew with NemoFlow acting as a quality gate for tool execution.
-NemoFlow checks tool reliability before each call, reports results back,
+A CrewAI crew with ToolRate acting as a quality gate for tool execution.
+ToolRate checks tool reliability before each call, reports results back,
 and automatically falls back to alternatives when tools are unreliable.
 
 Install:
@@ -29,24 +29,24 @@ from pydantic import Field
 from nemoflow import NemoFlowClient, guard
 
 # ---------------------------------------------------------------------------
-# 1. Initialize NemoFlow client
+# 1. Initialize ToolRate client
 # ---------------------------------------------------------------------------
 
 nemo = NemoFlowClient(os.environ.get("NEMOFLOW_API_KEY", "nf_live_your_key_here"))
 
 
 # ---------------------------------------------------------------------------
-# 2. Create NemoFlow-guarded CrewAI tools
+# 2. Create ToolRate-guarded CrewAI tools
 #
-# Each tool wraps the real API call with NemoFlow's assess -> execute -> report
+# Each tool wraps the real API call with ToolRate's assess -> execute -> report
 # loop. This gives the crew:
 #   - Pre-flight reliability checks (skip unreliable tools)
 #   - Automatic fallback to alternatives
-#   - Latency and success reporting that helps all NemoFlow users
+#   - Latency and success reporting that helps all ToolRate users
 # ---------------------------------------------------------------------------
 
-class NemoFlowSearchTool(BaseTool):
-    """Web search with NemoFlow reliability guard."""
+class ToolRateSearchTool(BaseTool):
+    """Web search with ToolRate reliability guard."""
 
     name: str = "web_search"
     description: str = (
@@ -55,7 +55,7 @@ class NemoFlowSearchTool(BaseTool):
     )
 
     def _run(self, query: str) -> str:
-        """Execute search with NemoFlow guard for auto-fallback."""
+        """Execute search with ToolRate guard for auto-fallback."""
         return guard(
             nemo,
             "https://serpapi.com/search",
@@ -87,13 +87,13 @@ class NemoFlowSearchTool(BaseTool):
         return f"[Tavily] Results for '{query}': Finding X, Finding Y"
 
 
-class NemoFlowAPITool(BaseTool):
-    """Generic API caller with manual NemoFlow assess -> execute -> report."""
+class ToolRateAPITool(BaseTool):
+    """Generic API caller with manual ToolRate assess -> execute -> report."""
 
     name: str = "api_call"
     description: str = (
         "Make an API call to a specified endpoint. Checks reliability with "
-        "NemoFlow before calling and reports results afterward."
+        "ToolRate before calling and reports results afterward."
     )
 
     def _run(self, endpoint: str, method: str = "GET") -> str:
@@ -110,7 +110,7 @@ class NemoFlowAPITool(BaseTool):
             confidence = assessment["confidence"]
             risk = assessment["predicted_failure_risk"]
 
-            print(f"\n  [NemoFlow] {endpoint}")
+            print(f"\n  [ToolRate] {endpoint}")
             print(f"    Reliability: {score}/100 (confidence: {confidence})")
             print(f"    Failure risk: {risk}")
 
@@ -128,7 +128,7 @@ class NemoFlowAPITool(BaseTool):
                         f"Pitfalls: {assessment.get('common_pitfalls', [])}")
 
         except Exception as e:
-            print(f"  [NemoFlow] Could not assess {endpoint}: {e}")
+            print(f"  [ToolRate] Could not assess {endpoint}: {e}")
 
         # --- EXECUTE: Make the actual API call ---
         start = time.perf_counter()
@@ -159,10 +159,10 @@ researcher = Agent(
     goal="Find comprehensive, accurate information on the given topic",
     backstory=(
         "You are an expert researcher who always verifies information from "
-        "multiple sources. You rely on NemoFlow-guarded tools to ensure the "
+        "multiple sources. You rely on ToolRate-guarded tools to ensure the "
         "APIs you call are reliable before spending time on them."
     ),
-    tools=[NemoFlowSearchTool(), NemoFlowAPITool()],
+    tools=[ToolRateSearchTool(), ToolRateAPITool()],
     verbose=True,
 )
 
@@ -209,7 +209,7 @@ writing_task = Task(
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    print("=== NemoFlow + CrewAI Integration ===\n")
+    print("=== ToolRate + CrewAI Integration ===\n")
 
     crew = Crew(
         agents=[researcher, writer],
@@ -226,10 +226,10 @@ def main() -> None:
     print(result)
 
     # ---------------------------------------------------------------------------
-    # 6. Post-run: Use NemoFlow discovery to improve future runs
+    # 6. Post-run: Use ToolRate discovery to improve future runs
     # ---------------------------------------------------------------------------
 
-    print("\n=== Post-Run: NemoFlow Discovery Insights ===\n")
+    print("\n=== Post-Run: ToolRate Discovery Insights ===\n")
 
     # Find hidden gems -- tools other agents found reliable as fallbacks
     print("Hidden Gems (tools that work great as fallbacks):")

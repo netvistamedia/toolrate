@@ -1,4 +1,4 @@
-"""CLI for NemoFlow administration.
+"""CLI for ToolRate administration.
 
 Usage:
     python -m app.cli create-key --tier free
@@ -57,7 +57,7 @@ async def create_key(tier: str, limit: int | None, data_pool: str | None):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="NemoFlow CLI")
+    parser = argparse.ArgumentParser(description="ToolRate CLI")
     subparsers = parser.add_subparsers(dest="command")
 
     create_parser = subparsers.add_parser("create-key", help="Create a new API key")

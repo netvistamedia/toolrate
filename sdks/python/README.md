@@ -1,6 +1,6 @@
-# NemoFlow Python SDK
+# ToolRate Python SDK
 
-Python client for the [NemoFlow API](https://api.nemoflow.ai) — the reliability oracle for AI agents.
+Python client for the [ToolRate API](https://api.toolrate.ai) — the reliability oracle for AI agents.
 
 ## Installation
 
@@ -22,7 +22,7 @@ result = guard(client, "https://api.openai.com/v1/chat/completions",
                lambda: openai.chat.completions.create(model="gpt-4", messages=[...]))
 ```
 
-That's it. NemoFlow will:
+That's it. ToolRate will:
 1. Check the tool's reliability score before calling
 2. Execute the tool call
 3. Report success/failure back (building the data moat)

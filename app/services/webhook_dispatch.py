@@ -90,8 +90,8 @@ async def _deliver(webhook_id, url: str, secret: str, payload: dict):
             content=body,
             headers={
                 "Content-Type": "application/json",
-                "X-NemoFlow-Signature": signature,
-                "X-NemoFlow-Event": payload["event"],
+                "X-ToolRate-Signature": signature,
+                "X-ToolRate-Event": payload["event"],
             },
         )
         success = resp.status_code < 300

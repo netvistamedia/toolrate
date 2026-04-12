@@ -1,17 +1,17 @@
 """LLM-readable site content — llms.txt and llms-full.txt (llmstxt.org standard)."""
 
-LLMS_TXT = """# NemoFlow
+LLMS_TXT = """# ToolRate
 
 > Reliability oracle for AI agents. Rates 600+ tools and APIs so agents pick the right one from the start.
 
-NemoFlow provides real-time reliability scores for external tools and APIs, based on the collective experience of thousands of AI agents. Before your agent calls a tool, check NemoFlow to get a reliability score, failure risk, common pitfalls, and alternatives.
+ToolRate provides real-time reliability scores for external tools and APIs, based on the collective experience of thousands of AI agents. Before your agent calls a tool, check ToolRate to get a reliability score, failure risk, common pitfalls, and alternatives.
 
 ## Docs
 
-- [API Documentation](https://api.nemoflow.ai/docs): Interactive Swagger UI with all endpoints
-- [API Reference](https://api.nemoflow.ai/redoc): Full OpenAPI reference documentation
+- [API Documentation](https://api.toolrate.ai/docs): Interactive Swagger UI with all endpoints
+- [API Reference](https://api.toolrate.ai/redoc): Full OpenAPI reference documentation
 - [GitHub](https://github.com/netvistamedia/nemoflow): Source code and examples
-- [Get API Key](https://api.nemoflow.ai/register): Free tier — 100 calls/day, no credit card required
+- [Get API Key](https://api.toolrate.ai/register): Free tier — 100 calls/day, no credit card required
 
 ## SDKs
 
@@ -20,7 +20,7 @@ NemoFlow provides real-time reliability scores for external tools and APIs, base
 
 ## API Base URL
 
-https://api.nemoflow.ai
+https://api.toolrate.ai
 
 ## Authentication
 
@@ -28,27 +28,27 @@ All API endpoints require an API key via the `X-Api-Key` header.
 
 ## Core Endpoints
 
-- [POST /v1/assess](https://api.nemoflow.ai/docs#/Assessment/assess_tool_v1_assess_post): Get reliability score for a tool before calling it
-- [POST /v1/report](https://api.nemoflow.ai/docs#/Reporting/report_result_v1_report_post): Report execution result (success/failure) to build the data moat
-- [GET /v1/discover/hidden-gems](https://api.nemoflow.ai/docs#/Discovery): Find tools with high fallback success rates
-- [GET /v1/discover/fallback-chain](https://api.nemoflow.ai/docs#/Discovery): Get best alternatives when a tool fails
-- [GET /v1/tools](https://api.nemoflow.ai/docs#/Tools): Search and browse all rated tools
-- [GET /v1/tools/categories](https://api.nemoflow.ai/docs#/Tools): List all tool categories
+- [POST /v1/assess](https://api.toolrate.ai/docs#/Assessment/assess_tool_v1_assess_post): Get reliability score for a tool before calling it
+- [POST /v1/report](https://api.toolrate.ai/docs#/Reporting/report_result_v1_report_post): Report execution result (success/failure) to build the data moat
+- [GET /v1/discover/hidden-gems](https://api.toolrate.ai/docs#/Discovery): Find tools with high fallback success rates
+- [GET /v1/discover/fallback-chain](https://api.toolrate.ai/docs#/Discovery): Get best alternatives when a tool fails
+- [GET /v1/tools](https://api.toolrate.ai/docs#/Tools): Search and browse all rated tools
+- [GET /v1/tools/categories](https://api.toolrate.ai/docs#/Tools): List all tool categories
 
 ## Optional
 
-- [Full documentation for LLMs](https://api.nemoflow.ai/llms-full.txt)
+- [Full documentation for LLMs](https://api.toolrate.ai/llms-full.txt)
 """
 
-LLMS_FULL_TXT = """# NemoFlow — Full Documentation for LLMs
+LLMS_FULL_TXT = """# ToolRate — Full Documentation for LLMs
 
 > Reliability oracle for AI agents. Rates 600+ tools and APIs so agents pick the right one from the start.
 
-NemoFlow provides real-time reliability scores for external tools and APIs, based on the collective experience of thousands of AI agents. Before your agent calls a tool, check NemoFlow to get a reliability score, failure risk, common pitfalls, and alternatives. The data moat grows with every report, making scores more accurate for everyone.
+ToolRate provides real-time reliability scores for external tools and APIs, based on the collective experience of thousands of AI agents. Before your agent calls a tool, check ToolRate to get a reliability score, failure risk, common pitfalls, and alternatives. The data moat grows with every report, making scores more accurate for everyone.
 
 ## API Base URL
 
-https://api.nemoflow.ai
+https://api.toolrate.ai
 
 ## Authentication
 
@@ -58,7 +58,7 @@ All endpoints (except `/health` and `/v1/auth/register`) require an API key via 
 X-Api-Key: nf_live_your_key_here
 ```
 
-Get a free API key at https://api.nemoflow.ai/register (100 calls/day, no credit card).
+Get a free API key at https://api.toolrate.ai/register (100 calls/day, no credit card).
 
 ## Rate Limits & Plans
 
@@ -358,7 +358,7 @@ Health check. No authentication required.
 
 ## Scoring Algorithm
 
-NemoFlow uses a multi-factor scoring algorithm:
+ToolRate uses a multi-factor scoring algorithm:
 
 1. **Recency-weighted average**: Half-life of 3.5 days, ~70% weight on last 7 days
 2. **Bayesian smoothing**: Prior alpha=5, beta=1, new tools start at ~83%
@@ -376,7 +376,7 @@ NemoFlow uses a multi-factor scoring algorithm:
 - **Open source**: https://github.com/netvistamedia/nemoflow
 """
 
-ROBOTS_TXT = """# NemoFlow — https://api.nemoflow.ai
+ROBOTS_TXT = """# ToolRate — https://api.toolrate.ai
 User-agent: *
 Allow: /
 Disallow: /v1/
@@ -384,5 +384,5 @@ Disallow: /billing/
 
 # LLM-specific content
 # See https://llmstxt.org
-Sitemap: https://api.nemoflow.ai/sitemap.xml
+Sitemap: https://api.toolrate.ai/sitemap.xml
 """

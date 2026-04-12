@@ -11,8 +11,8 @@ ME_PAGE_HTML = r"""<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>NemoFlow — Your Dashboard</title>
-<link rel="icon" href="https://nemoflow.ai/nemoflow-favicon.png" type="image/png">
+<title>ToolRate — Your Dashboard</title>
+<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -139,7 +139,7 @@ code,.mono{font-family:'Fira Code',monospace}
 
 <!-- Auth prompt -->
 <div class="auth" id="auth-screen">
-  <h1>Your NemoFlow account</h1>
+  <h1>Your ToolRate account</h1>
   <p>Paste your API key to view usage, quota, and billing. Your key is kept only in your browser's localStorage — we never store it on the server.</p>
   <label for="user-key">API Key</label>
   <input type="password" id="user-key" placeholder="nf_live_...">
@@ -153,7 +153,7 @@ code,.mono{font-family:'Fira Code',monospace}
 
 <header class="topbar">
   <div class="topbar-left">
-    <img src="https://nemoflow.ai/nemoflow-logo.webp" alt="NemoFlow">
+    <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate">
     <span class="topbar-tag" id="tier-tag">—</span>
   </div>
   <div class="topbar-right">

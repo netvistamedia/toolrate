@@ -1,4 +1,4 @@
-# NemoFlow Tool Assessment Prompt
+# ToolRate Tool Assessment Prompt
 
 Use this prompt with each LLM (Claude, GPT-4, Gemini, etc.). Copy the output into a JSON file per LLM, then run the import script.
 

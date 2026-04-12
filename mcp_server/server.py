@@ -1,6 +1,6 @@
 """
-NemoFlow MCP Server — lets Claude Code, Cursor, and other MCP clients
-use NemoFlow natively as tool-calling capabilities.
+ToolRate MCP Server — lets Claude Code, Cursor, and other MCP clients
+use ToolRate natively as tool-calling capabilities.
 
 Run:
     python -m mcp_server  (stdio mode, for IDE integrations)
@@ -13,7 +13,7 @@ Configure in Claude Code settings or .cursor/mcp.json:
           "args": ["-m", "mcp_server"],
           "env": {
             "NEMOFLOW_API_KEY": "nf_live_...",
-            "NEMOFLOW_BASE_URL": "https://api.nemoflow.ai"
+            "NEMOFLOW_BASE_URL": "https://api.toolrate.ai"
           }
         }
       }
@@ -25,12 +25,12 @@ import httpx
 from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP(
-    "NemoFlow",
+    "ToolRate",
     instructions="Reliability oracle for AI agents — assess tools before calling, report results after.",
 )
 
 API_KEY = os.environ.get("NEMOFLOW_API_KEY", "")
-BASE_URL = os.environ.get("NEMOFLOW_BASE_URL", "https://api.nemoflow.ai")
+BASE_URL = os.environ.get("NEMOFLOW_BASE_URL", "https://api.toolrate.ai")
 
 
 def _client() -> httpx.Client:
@@ -136,7 +136,7 @@ def get_fallback_chain(tool_identifier: str, limit: int = 5) -> dict:
 
 @mcp.tool()
 def search_tools(query: str = "", category: str | None = None, limit: int = 20) -> dict:
-    """Search and browse all rated tools in NemoFlow.
+    """Search and browse all rated tools in ToolRate.
 
     Args:
         query: Search by name or identifier (case-insensitive)

@@ -5,22 +5,22 @@ PRICING_HTML = r"""<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NemoFlow — Pricing</title>
-<meta name="description" content="NemoFlow pricing — Free for hackers, Pay-as-you-go at $0.008 per assessment (best for agents and bots), Pro $29/mo for power users, Enterprise / Platform for AI platforms.">
-<meta property="og:title" content="NemoFlow — Pricing">
+<title>ToolRate — Pricing</title>
+<meta name="description" content="ToolRate pricing — Free for hackers, Pay-as-you-go at $0.008 per assessment (best for agents and bots), Pro $29/mo for power users, Enterprise / Platform for AI platforms.">
+<meta property="og:title" content="ToolRate — Pricing">
 <meta property="og:description" content="Four clean plans for the reliability oracle for AI agents — Free, Pay-as-you-go, Pro, and Enterprise.">
-<meta property="og:image" content="https://nemoflow.ai/nemoflow-logo.webp">
-<meta property="og:url" content="https://api.nemoflow.ai/pricing">
-<link rel="canonical" href="https://api.nemoflow.ai/pricing">
-<link rel="icon" href="https://nemoflow.ai/nemoflow-favicon.png" type="image/png">
+<meta property="og:image" content="https://toolrate.ai/toolrate-logo.webp">
+<meta property="og:url" content="https://api.toolrate.ai/pricing">
+<link rel="canonical" href="https://api.toolrate.ai/pricing">
+<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "Product",
-  "name": "NemoFlow",
+  "name": "ToolRate",
   "description": "Reliability oracle for AI agents — real-time scores, failure risk, fallback chains.",
-  "brand": {"@type": "Organization", "name": "NemoFlow"},
+  "brand": {"@type": "Organization", "name": "ToolRate"},
   "offers": [
     {"@type": "Offer", "name": "Free", "price": "0", "priceCurrency": "USD",
      "description": "100 assessments per day, public data pool, all endpoints"},
@@ -190,7 +190,7 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,
 
 <header class="topbar">
   <a href="/" class="topbar-left">
-    <img src="https://nemoflow.ai/nemoflow-logo.webp" alt="NemoFlow" style="height:32px">
+    <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" style="height:32px">
     <span class="topbar-tag">v0.1</span>
   </a>
   <nav class="topbar-links">
@@ -246,7 +246,7 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,
   <div class="plan">
     <div class="plan-tier">Pro</div>
     <div class="plan-price">$29<span class="unit">/ month</span></div>
-    <p class="plan-sub">For power users and teams that know they'll use NemoFlow heavily every month.</p>
+    <p class="plan-sub">For power users and teams that know they'll use ToolRate heavily every month.</p>
     <ul class="plan-features">
       <li>10,000 assessments / month</li>
       <li>Webhook alerts on score drops</li>
@@ -310,7 +310,7 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,
   <div class="why-payg-inner">
     <span class="eyebrow">For autonomous agents</span>
     <h2>Pay-as-you-go is the plan we recommend for almost every agent.</h2>
-    <p class="lead">Autonomous agents have unpredictable workloads. One hour you're idle, the next you're scoring a thousand tools because a user asked for a complex task. A flat subscription leaves you paying for headroom you don't need — or worse, getting rate-limited right when you need NemoFlow most.</p>
+    <p class="lead">Autonomous agents have unpredictable workloads. One hour you're idle, the next you're scoring a thousand tools because a user asked for a complex task. A flat subscription leaves you paying for headroom you don't need — or worse, getting rate-limited right when you need ToolRate most.</p>
     <div class="why-payg-grid">
       <div class="why-payg-card">
         <h4>Zero friction sign-up</h4>
@@ -333,12 +333,12 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,
   <div class="enterprise-grid">
     <div>
       <div class="enterprise-eyebrow">For AI Platforms</div>
-      <h2>Embed NemoFlow for every agent on your platform.</h2>
+      <h2>Embed ToolRate for every agent on your platform.</h2>
       <p class="lead">Building the next Cursor, Claude Code, Manus or Devin? Give every user on your platform a reliability oracle that's tuned to your own workloads — not a shared public pool.</p>
       <ul class="enterprise-points">
         <li><strong>Private data moat.</strong> Your users' reports build your own isolated scoring model. Your data never mixes with the public pool — and your insights never leak to competitors.</li>
         <li><strong>Compliance-ready.</strong> EU hosting, GDPR, audit log export, SSO, SCIM provisioning. Ships with everything your procurement team asks for.</li>
-        <li><strong>Scale without worry.</strong> 99.99% SLA, dedicated infrastructure, and a support channel staffed by the engineers who built NemoFlow.</li>
+        <li><strong>Scale without worry.</strong> 99.99% SLA, dedicated infrastructure, and a support channel staffed by the engineers who built ToolRate.</li>
         <li><strong>Custom integrations.</strong> White-label the API, embed scores in your UI, get custom benchmarks for the tools your users rely on most.</li>
       </ul>
     </div>
@@ -372,7 +372,7 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,
         </div>
         <div class="form-row">
           <label for="f-use">What are you building?</label>
-          <textarea id="f-use" name="use_case" placeholder="We're building an AI coding platform with ~50k active developers and need NemoFlow scores surfaced in-editor&hellip;" required minlength="10" maxlength="2000"></textarea>
+          <textarea id="f-use" name="use_case" placeholder="We're building an AI coding platform with ~50k active developers and need ToolRate scores surfaced in-editor&hellip;" required minlength="10" maxlength="2000"></textarea>
         </div>
         <button type="submit" class="btn btn-primary" id="salesBtn" style="width:100%">Request a call</button>
         <div class="form-status" id="salesStatus"></div>
@@ -387,7 +387,7 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,
   <div class="faq-grid">
     <div class="faq-item">
       <h4>What counts as an "assessment"?</h4>
-      <p>Any call to <code>/v1/assess</code>. Reports, webhook calls, and tool browsing don't count — you're only billed when you actually ask NemoFlow to score a tool.</p>
+      <p>Any call to <code>/v1/assess</code>. Reports, webhook calls, and tool browsing don't count — you're only billed when you actually ask ToolRate to score a tool.</p>
     </div>
     <div class="faq-item">
       <h4>Does the 100/day free grant apply to Pay-as-you-go?</h4>
@@ -413,7 +413,7 @@ code{font-family:'Fira Code',monospace;font-size:0.82em;background:rgba(240,112,
 </section>
 
 <footer class="footer">
-  <div class="footer-left">© 2026 NemoFlow &middot; Built for agents, by agents &middot; Hosted in Germany</div>
+  <div class="footer-left">© 2026 ToolRate &middot; Built for agents, by agents &middot; Hosted in Germany</div>
   <div class="footer-right">
     <a href="/">Home</a>
     <a href="/docs">Docs</a>
@@ -503,7 +503,7 @@ async function submitSales(e) {
     setTimeout(function(){ btn.disabled = false; btn.textContent = oldText; }, 3000);
   } catch (err) {
     status.className = 'form-status err';
-    status.textContent = 'Network error — please try again or email sales@nemoflow.ai directly.';
+    status.textContent = 'Network error — please try again or email sales@toolrate.ai directly.';
     btn.disabled = false;
     btn.textContent = oldText;
   }

@@ -4,7 +4,7 @@ set -e
 SERVER="nemoflow@178.104.171.216"
 REMOTE_DIR="~/nemoflow"
 
-echo "Deploying NemoFlow..."
+echo "Deploying ToolRate..."
 
 # Push latest code
 git push origin main
@@ -28,4 +28,4 @@ echo "Deployed successfully!"
 docker compose ps
 REMOTE
 
-echo "Done! https://api.nemoflow.ai"
+echo "Done! https://api.toolrate.ai"

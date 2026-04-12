@@ -10,7 +10,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 license = "MIT"
 authors = [
-    {name = "NemoFlow", email = "hello@nemoflow.ai"},
+    {name = "ToolRate", email = "hello@toolrate.ai"},
 ]
 keywords = ["ai", "agents", "reliability", "tools", "llm", "api"]
 classifiers = [
@@ -30,6 +30,6 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://nemoflow.ai"
-Documentation = "https://api.nemoflow.ai/docs"
+Homepage = "https://toolrate.ai"
+Documentation = "https://api.toolrate.ai/docs"
 Repository = "https://github.com/netvistamedia/nemoflow"

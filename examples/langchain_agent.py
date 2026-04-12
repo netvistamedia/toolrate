@@ -1,7 +1,7 @@
 """
-NemoFlow + LangChain Integration Example
+ToolRate + LangChain Integration Example
 =========================================
-An agent that uses NemoFlow to check tool reliability before calling tools,
+An agent that uses ToolRate to check tool reliability before calling tools,
 and reports outcomes back to build community intelligence.
 
 Install:
@@ -29,7 +29,7 @@ from langchain_openai import ChatOpenAI
 from nemoflow import NemoFlowClient, guard
 
 # ---------------------------------------------------------------------------
-# 1. Initialize NemoFlow client
+# 1. Initialize ToolRate client
 # ---------------------------------------------------------------------------
 
 nemo = NemoFlowClient(os.environ.get("NEMOFLOW_API_KEY", "nf_live_your_key_here"))
@@ -56,10 +56,10 @@ def _get_weather(city: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 3. Wrap tools with NemoFlow reliability guard
+# 3. Wrap tools with ToolRate reliability guard
 #
 # The key pattern: instead of calling the API directly, we wrap each tool
-# so that NemoFlow:
+# so that ToolRate:
 #   a) Checks reliability score before executing
 #   b) Executes the call
 #   c) Reports success/failure + latency back to the platform
@@ -67,7 +67,7 @@ def _get_weather(city: str) -> str:
 # ---------------------------------------------------------------------------
 
 def nemoflow_search(query: str) -> str:
-    """Web search with NemoFlow reliability guard and automatic fallback."""
+    """Web search with ToolRate reliability guard and automatic fallback."""
     return guard(
         nemo,
         "https://serpapi.com/search",                       # primary tool
@@ -84,16 +84,16 @@ def nemoflow_search(query: str) -> str:
 
 
 def nemoflow_weather(city: str) -> str:
-    """Weather lookup with NemoFlow assess -> execute -> report loop."""
+    """Weather lookup with ToolRate assess -> execute -> report loop."""
     tool_url = "https://api.openweathermap.org/data/2.5/weather"
 
     # Step 1: Assess -- check the tool's current reliability
     assessment = nemo.assess(tool_url, context="langchain-agent:weather")
-    print(f"  [NemoFlow] Weather API reliability: {assessment['reliability_score']}/100 "
+    print(f"  [ToolRate] Weather API reliability: {assessment['reliability_score']}/100 "
           f"(confidence: {assessment['confidence']})")
 
     if assessment.get("common_pitfalls"):
-        print(f"  [NemoFlow] Watch out for: {assessment['common_pitfalls']}")
+        print(f"  [ToolRate] Watch out for: {assessment['common_pitfalls']}")
 
     # Step 2: Execute -- call the tool and measure latency
     start = time.perf_counter()
@@ -117,21 +117,21 @@ def nemoflow_weather(city: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# 4. Create LangChain tools from the NemoFlow-wrapped functions
+# 4. Create LangChain tools from the ToolRate-wrapped functions
 # ---------------------------------------------------------------------------
 
 search_tool = StructuredTool.from_function(
     func=nemoflow_search,
     name="web_search",
     description="Search the web for current information. Includes automatic "
-                "fallback to alternative search engines via NemoFlow.",
+                "fallback to alternative search engines via ToolRate.",
 )
 
 weather_tool = StructuredTool.from_function(
     func=nemoflow_weather,
     name="weather",
     description="Get current weather for a city. Reliability is checked via "
-                "NemoFlow before each call.",
+                "ToolRate before each call.",
 )
 
 # ---------------------------------------------------------------------------
@@ -144,7 +144,7 @@ prompt = ChatPromptTemplate.from_messages([
     ("system",
      "You are a helpful assistant with access to web search and weather tools. "
      "Use them when the user asks for current information. Each tool call is "
-     "automatically checked for reliability by NemoFlow."),
+     "automatically checked for reliability by ToolRate."),
     MessagesPlaceholder("chat_history", optional=True),
     ("human", "{input}"),
     MessagesPlaceholder("agent_scratchpad"),
@@ -159,7 +159,7 @@ executor = AgentExecutor(agent=agent, tools=[search_tool, weather_tool], verbose
 # ---------------------------------------------------------------------------
 
 def main() -> None:
-    print("=== NemoFlow + LangChain Agent ===\n")
+    print("=== ToolRate + LangChain Agent ===\n")
 
     # Example 1: Weather query (assess -> execute -> report)
     result = executor.invoke({"input": "What's the weather like in Amsterdam?"})

@@ -1,6 +1,6 @@
-# NemoFlow TypeScript SDK
+# ToolRate TypeScript SDK
 
-TypeScript client for the [NemoFlow API](https://api.nemoflow.ai) — the reliability oracle for AI agents. Requires Node.js 18+ (uses native `fetch`).
+TypeScript client for the [ToolRate API](https://api.toolrate.ai) — the reliability oracle for AI agents. Requires Node.js 18+ (uses native `fetch`).
 
 ## Installation
 
@@ -11,9 +11,9 @@ npm install nemoflow
 ## Quick start — one line with guard()
 
 ```typescript
-import { NemoFlow } from "nemoflow";
+import { ToolRate } from "nemoflow";
 
-const nemo = new NemoFlow("nf_live_...");
+const nemo = new ToolRate("nf_live_...");
 
 // Wrap any tool call — assess, execute, report, auto-fallback
 const result = await nemo.guard(

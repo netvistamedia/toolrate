@@ -13,7 +13,7 @@ router = APIRouter()
 
 @router.get("/stats", tags=["Stats"],
             summary="Platform statistics",
-            description="Get NemoFlow platform stats: total tools, reports, API keys, and daily activity.")
+            description="Get ToolRate platform stats: total tools, reports, API keys, and daily activity.")
 async def platform_stats(
     db: Db,
     redis: RedisClient,

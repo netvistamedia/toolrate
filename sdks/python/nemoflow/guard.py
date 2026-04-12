@@ -1,4 +1,4 @@
-"""NemoFlow Guard — one-line reliability wrapper for tool calls.
+"""ToolRate Guard — one-line reliability wrapper for tool calls.
 
 Usage:
     from nemoflow import NemoFlowClient, guard
@@ -17,7 +17,7 @@ Usage:
                         lambda: anthropic.messages.create(...)),
                    ])
 
-    # Dynamic (auto) fallbacks — NemoFlow picks from real agent journey data
+    # Dynamic (auto) fallbacks — ToolRate picks from real agent journey data
     result = guard(client, "https://api.openai.com/v1/chat/completions",
                    lambda: openai.chat.completions.create(...),
                    fallbacks="auto",
@@ -59,12 +59,12 @@ def guard(
     resolvers: dict[str, Callable[[], T]] | None = None,
     max_fallbacks: int = 3,
 ) -> T:
-    """Execute a tool call with NemoFlow reliability guard.
+    """Execute a tool call with ToolRate reliability guard.
 
     1. Assesses the tool's reliability score
     2. If score < min_score and fallbacks exist, tries the best-scoring fallback
     3. Executes the tool call
-    4. Reports success/failure back to NemoFlow
+    4. Reports success/failure back to ToolRate
     5. On failure with fallbacks, automatically tries the next option
 
     Args:
@@ -74,10 +74,10 @@ def guard(
         context: Workflow context for context-bucketed scoring
         min_score: Minimum reliability score to proceed (0-100). Default 0 = always try.
         fallbacks: Either a list of (tool_identifier, callable) pairs, or the string
-            "auto" to have NemoFlow pick fallbacks dynamically from the primary tool's
+            "auto" to have ToolRate pick fallbacks dynamically from the primary tool's
             top alternatives and real fallback-chain data. "auto" requires `resolvers`.
         resolvers: Mapping of tool identifier → callable. When `fallbacks="auto"`,
-            NemoFlow matches candidate alternatives against these keys and only tries
+            ToolRate matches candidate alternatives against these keys and only tries
             tools the caller has pre-registered a runner for.
         max_fallbacks: Max number of auto fallbacks to include (default 3).
 
@@ -199,7 +199,7 @@ def _resolve_auto_fallbacks(
     resolvers: dict[str, Callable[[], Any]],
     max_n: int,
 ) -> list[tuple[str, Callable[[], Any]]]:
-    """Pick fallback callables by matching NemoFlow's alternatives against user resolvers."""
+    """Pick fallback callables by matching ToolRate's alternatives against user resolvers."""
     if not resolvers or max_n <= 0:
         return []
 
@@ -246,7 +246,7 @@ def _safe_report(client: NemoFlowClient, tool_identifier: str, **kwargs: Any) ->
 
 
 def _classify_error(error: Exception) -> str:
-    """Best-effort classification of an exception into NemoFlow error categories."""
+    """Best-effort classification of an exception into ToolRate error categories."""
     name = type(error).__name__.lower()
     message = str(error).lower()
 

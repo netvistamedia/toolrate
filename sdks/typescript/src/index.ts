@@ -1,6 +1,7 @@
-export { NemoFlow } from "./client.js";
+export { ToolRate, ToolRate as NemoFlow } from "./client.js";
 export {
-  type NemoFlowOptions,
+  type ToolRateOptions,
+  type ToolRateOptions as NemoFlowOptions,
   type AssessParams,
   type AssessResponse,
   type AlternativeTool,
@@ -25,5 +26,6 @@ export {
   type WebhookListResponse,
   type RotateKeyResponse,
   type GuardOptions,
-  NemoFlowError,
+  ToolRateError,
+  ToolRateError as NemoFlowError,
 } from "./types.js";

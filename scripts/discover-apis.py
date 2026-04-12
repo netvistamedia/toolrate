@@ -217,7 +217,7 @@ async def main():
         or os.environ.get("NEMO_ANTHROPIC_API_KEY", "")
     )
 
-    print("=== NemoFlow API Discovery ===\n")
+    print("=== ToolRate API Discovery ===\n")
 
     # 1. Gather candidate APIs
     print("Gathering APIs from sources...")

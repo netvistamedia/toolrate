@@ -4,12 +4,12 @@ from typing import Any, Optional
 
 import httpx
 
-_DEFAULT_BASE_URL = "https://api.nemoflow.ai"
+_DEFAULT_BASE_URL = "https://api.toolrate.ai"
 _DEFAULT_TIMEOUT = 30.0
 
 
 class NemoFlowClient:
-    """Synchronous client for the NemoFlow API."""
+    """Synchronous client for the ToolRate API."""
 
     def __init__(
         self,
@@ -228,7 +228,7 @@ class NemoFlowClient:
 
 
 class AsyncNemoFlowClient:
-    """Asynchronous client for the NemoFlow API."""
+    """Asynchronous client for the ToolRate API."""
 
     def __init__(
         self,

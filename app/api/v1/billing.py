@@ -23,7 +23,7 @@ class ContactSalesRequest(BaseModel):
     volume: str = Field(min_length=1, max_length=64,
                         description="Estimated monthly call volume, e.g. '500k', '2M', 'unsure'")
     use_case: str = Field(min_length=10, max_length=2000,
-                          description="What you're building and why you need NemoFlow at scale")
+                          description="What you're building and why you need ToolRate at scale")
     name: str | None = Field(default=None, max_length=120)
 
 
@@ -41,7 +41,7 @@ class ContactSalesResponse(BaseModel):
         "Submit an inquiry for the Enterprise / Platform plan. "
         "Use this if you need a private data pool, SSO, SLA, white-label, "
         "or you are a platform (Cursor, Claude Code, Manus, etc.) that "
-        "wants to enable NemoFlow for all of your users."
+        "wants to enable ToolRate for all of your users."
     ),
 )
 async def contact_sales(request: Request, body: ContactSalesRequest, db: Db):
@@ -89,9 +89,9 @@ async def _send_sales_email(body: ContactSalesRequest):
 
     payload = {
         "personalizations": [{"to": [{"email": settings.sales_inbox_email}]}],
-        "from": {"email": settings.sendgrid_from_email, "name": "NemoFlow Leads"},
+        "from": {"email": settings.sendgrid_from_email, "name": "ToolRate Leads"},
         "reply_to": {"email": body.email},
-        "subject": f"[NemoFlow Enterprise] {body.company} — {body.volume}",
+        "subject": f"[ToolRate Enterprise] {body.company} — {body.volume}",
         "content": [{"type": "text/html", "value": html}],
     }
     try:
@@ -168,8 +168,8 @@ async def create_checkout(
         customer=customer_id,
         mode="subscription",
         line_items=[line_item],
-        success_url=f"https://api.nemoflow.ai/billing/success?plan={plan}&session_id={{CHECKOUT_SESSION_ID}}",
-        cancel_url="https://api.nemoflow.ai/billing/cancel",
+        success_url=f"https://api.toolrate.ai/billing/success?plan={plan}&session_id={{CHECKOUT_SESSION_ID}}",
+        cancel_url="https://api.toolrate.ai/billing/cancel",
         metadata={"api_key_id": str(api_key.id), "plan": plan},
         subscription_data={"metadata": {"api_key_id": str(api_key.id), "plan": plan}},
     )

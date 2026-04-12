@@ -1,5 +1,5 @@
 """
-Load test for NemoFlow API.
+Load test for ToolRate API.
 
 Setup:
     pip install locust
@@ -8,7 +8,7 @@ Run against local:
     locust -f loadtest/locustfile.py --host http://localhost:8000
 
 Run against production:
-    locust -f loadtest/locustfile.py --host https://api.nemoflow.ai
+    locust -f loadtest/locustfile.py --host https://api.toolrate.ai
 
 Headless mode (10K users, ramp 500/s, run 2 min):
     locust -f loadtest/locustfile.py --host http://localhost:8000 \
@@ -48,8 +48,8 @@ CONTEXTS = [
 ]
 
 
-class NemoFlowAgent(HttpUser):
-    """Simulates an AI agent querying NemoFlow before tool calls."""
+class ToolRateAgent(HttpUser):
+    """Simulates an AI agent querying ToolRate before tool calls."""
 
     wait_time = between(0.1, 0.5)
 

@@ -32,7 +32,7 @@ class RegisterResponse(BaseModel):
     tier: str
     daily_limit: int
     message: str
-    docs_url: str = Field("https://api.nemoflow.ai/docs", description="Interactive API documentation")
+    docs_url: str = Field("https://api.toolrate.ai/docs", description="Interactive API documentation")
     quickstart: str = Field(..., description="Copy-paste first API call example")
 
 
@@ -114,7 +114,7 @@ async def register(
         api_key=full_key,
         tier="free",
         daily_limit=settings.free_daily_limit,
-        message="Save this key now — it cannot be retrieved later. Upgrade to Pro at https://nemoflow.ai",
+        message="Save this key now — it cannot be retrieved later. Upgrade to Pro at https://toolrate.ai",
         quickstart=quickstart,
     )
 

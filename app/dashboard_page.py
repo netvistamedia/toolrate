@@ -10,8 +10,8 @@ DASHBOARD_HTML = r"""<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>NemoFlow — Admin Dashboard</title>
-<link rel="icon" href="https://nemoflow.ai/nemoflow-favicon.png" type="image/png">
+<title>ToolRate — Admin Dashboard</title>
+<link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -161,7 +161,7 @@ td.tool .id{color:var(--text-mute);font-size:0.68rem;font-family:'Fira Code',mon
 
 <header class="topbar">
   <div class="topbar-left">
-    <img src="https://nemoflow.ai/nemoflow-logo.webp" alt="NemoFlow">
+    <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate">
     <span class="topbar-tag">Admin</span>
   </div>
   <div class="topbar-right">
