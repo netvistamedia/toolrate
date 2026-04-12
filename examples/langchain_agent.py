@@ -169,17 +169,19 @@ def main() -> None:
     result = executor.invoke({"input": "Search for the latest AI research papers"})
     print(f"\nAgent: {result['output']}\n")
 
-    # Bonus: Discover hidden gem tools for search category
+    # Bonus: Discover hidden gem tools for search category.
+    # Note: the API returns success rates as 0-100 percentages already, so
+    # format them as-is rather than as a 0.0-1.0 fraction.
     print("=== Discovering Hidden Gems ===")
     gems = nemo.discover_hidden_gems(category="search", limit=3)
     for gem in gems.get("hidden_gems", []):
-        print(f"  - {gem['tool']}: fallback success rate {gem['fallback_success_rate']:.0%}")
+        print(f"  - {gem['tool']}: fallback success rate {gem['fallback_success_rate']:.1f}%")
 
     # Bonus: Get fallback chain for a tool
     print("\n=== Fallback Chain for SerpAPI ===")
     chain = nemo.discover_fallback_chain("https://serpapi.com/search")
     for alt in chain.get("fallback_chain", []):
-        print(f"  - {alt['fallback_tool']}: success rate {alt['success_rate']:.0%}")
+        print(f"  - {alt['fallback_tool']}: success rate {alt['success_rate']:.1f}%")
 
     nemo.close()
 

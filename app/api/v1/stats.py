@@ -94,19 +94,28 @@ async def my_stats(
     redis: RedisClient,
     api_key: AuthenticatedKey,
 ):
-    now = datetime.now(timezone.utc)
-    today = now.replace(hour=0, minute=0, second=0, microsecond=0)
-
-    # Get current daily usage from Redis
-    from datetime import date
-    date_key = f"rl:{api_key.key_hash}:{date.today().isoformat()}"
-    daily_used = await redis.get(date_key)
+    # Read the counter that matches the key's billing period (pro keys use
+    # a monthly bucket, everything else is daily). Previously this always
+    # read the daily key using local-TZ `date.today()`, which disagreed with
+    # the rate limiter's UTC key both for pro users and around the UTC
+    # midnight boundary.
+    from app.services.rate_limiter import current_usage
+    period = api_key.billing_period or "daily"
+    used = await current_usage(redis, api_key.key_hash, period)  # type: ignore[arg-type]
+    limit = api_key.daily_limit or 0
 
     return {
         "key_prefix": api_key.key_prefix,
         "tier": api_key.tier,
-        "daily_limit": api_key.daily_limit,
-        "daily_used": int(daily_used) if daily_used else 0,
-        "daily_remaining": api_key.daily_limit - (int(daily_used) if daily_used else 0),
+        "billing_period": period,
+        "limit": limit,
+        "used": used,
+        "remaining": max(0, limit - used),
+        # Legacy fields kept for SDK back-compat — these were always "daily" in
+        # the old response shape, even for pro keys. Now they mirror the
+        # period-aware counter.
+        "daily_limit": limit,
+        "daily_used": used,
+        "daily_remaining": max(0, limit - used),
         "created_at": api_key.created_at.isoformat() if api_key.created_at else None,
     }

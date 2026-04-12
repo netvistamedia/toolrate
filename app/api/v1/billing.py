@@ -77,20 +77,29 @@ async def contact_sales(request: Request, body: ContactSalesRequest, db: Db):
 
 
 async def _send_sales_email(body: ContactSalesRequest):
+    # HTML-escape every user-supplied field before inlining it into the email
+    # body. Without this, a malicious `use_case` could inject arbitrary HTML
+    # or phishing links into the inbox message delivered to the sales team.
+    from html import escape
+    company = escape(body.company)
+    name = escape(body.name) if body.name else "—"
+    email = escape(str(body.email))
+    volume = escape(body.volume)
+    use_case = escape(body.use_case)
     html = f"""
     <h2>New Enterprise / Platform lead</h2>
-    <p><strong>Company:</strong> {body.company}</p>
-    <p><strong>Name:</strong> {body.name or '—'}</p>
-    <p><strong>Email:</strong> <a href="mailto:{body.email}">{body.email}</a></p>
-    <p><strong>Est. volume:</strong> {body.volume}</p>
+    <p><strong>Company:</strong> {company}</p>
+    <p><strong>Name:</strong> {name}</p>
+    <p><strong>Email:</strong> <a href="mailto:{email}">{email}</a></p>
+    <p><strong>Est. volume:</strong> {volume}</p>
     <p><strong>Use case:</strong></p>
-    <pre style="white-space:pre-wrap;font-family:inherit;background:#f5f5f5;padding:1rem;border-radius:8px">{body.use_case}</pre>
+    <pre style="white-space:pre-wrap;font-family:inherit;background:#f5f5f5;padding:1rem;border-radius:8px">{use_case}</pre>
     """.strip()
 
     payload = {
         "personalizations": [{"to": [{"email": settings.sales_inbox_email}]}],
         "from": {"email": settings.sendgrid_from_email, "name": "ToolRate Leads"},
-        "reply_to": {"email": body.email},
+        "reply_to": {"email": str(body.email)},
         "subject": f"[ToolRate Enterprise] {body.company} — {body.volume}",
         "content": [{"type": "text/html", "value": html}],
     }

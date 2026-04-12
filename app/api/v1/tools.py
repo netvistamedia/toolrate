@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import case, func, select
 
-from app.core.security import context_hash as _context_hash
+from app.core.security import context_hash as _context_hash, effective_data_pool
 from app.dependencies import Db, RedisClient, AuthenticatedKey
 from app.models.report import ExecutionReport
 from app.models.tool import Tool
@@ -22,7 +22,7 @@ async def list_tools(
     api_key: AuthenticatedKey,
     q: str | None = Query(None, max_length=256, description="Search by name or identifier (case-insensitive substring match)"),
     category: str | None = Query(None, max_length=128, description="Filter by category (e.g. 'email', 'llm', 'payment')"),
-    offset: int = Query(0, ge=0, description="Pagination offset"),
+    offset: int = Query(0, ge=0, le=10000, description="Pagination offset"),
     limit: int = Query(50, ge=1, le=200, description="Results per page"),
 ):
     stmt = select(Tool)
@@ -103,7 +103,7 @@ async def get_tool_detail(
         )
 
     ctx_hash = _context_hash("")
-    data_pool = api_key.data_pool
+    data_pool = effective_data_pool(api_key.data_pool)
 
     cached = await get_cached_score(redis, str(tool.id), ctx_hash, data_pool)
     if cached:

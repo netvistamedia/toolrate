@@ -7,8 +7,12 @@ x-logging: &default-logging
 services:
   app:
     build: .
+    # Bind only to loopback — Caddy on the host handles public TLS and
+    # reverse-proxies to 127.0.0.1:8000. Exposing on 0.0.0.0 would let
+    # an attacker hit the app directly and spoof X-Forwarded-For past
+    # uvicorn's --proxy-headers, bypassing per-IP rate limits.
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     env_file: .env
     depends_on:
       postgres:

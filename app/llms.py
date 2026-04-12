@@ -20,7 +20,7 @@ ToolRate delivers real-time reliability scores, failure risk, jurisdiction intel
 
 ## API Base URL
 
-https://toolrate.ai
+https://api.toolrate.ai
 
 ## Authentication
 
@@ -48,7 +48,7 @@ ToolRate delivers real-time reliability scores, failure risk, jurisdiction intel
 
 ## API Base URL
 
-https://toolrate.ai
+https://api.toolrate.ai
 
 ## Authentication
 
@@ -109,14 +109,16 @@ import { ToolRate } from "toolrate";
 
 const client = new ToolRate("nf_live_...");
 
-const score = await client.assess("https://api.stripe.com/v1/charges");
+const score = await client.assess({ toolIdentifier: "https://api.stripe.com/v1/charges" });
 
 const result = await client.guard(
   "https://api.stripe.com/v1/charges",
-  () => stripe.charges.create({...}),
+  async () => stripe.charges.create({...}),
   { fallbacks: [
-    ["https://api.lemonsqueezy.com/v1/checkouts",
-     () => lemon.createCheckout({...})],
+    {
+      toolIdentifier: "https://api.lemonsqueezy.com/v1/checkouts",
+      fn: async () => lemon.createCheckout({...}),
+    },
   ]}
 );
 ```
@@ -162,24 +164,33 @@ Get a reliability score for a tool before calling it. Requires API key.
 **Response (200):**
 ```json
 {
-  "tool_identifier": "https://api.stripe.com/v1/charges",
   "reliability_score": 94.2,
   "confidence": 0.87,
-  "failure_risk": "low",
-  "sample_size": 1240,
-  "pitfalls": ["Rate limit 429 errors above 100 req/s", "Requires idempotency key for retries"],
-  "alternatives": [
-    {
-      "tool_identifier": "https://api.lemonsqueezy.com/v1/checkouts",
-      "reliability_score": 91.5,
-      "fallback_success_rate": 0.89
-    }
+  "data_source": "empirical",
+  "historical_success_rate": "89% (last 30 days, 12k calls)",
+  "predicted_failure_risk": "low",
+  "trend": {"direction": "stable", "score_24h": 91.0, "score_7d": 89.0, "change_24h": 2.0},
+  "common_pitfalls": [
+    {"category": "timeout", "percentage": 8, "count": 120,
+     "mitigation": "Increase timeout to 30s; retry with backoff"}
   ],
-  "recommendation": "safe_to_call"
+  "recommended_mitigations": ["Increase timeout to 30s; retry with backoff"],
+  "top_alternatives": [
+    {"tool": "https://api.lemonsqueezy.com/v1/checkouts", "score": 91.5, "reason": "Alternative provider"}
+  ],
+  "estimated_latency_ms": 420,
+  "latency": {"avg": 420, "p50": 380, "p95": 890, "p99": 1200},
+  "last_updated": "2026-04-11T09:05:00Z",
+  "hosting_jurisdiction": "Non-EU (United States)",
+  "gdpr_compliant": false,
+  "data_residency_risk": "medium",
+  "recommended_for": ["general_purpose"],
+  "eu_alternatives": []
 }
 ```
 
-The `recommendation` field can be: `safe_to_call`, `use_with_caution`, `consider_alternative`, or `avoid`.
+`predicted_failure_risk` can be: `low`, `medium`, `high`, or `unknown`.
+`data_source` is one of `empirical`, `llm_estimated`, or `bayesian_prior`.
 
 ---
 
@@ -193,20 +204,20 @@ Report execution result (success or failure). This builds the community data moa
   "tool_identifier": "https://api.stripe.com/v1/charges",
   "success": true,
   "latency_ms": 420,
-  "error_category": null,
-  "error_message": null,
-  "metadata": {}
+  "context": "e-commerce checkout",
+  "session_id": "agent-session-abc123",
+  "attempt_number": 1,
+  "previous_tool": null
 }
 ```
 
-For failures, include `error_category` (e.g., "timeout", "auth_failure", "rate_limit", "server_error") and optionally `error_message`.
+For failures, include `error_category` (one of `timeout`, `rate_limit`, `auth_failure`, `validation_error`, `server_error`, `connection_error`, `not_found`, `permission_denied`).
 
-**Response (201):**
+**Response (200):**
 ```json
 {
-  "accepted": true,
-  "tool_identifier": "https://api.stripe.com/v1/charges",
-  "updated_score": 94.1
+  "status": "accepted",
+  "tool_id": "8b0e6f3d-...-3c0a"
 }
 ```
 
@@ -225,15 +236,19 @@ Discover tools with high fallback success rates — tools nobody talks about but
 {
   "hidden_gems": [
     {
-      "tool_identifier": "https://api.resend.com/emails",
-      "reliability_score": 96.8,
-      "fallback_success_rate": 0.94,
-      "category": "email",
-      "times_used_as_fallback": 342
+      "tool": "https://api.resend.com/emails",
+      "display_name": "Resend",
+      "category": "Email APIs",
+      "fallback_success_rate": 94.0,
+      "times_used_as_fallback": 342,
+      "avg_latency_ms": 210
     }
-  ]
+  ],
+  "count": 1
 }
 ```
+
+`fallback_success_rate` is a 0-100 percentage (not a 0-1 fraction).
 
 ---
 
@@ -248,17 +263,21 @@ Get the best alternatives when a tool fails, based on real agent journey data. R
 **Response (200):**
 ```json
 {
-  "tool_identifier": "https://api.stripe.com/v1/charges",
+  "tool": "https://api.stripe.com/v1/charges",
   "fallback_chain": [
     {
-      "tool_identifier": "https://api.lemonsqueezy.com/v1/checkouts",
-      "reliability_score": 91.5,
-      "fallback_success_rate": 0.89,
-      "avg_switch_count": 1.2
+      "fallback_tool": "https://api.lemonsqueezy.com/v1/checkouts",
+      "display_name": "Lemon Squeezy",
+      "times_chosen_after_failure": 18,
+      "success_rate": 89.0,
+      "avg_latency_ms": 310
     }
-  ]
+  ],
+  "count": 1
 }
 ```
+
+`success_rate` is a 0-100 percentage (not a 0-1 fraction).
 
 ---
 
@@ -268,9 +287,8 @@ Search and browse all rated tools. Requires API key.
 
 **Query parameters:**
 - `category` (optional): Filter by category
-- `search` (optional): Search by tool name or identifier
-- `min_score` (optional): Minimum reliability score
-- `limit` (optional): Number of results (default 20)
+- `q` (optional): Case-insensitive substring search on identifier or display name
+- `limit` (optional): Number of results (default 50, max 200)
 - `offset` (optional): Pagination offset
 
 ---
@@ -283,10 +301,11 @@ List all tool categories with counts. Requires API key.
 ```json
 {
   "categories": [
-    {"name": "payment", "count": 45},
-    {"name": "email", "count": 32},
-    {"name": "storage", "count": 28}
-  ]
+    {"name": "Payment APIs", "tool_count": 45},
+    {"name": "Email APIs", "tool_count": 32},
+    {"name": "Cloud Storage", "tool_count": 28}
+  ],
+  "total": 3
 }
 ```
 
@@ -328,10 +347,20 @@ Platform-wide metrics. Requires API key.
 **Response (200):**
 ```json
 {
-  "total_tools": 637,
-  "total_reports": 68400,
-  "total_assessments": 142000,
-  "avg_reliability": 82.1
+  "platform": {
+    "total_tools": 637,
+    "total_reports": 68400,
+    "total_api_keys": 120,
+    "journey_reports": 9800
+  },
+  "activity": {
+    "reports_today": 1240,
+    "reports_last_7d": 7840
+  },
+  "top_tools": [
+    {"identifier": "https://api.stripe.com/v1/charges", "display_name": "Stripe Charges", "report_count": 4200}
+  ],
+  "generated_at": "2026-04-12T08:00:00Z"
 }
 ```
 

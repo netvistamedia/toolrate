@@ -46,12 +46,16 @@ async def register(
     redis: RedisClient,
     request: Request,
 ):
-    # Rate limit registration: max 5 per IP per hour
+    # Rate limit registration: max 5 per IP per hour. Atomic INCR+EXPIRE so a
+    # crash between the two commands can't leave the counter without a TTL
+    # and permanently lock out the IP.
     client_ip = request.client.host if request.client else "unknown"
     reg_key = f"reg:ip:{client_ip}"
-    count = await redis.incr(reg_key)
-    if count == 1:
-        await redis.expire(reg_key, 3600)
+    _INCR_WITH_TTL_LUA = (
+        "local c = redis.call('INCR', KEYS[1]); "
+        "if c == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end; return c"
+    )
+    count = await redis.eval(_INCR_WITH_TTL_LUA, 1, reg_key, 3600)
     if count > 5:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
@@ -139,15 +143,20 @@ async def rotate_key(
     # Generate new key
     full_key, key_hash, key_prefix = generate_api_key()
 
-    # Create new key with same settings
+    # Create new key with same settings. `billing_period` has to be copied
+    # explicitly — the column default is "daily", so a Pro key (monthly)
+    # that's rotated without this would silently become a daily-quota key,
+    # turning a 10k/month quota into effectively 10k/day.
     new_key = ApiKey(
         key_hash=key_hash,
         key_prefix=key_prefix,
         tier=api_key.tier,
         daily_limit=api_key.daily_limit,
+        billing_period=api_key.billing_period,
         data_pool=api_key.data_pool,
         stripe_customer_id=api_key.stripe_customer_id,
         stripe_subscription_id=api_key.stripe_subscription_id,
+        stripe_subscription_item_id=api_key.stripe_subscription_item_id,
     )
     db.add(new_key)
 

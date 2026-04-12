@@ -49,7 +49,7 @@ async def create_key(tier: str, limit: int | None, data_pool: str | None):
     print(f"  Prefix:       {key_prefix}")
     print(f"  Tier:         {tier}")
     print(f"  Period:       {period}")
-    print(f"  Limit:        {limit} / {period[:-2]}")
+    print(f"  Limit:        {limit} / {'day' if period == 'daily' else 'month'}")
     if data_pool:
         print(f"  Data pool:    {data_pool}")
     print()

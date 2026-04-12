@@ -290,7 +290,7 @@ export class ToolRate {
     const context = options?.context ?? "";
     const minScore = options?.minScore ?? 0;
     const maxFallbacks = options?.maxFallbacks ?? 3;
-    const sessionId = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+    const sessionId = makeSessionId();
 
     const autoMode = options?.fallbacks === "auto";
     const explicitFallbacks: Array<{ toolIdentifier: string; fn: () => Promise<T> }> =
@@ -515,6 +515,25 @@ export class ToolRate {
 
     return responseBody as T;
   }
+}
+
+// ── Session ID generation ────────────────────────────────────────────
+// The bare `crypto` global was only promoted to a Node.js global in 18.18.0,
+// but package.json advertises `node: ">=18.0.0"`, so pre-18.18 would throw
+// `ReferenceError: crypto is not defined`. Try a Web Crypto global first,
+// then fall back to a Math.random hex string — good enough for session IDs.
+function makeSessionId(): string {
+  const g = (globalThis as { crypto?: { randomUUID?: () => string } }).crypto;
+  if (g?.randomUUID) {
+    return g.randomUUID().replace(/-/g, "").slice(0, 16);
+  }
+  // Non-crypto fallback: 16 hex chars from Math.random. Session IDs only
+  // need to be collision-resistant within a single agent run.
+  let out = "";
+  for (let i = 0; i < 16; i++) {
+    out += Math.floor(Math.random() * 16).toString(16);
+  }
+  return out;
 }
 
 // ── Response mapping ────────────────────────────────────────────────

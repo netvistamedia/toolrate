@@ -42,14 +42,17 @@ async function withToolRate<T>(
   context: string = "",
 ): Promise<T> {
   // ASSESS: Check reliability before calling
-  const assessment = await nemo.assess({ toolIdentifier, context });
+  const assessment = await client.assess({ toolIdentifier, context });
   console.log(
     `  [ToolRate] ${toolIdentifier}: reliability ${assessment.reliabilityScore}/100 ` +
       `(confidence: ${assessment.confidence})`,
   );
 
   if (assessment.commonPitfalls.length > 0) {
-    console.log(`  [ToolRate] Pitfalls: ${assessment.commonPitfalls.join(", ")}`);
+    // commonPitfalls is an array of PitfallDetail objects — join their
+    // category fields rather than the objects themselves.
+    const labels = assessment.commonPitfalls.map((p) => p.category).join(", ");
+    console.log(`  [ToolRate] Pitfalls: ${labels}`);
   }
 
   // EXECUTE: Call the tool and measure latency
@@ -59,7 +62,7 @@ async function withToolRate<T>(
     const latencyMs = Math.round(performance.now() - start);
 
     // REPORT: Feed success data back
-    await nemo.report({
+    await client.report({
       toolIdentifier,
       success: true,
       latencyMs,
@@ -71,7 +74,7 @@ async function withToolRate<T>(
     const latencyMs = Math.round(performance.now() - start);
 
     // REPORT: Feed failure data back so other agents can learn
-    await nemo.report({
+    await client.report({
       toolIdentifier,
       success: false,
       latencyMs,
@@ -100,7 +103,7 @@ const searchTool = tool({
     // Using the guard() pattern for automatic fallback:
     // If the primary search API fails, ToolRate automatically tries the
     // fallback, reports both outcomes, and returns the first success.
-    return nemo.guard<string>(
+    return client.guard<string>(
       "https://serpapi.com/search",
       async () => {
         // In production: call SerpAPI
@@ -154,7 +157,7 @@ const stockTool = tool({
   execute: async ({ ticker }) => {
     // Another guard() example with a quality gate:
     // If the primary API scores below 50, skip it and go straight to fallback
-    return nemo.guard<string>(
+    return client.guard<string>(
       "https://api.polygon.io/v2/aggs/ticker",
       async () => {
         // In production: call Polygon.io
@@ -216,22 +219,24 @@ async function main(): Promise<void> {
 
   console.log("\n=== ToolRate Discovery Insights ===\n");
 
-  // Find hidden gems: tools the community found reliable as fallbacks
-  const gems = await nemo.discoverHiddenGems({ category: "search", limit: 3 });
+  // Find hidden gems: tools the community found reliable as fallbacks.
+  // The API returns success rates as 0-100 percentages already — don't
+  // multiply by 100 again.
+  const gems = await client.discoverHiddenGems({ category: "search", limit: 3 });
   console.log("Hidden Gems (reliable fallback tools):");
   for (const gem of gems.hiddenGems) {
     console.log(
-      `  ${gem.tool}: fallback success ${(gem.fallbackSuccessRate * 100).toFixed(0)}%, ` +
+      `  ${gem.tool}: fallback success ${gem.fallbackSuccessRate.toFixed(1)}%, ` +
         `used ${gem.timesUsedAsFallback} times`,
     );
   }
 
   // Get fallback chain: what works best when Polygon fails
-  const chain = await nemo.discoverFallbackChain("https://api.polygon.io/v2/aggs/ticker");
+  const chain = await client.discoverFallbackChain("https://api.polygon.io/v2/aggs/ticker");
   console.log("\nFallback Chain for Polygon.io:");
   for (const alt of chain.fallbackChain) {
     console.log(
-      `  -> ${alt.fallbackTool}: success ${(alt.successRate * 100).toFixed(0)}%, ` +
+      `  -> ${alt.fallbackTool}: success ${alt.successRate.toFixed(1)}%, ` +
         `avg latency ${alt.avgLatencyMs ?? "N/A"}ms`,
     );
   }

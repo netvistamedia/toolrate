@@ -8,7 +8,7 @@ Designed to run as a monthly cron or on each deploy.
 """
 import asyncio
 import argparse
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import asyncpg
 
@@ -22,17 +22,20 @@ MONTHS_RETAIN = 12     # Keep 12 months of historical data
 async def ensure_partitions(conn: asyncpg.Connection, months_ahead: int, months_retain: int, dry_run: bool = False):
     """Create missing future partitions and drop expired ones."""
 
-    now = datetime.utcnow()
+    # Partitions use a tz-aware created_at column, so bound boundaries in
+    # UTC. `datetime.utcnow()` is deprecated in 3.12+ and returns a naive
+    # value that compares wrong against aware timestamps.
+    now = datetime.now(timezone.utc)
 
     # --- Create future partitions ---
     for offset in range(-1, months_ahead + 1):
         year = now.year + (now.month + offset - 1) // 12
         month = (now.month + offset - 1) % 12 + 1
-        start = datetime(year, month, 1)
+        start = datetime(year, month, 1, tzinfo=timezone.utc)
         if month == 12:
-            end = datetime(year + 1, 1, 1)
+            end = datetime(year + 1, 1, 1, tzinfo=timezone.utc)
         else:
-            end = datetime(year, month + 1, 1)
+            end = datetime(year, month + 1, 1, tzinfo=timezone.utc)
 
         partition_name = f"{PARTITION_TABLE}_y{start.year}m{start.month:02d}"
         exists = await conn.fetchval(
@@ -51,7 +54,7 @@ async def ensure_partitions(conn: asyncpg.Connection, months_ahead: int, months_
             await conn.execute(sql)
 
     # --- Drop old partitions beyond retention ---
-    cutoff = datetime(now.year, now.month, 1) - timedelta(days=months_retain * 31)
+    cutoff = datetime(now.year, now.month, 1, tzinfo=timezone.utc) - timedelta(days=months_retain * 31)
     rows = await conn.fetch(
         """
         SELECT inhrelid::regclass::text AS partition_name
@@ -71,6 +74,7 @@ async def ensure_partitions(conn: asyncpg.Connection, months_ahead: int, months_
         except (IndexError, ValueError):
             continue
 
+        partition_date = partition_date.replace(tzinfo=timezone.utc)
         if partition_date < cutoff:
             print(f"  DROP partition {name} (older than {months_retain} months)")
             if not dry_run:

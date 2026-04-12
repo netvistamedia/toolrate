@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 
 from app.dependencies import Db, RedisClient, AuthenticatedKey
-from app.core.security import make_fingerprint
+from app.core.security import make_fingerprint, effective_data_pool
 from app.schemas.report import ReportRequest, ReportResponse
 from app.services.report_ingest import ingest_report
 
@@ -30,7 +30,7 @@ async def submit_report(
         latency_ms=body.latency_ms,
         context=body.context,
         reporter_fingerprint=fingerprint,
-        data_pool=api_key.data_pool,
+        data_pool=effective_data_pool(api_key.data_pool),
         session_id=body.session_id,
         attempt_number=body.attempt_number,
         previous_tool=body.previous_tool,

@@ -5,6 +5,7 @@ from sqlalchemy import select, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.core.security import make_fingerprint
 from app.models.report import ExecutionReport
 from app.models.tool import Tool
 from app.models.alternative import Alternative
@@ -16,6 +17,17 @@ from app.services.jurisdiction import (
     is_gdpr_compliant,
     recommended_for,
 )
+
+# Synthetic fingerprints used by the LLM bootstrap paths (seed.py,
+# import_assessments.py, llm_assess.py). When all of a tool's recent reports
+# carry one of these, we mark data_source as "llm_estimated" so callers know
+# the score is from model consensus, not empirical traffic.
+_LLM_SYNTHETIC_FINGERPRINTS: frozenset[str] = frozenset({
+    make_fingerprint("seed", "seed"),
+    make_fingerprint("llm_ondemand", "llm_ondemand"),
+    make_fingerprint("llm_consensus", "llm_consensus"),
+})
+
 
 # Pre-defined mitigations for known error categories
 MITIGATIONS = {
@@ -116,13 +128,16 @@ async def compute_score(
         cold = _cold_start_response(now, tool)
         if eu_only or gdpr_required:
             cold.eu_alternatives = await _get_eu_alternatives(
-                db, tool, gdpr_required=gdpr_required,
+                db, tool, gdpr_required=gdpr_required and not eu_only,
             )
         return cold
 
-    # Determine data source
-    # Check if all reports come from the LLM synthetic fingerprint
-    all_llm = all(r.reporter_fingerprint and r.reporter_fingerprint.startswith("llm") for r in reports[:5])
+    # Determine data source. Synthetic bootstrap reports (seed + LLM consensus +
+    # on-demand LLM assessment) use fixed hashed fingerprints, so we compare
+    # against that known set rather than a substring match.
+    all_llm = all(
+        r.reporter_fingerprint in _LLM_SYNTHETIC_FINGERPRINTS for r in reports[:5]
+    )
     data_source = "llm_estimated" if all_llm else "empirical"
 
     # Step 1: Recency-weighted success rate
@@ -140,7 +155,10 @@ async def compute_score(
         created = report.created_at
         if created.tzinfo is None:
             created = created.replace(tzinfo=timezone.utc)
-        age_days = (now - created).total_seconds() / 86400
+        # Clamp at zero: if the system clock moved backward or a report is
+        # somehow ahead of `now`, a negative age would turn the weight into
+        # math.exp(+big) and let one row dominate the weighted average.
+        age_days = max(0.0, (now - created).total_seconds() / 86400)
         weight = math.exp(-decay_lambda * age_days)
 
         if report.success:
@@ -242,10 +260,15 @@ async def compute_score(
     juris_category = tool.jurisdiction_category
     juris_fields = _jurisdiction_fields(tool, juris_category)
 
-    # Step 10: EU / GDPR-filtered alternatives on demand
+    # Step 10: EU / GDPR-filtered alternatives on demand. `eu_only` is the
+    # stricter filter (EU only) and must override `gdpr_required` (EU +
+    # GDPR-adequate) when both are set — otherwise a caller explicitly
+    # asking for EU-only would silently get GDPR-adequate results too.
     eu_alts: list[AlternativeTool] = []
     if eu_only or gdpr_required:
-        eu_alts = await _get_eu_alternatives(db, tool, gdpr_required=gdpr_required)
+        eu_alts = await _get_eu_alternatives(
+            db, tool, gdpr_required=gdpr_required and not eu_only,
+        )
 
     return AssessResponse(
         reliability_score=round(reliability * 100, 1),
@@ -367,15 +390,23 @@ async def _get_eu_alternatives(
 
 async def _get_alternatives(db: AsyncSession, tool_id) -> list[AlternativeTool]:
     # 1. Check stored alternatives first
+    # There's no unique constraint on (tool_id, alternative_tool_id), so
+    # re-running seed/import can leave duplicates. Pull more than `limit`
+    # rows and dedupe by identifier before truncating, so users don't see
+    # the same alternative listed twice.
     result = await db.execute(
         select(Alternative, Tool)
         .join(Tool, Alternative.alternative_tool_id == Tool.id)
         .where(Alternative.tool_id == tool_id)
         .order_by(Alternative.relevance_score.desc())
-        .limit(3)
+        .limit(9)
     )
-    alternatives = []
+    alternatives: list[AlternativeTool] = []
+    seen_identifiers: set[str] = set()
     for alt, alt_tool in result.tuples().all():
+        if alt_tool.identifier in seen_identifiers:
+            continue
+        seen_identifiers.add(alt_tool.identifier)
         alternatives.append(
             AlternativeTool(
                 tool=alt_tool.identifier,
@@ -383,6 +414,8 @@ async def _get_alternatives(db: AsyncSession, tool_id) -> list[AlternativeTool]:
                 reason="Alternative provider",
             )
         )
+        if len(alternatives) >= 3:
+            break
 
     if alternatives:
         return alternatives

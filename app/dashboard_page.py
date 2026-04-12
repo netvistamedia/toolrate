@@ -405,6 +405,19 @@ function fmtPct(n, digits) {
   if (n === null || n === undefined) return '—';
   return (n * 100).toFixed(digits || 1) + '%';
 }
+// Escape user-controlled strings before interpolating them into innerHTML.
+// Error categories, tool identifiers, and display names all flow into this
+// admin page from untrusted /v1/report and /v1/assess payloads, so any
+// innerHTML usage without escaping is a stored XSS sink.
+function esc(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 function shortTool(t) {
   return t.replace(/^https?:\/\//, '').replace(/\/$/, '');
 }
@@ -467,7 +480,7 @@ function render(d) {
     totalErrors += e.count;
     var row = document.createElement('div');
     row.className = 'err-item';
-    row.innerHTML = '<span class="cat">' + e.category + '</span><span class="cnt">' + fmtNum(e.count) + '</span>';
+    row.innerHTML = '<span class="cat">' + esc(e.category) + '</span><span class="cnt">' + fmtNum(e.count) + '</span>';
     list.appendChild(row);
   });
   if (d.errors_today.length === 0) {
@@ -501,10 +514,10 @@ function renderToolTable(id, rows) {
   }
   rows.forEach(function(r) {
     var tr = document.createElement('tr');
-    var short = shortTool(r.identifier);
+    var short = shortTool(r.identifier || '');
     tr.innerHTML =
-      '<td class="tool"><span class="name">' + (r.display_name || short) + '</span>' +
-      '<span class="id">' + short + '</span></td>' +
+      '<td class="tool"><span class="name">' + esc(r.display_name || short) + '</span>' +
+      '<span class="id">' + esc(short) + '</span></td>' +
       '<td class="num">' + fmtNum(r.reports_24h) + '</td>' +
       '<td class="num">' + pillForRate(r.success_rate) + '</td>';
     tbody.appendChild(tr);

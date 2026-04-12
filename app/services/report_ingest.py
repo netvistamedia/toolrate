@@ -8,6 +8,17 @@ from app.core.security import context_hash as _context_hash
 from app.models.report import ExecutionReport
 from app.models.tool import Tool
 
+# Atomic INCR+EXPIRE — same pattern as rate_limiter. Without this, a crash
+# between INCR and EXPIRE leaves the fingerprint key with no TTL, so the
+# per-tool-per-day counter never resets and the reporter is banned forever.
+_INCR_WITH_TTL_LUA = """
+local count = redis.call('INCR', KEYS[1])
+if count == 1 then
+    redis.call('EXPIRE', KEYS[1], ARGV[1])
+end
+return count
+"""
+
 
 async def upsert_tool(db: AsyncSession, identifier: str) -> Tool:
     """Get or create a tool by identifier. Handles concurrent inserts safely."""
@@ -46,9 +57,7 @@ async def ingest_report(
 
     # Anti-gaming: limit reports per fingerprint per tool per day
     fp_key = f"fp:{reporter_fingerprint}:{tool.id}"
-    fp_count = await redis.incr(fp_key)
-    if fp_count == 1:
-        await redis.expire(fp_key, 86400)
+    fp_count = await redis.eval(_INCR_WITH_TTL_LUA, 1, fp_key, 86400)
     if fp_count > settings.max_reports_per_fingerprint_per_tool_per_day:
         return tool, None  # silently drop, don't reveal the limit
 

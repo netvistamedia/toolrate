@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter
 
 from app.config import settings
+from app.core.security import effective_data_pool
 from app.dependencies import AuthenticatedKey, Db, RedisClient
 from app.services.rate_limiter import current_usage
 
@@ -146,7 +147,9 @@ async def my_dashboard(db: Db, redis: RedisClient, api_key: AuthenticatedKey):
             "tier": api_key.tier,
             "billing_period": period,
             "is_active": bool(api_key.is_active),
-            "data_pool": api_key.data_pool,
+            # Strip the "email:<hash>" dedup tag so free users don't see
+            # their internal dedup marker in the "data pool" field.
+            "data_pool": effective_data_pool(api_key.data_pool),
             "created_at": api_key.created_at.isoformat() if api_key.created_at else None,
             "last_used_at": (
                 api_key.last_used_at.isoformat() if api_key.last_used_at else None

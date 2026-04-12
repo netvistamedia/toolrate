@@ -176,21 +176,36 @@ async def seed():
                 db.add(report)
                 total_reports += 1
 
-            tool.report_count = num_reports
+            # Accumulate so re-running the seed on an existing tool keeps
+            # the count in sync with the true row count rather than
+            # overwriting it with just the latest batch.
+            tool.report_count = (tool.report_count or 0) + num_reports
 
-        # Create alternatives
+        # Create alternatives. There's no unique constraint on
+        # (tool_id, alternative_tool_id), so re-running the seed would
+        # otherwise duplicate every pair — check existence first.
         alt_count = 0
         for group in ALTERNATIVE_GROUPS.values():
             for i, ident in enumerate(group):
                 for j, alt_ident in enumerate(group):
-                    if i != j and ident in tool_map and alt_ident in tool_map:
-                        alt = Alternative(
-                            tool_id=tool_map[ident].id,
-                            alternative_tool_id=tool_map[alt_ident].id,
-                            relevance_score=round(random.uniform(0.6, 0.95), 2),
+                    if i == j or ident not in tool_map or alt_ident not in tool_map:
+                        continue
+                    tool_a = tool_map[ident]
+                    tool_b = tool_map[alt_ident]
+                    existing = await db.execute(
+                        select(Alternative).where(
+                            Alternative.tool_id == tool_a.id,
+                            Alternative.alternative_tool_id == tool_b.id,
                         )
-                        db.add(alt)
-                        alt_count += 1
+                    )
+                    if existing.scalar_one_or_none() is not None:
+                        continue
+                    db.add(Alternative(
+                        tool_id=tool_a.id,
+                        alternative_tool_id=tool_b.id,
+                        relevance_score=round(random.uniform(0.6, 0.95), 2),
+                    ))
+                    alt_count += 1
 
         await db.commit()
 

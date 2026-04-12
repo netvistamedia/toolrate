@@ -181,7 +181,10 @@ async def import_to_db(tools: list[dict]):
                 db.add(report)
                 reports_created += 1
 
-            tool.report_count = max(tool.report_count, num_reports)
+            # Accumulate so re-imports don't clobber earlier counts — scoring
+            # reads rows directly, but report_count drives sort order for
+            # alternatives and discovery, so it has to reflect the true total.
+            tool.report_count = (tool.report_count or 0) + num_reports
 
         await db.commit()
 

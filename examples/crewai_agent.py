@@ -115,7 +115,13 @@ class ToolRateAPITool(BaseTool):
             print(f"    Failure risk: {risk}")
 
             if assessment.get("common_pitfalls"):
-                print(f"    Pitfalls: {', '.join(assessment['common_pitfalls'])}")
+                # common_pitfalls is a list of dicts with category/percentage/
+                # count/mitigation — join their category labels rather than the
+                # dicts themselves.
+                pitfall_labels = ", ".join(
+                    p["category"] for p in assessment["common_pitfalls"]
+                )
+                print(f"    Pitfalls: {pitfall_labels}")
 
             if assessment.get("recommended_mitigations"):
                 print(f"    Mitigations: {', '.join(assessment['recommended_mitigations'])}")
@@ -231,12 +237,13 @@ def main() -> None:
 
     print("\n=== Post-Run: ToolRate Discovery Insights ===\n")
 
-    # Find hidden gems -- tools other agents found reliable as fallbacks
+    # Find hidden gems -- tools other agents found reliable as fallbacks.
+    # The API returns success rates as 0-100 percentages, so format directly.
     print("Hidden Gems (tools that work great as fallbacks):")
     gems = nemo.discover_hidden_gems(category="search", limit=5)
     for gem in gems.get("hidden_gems", []):
         print(f"  {gem['tool']}: "
-              f"fallback success {gem['fallback_success_rate']:.0%}, "
+              f"fallback success {gem['fallback_success_rate']:.1f}%, "
               f"used {gem['times_used_as_fallback']} times")
 
     # Get fallback chain -- what to try when SerpAPI fails
@@ -244,7 +251,7 @@ def main() -> None:
     chain = nemo.discover_fallback_chain("https://serpapi.com/search", limit=3)
     for alt in chain.get("fallback_chain", []):
         print(f"  -> {alt['fallback_tool']}: "
-              f"success {alt['success_rate']:.0%}, "
+              f"success {alt['success_rate']:.1f}%, "
               f"avg latency {alt.get('avg_latency_ms', 'N/A')}ms")
 
     nemo.close()

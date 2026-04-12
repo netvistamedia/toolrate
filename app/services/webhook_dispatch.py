@@ -71,7 +71,19 @@ async def dispatch_score_change(
     }
 
     for wh in webhooks:
-        asyncio.create_task(_deliver(wh.id, wh.url, wh.secret, payload))
+        task = asyncio.create_task(_deliver(wh.id, wh.url, wh.secret, payload))
+        task.add_done_callback(_log_task_exception)
+
+
+def _log_task_exception(task: "asyncio.Task") -> None:
+    """Surface background-task failures. Without this hook, exceptions raised
+    inside `_deliver` (e.g. a DB outage while updating failure_count) are
+    only emitted as an asyncio 'never retrieved' warning at GC time."""
+    if task.cancelled():
+        return
+    exc = task.exception()
+    if exc is not None:
+        logger.error("Webhook delivery task crashed: %s", exc, exc_info=exc)
 
 
 async def _deliver(webhook_id, url: str, secret: str, payload: dict):
