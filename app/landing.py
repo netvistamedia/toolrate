@@ -876,7 +876,7 @@ body::after {
   <div class="hero-glow"></div>
   <div class="hero-content">
     <div class="hero-eyebrow">Reliability Oracle for AI Agents</div>
-    <h1>Pick the <span>right tool</span><br>from the start</h1>
+    <h1>Real advice for every tool your <span>agent considers</span></h1>
     <p class="hero-sub">
       AI agents pick tools, they fail, swap for another &mdash; costing time, tokens, and money.
       ToolRate rates 600+ tools so your agents pick correctly the first time.
