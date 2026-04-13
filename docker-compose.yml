@@ -25,15 +25,17 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: nemo
-      POSTGRES_PASSWORD: nemo
-      POSTGRES_DB: nemoflow
+      POSTGRES_USER: ${POSTGRES_USER:-nemo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nemo}
+      POSTGRES_DB: ${POSTGRES_DB:-nemoflow}
+    # Bind to loopback so a future firewall misconfig can't expose the DB.
+    # Hetzner Cloud Firewall already blocks 5432 inbound; this is defense-in-depth.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U nemo -d nemoflow"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-nemo} -d $${POSTGRES_DB:-nemoflow}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -42,7 +44,7 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -56,7 +58,7 @@ services:
       - ./scripts/backup-db.sh:/usr/local/bin/backup-db.sh:ro
       - pgbackups:/backups
     environment:
-      PGPASSWORD: nemo
+      PGPASSWORD: ${POSTGRES_PASSWORD:-nemo}
     entrypoint: ["/bin/sh", "-c"]
     command:
       - |

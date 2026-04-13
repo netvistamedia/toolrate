@@ -223,4 +223,14 @@ Python 3.12 / FastAPI / PostgreSQL / Redis / Caddy / Docker — hosted on Hetzne
 
 ## License
 
-Proprietary. Contact for licensing.
+ToolRate is source-available software licensed under the **Business Source License 1.1 (BUSL-1.1)**.
+
+**You are free to:**
+- Read, modify, and contribute to the code
+- Run ToolRate for your own agents and internal use
+- Fork and experiment locally
+
+**You may not:**
+- Offer a competing commercial hosted or managed service based on ToolRate
+
+On **2030-04-13**, BUSL-1.1 automatically converts to the **Apache License, Version 2.0**. For alternative licensing arrangements, contact bleep@toolrate.ai.
