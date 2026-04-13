@@ -5,7 +5,11 @@ A CrewAI crew with ToolRate acting as a quality gate for tool execution.
 ToolRate checks tool reliability before each call, reports results back,
 and automatically falls back to alternatives when tools are unreliable.
 
-Install:
+Install (we recommend uv — https://github.com/astral-sh/uv):
+    uv add toolrate crewai crewai-tools
+
+Or with pip inside a virtual environment:
+    python3 -m venv .venv && source .venv/bin/activate
     pip install toolrate crewai crewai-tools
 
 Set environment variables:

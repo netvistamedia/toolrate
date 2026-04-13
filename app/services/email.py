@@ -35,8 +35,10 @@ async def send_welcome_email(to_email: str, api_key_prefix: str):
   <h2 style="font-size:1.1rem;margin-bottom:0.75rem">Quick Start</h2>
 
   <p><strong>1. Install the SDK</strong></p>
-  <pre style="background:#1a1a2e;color:#e0e0e0;padding:1rem;border-radius:8px;font-size:0.85rem;overflow-x:auto"><code>pip install toolrate    <span style="color:#666"># Python</span>
+  <p style="margin:0 0 0.5rem;color:#666;font-size:0.85rem">For Python we recommend <a href="https://github.com/astral-sh/uv" style="color:#7b61ff">uv</a> — fast, modern, no PEP 668 errors.</p>
+  <pre style="background:#1a1a2e;color:#e0e0e0;padding:1rem;border-radius:8px;font-size:0.85rem;overflow-x:auto"><code>uv add toolrate         <span style="color:#666"># Python (recommended)</span>
 npm install toolrate    <span style="color:#666"># TypeScript</span></code></pre>
+  <p style="margin:0.5rem 0 0;color:#666;font-size:0.8rem">Prefer pip? <code style="background:#f1f3f5;padding:1px 4px;border-radius:3px">python3 -m venv .venv &amp;&amp; source .venv/bin/activate &amp;&amp; pip install toolrate</code></p>
 
   <p><strong>2. Check a tool before calling it</strong></p>
   <pre style="background:#1a1a2e;color:#e0e0e0;padding:1rem;border-radius:8px;font-size:0.85rem;overflow-x:auto"><code><span style="color:#7b61ff">from</span> toolrate <span style="color:#7b61ff">import</span> ToolRate

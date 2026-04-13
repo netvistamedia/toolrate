@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" width="80">
-</p>
-
 <h1 align="center">ToolRate</h1>
 
 <p align="center">
@@ -9,18 +5,68 @@
 </p>
 
 <p align="center">
-  <a href="https://toolrate.ai">API</a> &nbsp;|&nbsp;
-  <a href="https://api.toolrate.ai/docs">Docs</a> &nbsp;|&nbsp;
-  <a href="https://toolrate.ai/register">Get API Key</a>
+  <a href="https://pypi.org/project/toolrate/"><img alt="PyPI" src="https://img.shields.io/pypi/v/toolrate?label=pypi&color=0a95fd"></a>
+  <a href="https://www.npmjs.com/package/toolrate"><img alt="npm" src="https://img.shields.io/npm/v/toolrate?label=npm&color=0a95fd"></a>
+  <a href="https://api.toolrate.ai/docs"><img alt="API" src="https://img.shields.io/badge/api-toolrate.ai-2fcffa"></a>
+</p>
+
+<p align="center">
+  <a href="https://toolrate.ai">Website</a> &nbsp;·&nbsp;
+  <a href="https://api.toolrate.ai/docs">API Docs</a> &nbsp;·&nbsp;
+  <a href="https://toolrate.ai/register">Get a free API key</a>
 </p>
 
 ---
 
 ToolRate is a reliability oracle for AI agents. It scores 600+ tools and APIs in real time so your agent picks the right one *before* wasting a call on a failing endpoint. One line wraps any tool call with assess-before, report-after, and automatic fallback.
 
-## The problem
+## Install
 
-AI agents fail **60-80% of the time** on external tool calls. Timeouts, rate limits, auth failures, flaky APIs. Your agent retries blindly, burns tokens, and still fails. ToolRate gives it the information it needs to make smarter choices.
+**Python** — we recommend [uv](https://github.com/astral-sh/uv), the fast, modern Python package manager. It handles virtual environments for you and avoids the `externally-managed-environment` errors plain `pip` raises on macOS Homebrew and recent Linux distros.
+
+```bash
+# One-time: install uv (skip if you already have it)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Add ToolRate to your project
+uv add toolrate
+```
+
+**TypeScript / Node.js**
+
+```bash
+npm install toolrate
+```
+
+<details>
+<summary><b>Other ways to install</b> — pip, poetry, pdm, rye, pnpm, yarn, bun</summary>
+
+<br>
+
+**Python with pip** (inside a virtual environment):
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install toolrate
+```
+
+**Python with poetry / pdm / rye:**
+
+```bash
+poetry add toolrate
+pdm add toolrate
+rye add toolrate
+```
+
+**TypeScript with pnpm / yarn / bun:**
+
+```bash
+pnpm add toolrate
+yarn add toolrate
+bun add toolrate
+```
+
+</details>
 
 ## One line of code
 
@@ -42,13 +88,17 @@ import { ToolRate } from "toolrate";
 
 const client = new ToolRate("nf_live_...");
 
-const result = await nemo.guard(
+const result = await client.guard(
   "https://api.openai.com/v1/chat/completions",
   () => openai.chat.completions.create({ model: "gpt-4", messages }),
 );
 ```
 
 `guard()` automatically assesses reliability before calling, executes the tool, reports the outcome, and on failure tries your fallback tools.
+
+## The problem
+
+AI agents fail **60-80% of the time** on external tool calls. Timeouts, rate limits, auth failures, flaky APIs. Your agent retries blindly, burns tokens, and still fails. ToolRate gives it the information it needs to make smarter choices.
 
 ## What you get back
 
@@ -78,14 +128,7 @@ const result = await nemo.guard(
 }
 ```
 
-A single call gives your agent a reliability score, failure risk, common pitfalls, mitigations, and ranked alternatives -- everything it needs to decide whether to proceed, retry, or switch tools.
-
-## Install
-
-```bash
-pip install toolrate        # Python
-npm install toolrate        # TypeScript / Node.js
-```
+A single call gives your agent a reliability score, failure risk, common pitfalls, mitigations, and ranked alternatives — everything it needs to decide whether to proceed, retry, or switch tools.
 
 ## Quickstart
 
@@ -143,11 +186,11 @@ If the primary tool's score is below `min_score`, guard skips straight to the hi
 
 ## How scoring works
 
-1. **Recency-weighted average** -- 70% weight on last 7 days (exponential decay, half-life 3.5 days)
-2. **Bayesian smoothing** -- new tools start at ~83%, converge to real performance after ~25 reports
-3. **Context bucketing** -- different scores for different workflow contexts
-4. **Trend detection** -- failure risk adjusts if last 24h is worse than the 7-day average
-5. **Error aggregation** -- common pitfalls ranked by frequency across all reports
+1. **Recency-weighted average** — 70% weight on last 7 days (exponential decay, half-life 3.5 days)
+2. **Bayesian smoothing** — new tools start at ~83%, converge to real performance after ~25 reports
+3. **Context bucketing** — different scores for different workflow contexts
+4. **Trend detection** — failure risk adjusts if last 24h is worse than the 7-day average
+5. **Error aggregation** — common pitfalls ranked by frequency across all reports
 
 ## API endpoints
 
@@ -176,7 +219,7 @@ Full interactive documentation: **[api.toolrate.ai/docs](https://api.toolrate.ai
 
 ## Stack
 
-Python 3.12 / FastAPI / PostgreSQL / Redis / Caddy / Docker -- hosted on Hetzner Cloud in Germany.
+Python 3.12 / FastAPI / PostgreSQL / Redis / Caddy / Docker — hosted on Hetzner Cloud in Germany.
 
 ## License
 

@@ -70,8 +70,19 @@ X-Api-Key: nf_live_your_key_here
 
 ## SDKs
 
-- **Python**: `pip install toolrate`
-- **TypeScript**: `npm install toolrate`
+**Python** (we recommend [uv](https://github.com/astral-sh/uv) — fast, modern, no PEP 668 headaches):
+
+```bash
+uv add toolrate
+# or, with pip in a venv:
+python3 -m venv .venv && source .venv/bin/activate && pip install toolrate
+```
+
+**TypeScript / Node.js**:
+
+```bash
+npm install toolrate
+```
 """
 
 app = FastAPI(

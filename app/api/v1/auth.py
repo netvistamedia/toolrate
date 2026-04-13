@@ -108,7 +108,9 @@ async def register(
     asyncio.create_task(_safe_send())
 
     quickstart = (
-        f"pip install toolrate\n\n"
+        f"# Install (we recommend uv: https://github.com/astral-sh/uv)\n"
+        f"uv add toolrate\n"
+        f"# Or with pip in a venv: python3 -m venv .venv && source .venv/bin/activate && pip install toolrate\n\n"
         f"from toolrate import ToolRate\n"
         f"client = ToolRate(\"{key_prefix}...\")\n"
         f"print(client.assess(\"https://api.stripe.com/v1/charges\"))"

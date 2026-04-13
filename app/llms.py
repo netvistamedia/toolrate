@@ -15,7 +15,8 @@ ToolRate delivers real-time reliability scores, failure risk, jurisdiction intel
 
 ## SDKs
 
-- Python: `pip install toolrate`
+- Python (recommended): `uv add toolrate` — uses [uv](https://github.com/astral-sh/uv), the modern Python package manager
+- Python (alternative): `python3 -m venv .venv && source .venv/bin/activate && pip install toolrate`
 - TypeScript: `npm install toolrate`
 
 ## API Base URL
@@ -76,7 +77,21 @@ subscription, scales to zero, and the first 100 assessments every day are on us.
 
 ### Python
 
+We recommend [uv](https://github.com/astral-sh/uv) — fast, modern, and avoids the `externally-managed-environment` errors plain `pip` raises on macOS Homebrew and recent Linux distros.
+
 ```bash
+# One-time: install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Add ToolRate to your project
+uv add toolrate
+```
+
+Or, with `pip` inside a virtual environment:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install toolrate
 ```
 

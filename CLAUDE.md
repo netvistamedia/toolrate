@@ -11,7 +11,7 @@ ToolRate is a reliability oracle for AI agents. It rates 600+ tools/APIs so agen
 - **Cache**: Redis 7 (via redis-py async)
 - **Migrations**: Alembic (async)
 - **Server**: Hetzner Cloud (178.104.171.216), Docker Compose, Caddy for TLS
-- **SDKs**: Python (PyPI) + TypeScript (npm), both named `nemoflow`
+- **SDKs**: Python (PyPI) + TypeScript (npm), both named `toolrate` (renamed from `nemoflow` 2026-04-12; `nemoflow` on PyPI is deleted)
 
 ## Common commands
 
@@ -89,8 +89,8 @@ app/
     security.py        — API key generation, hashing
     exceptions.py      — Custom HTTP exceptions
 sdks/
-  python/              — PyPI package "nemoflow"
-  typescript/          — npm package "nemoflow"
+  python/              — PyPI package "toolrate"
+  typescript/          — npm package "toolrate"
 ```
 
 ## Scoring algorithm

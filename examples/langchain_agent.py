@@ -4,7 +4,11 @@ ToolRate + LangChain Integration Example
 An agent that uses ToolRate to check tool reliability before calling tools,
 and reports outcomes back to build community intelligence.
 
-Install:
+Install (we recommend uv — https://github.com/astral-sh/uv):
+    uv add toolrate langchain langchain-openai langchain-community
+
+Or with pip inside a virtual environment:
+    python3 -m venv .venv && source .venv/bin/activate
     pip install toolrate langchain langchain-openai langchain-community
 
 Set environment variables:

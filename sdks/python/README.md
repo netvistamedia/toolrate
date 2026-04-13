@@ -4,9 +4,25 @@ Python client for the [ToolRate API](https://api.toolrate.ai) — the reliabilit
 
 ## Installation
 
+We recommend [uv](https://github.com/astral-sh/uv) — the modern Python package manager. It's fast, manages virtual environments for you, and avoids the `externally-managed-environment` errors you'll hit with plain `pip` on macOS Homebrew and recent Linux distros.
+
 ```bash
+# One-time: install uv (skip if you already have it)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Add ToolRate to your project
+uv add toolrate
+```
+
+Prefer `pip`? Use a virtual environment:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install toolrate
 ```
+
+`poetry`, `pdm`, and `rye` work too: `poetry add toolrate`.
 
 ## Quick start — one line of code
 
