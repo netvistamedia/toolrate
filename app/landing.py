@@ -1005,45 +1005,25 @@ __SITE_HEADER_HTML__
 
 <!-- Jurisdiction Intelligence -->
 <section class="jurisdiction">
-  <div class="jurisdiction-eyebrow">Enterprise Compliance Layer</div>
+  <div class="jurisdiction-eyebrow">Global Compliance Layer</div>
   <div class="jurisdiction-head">
     <div class="jurisdiction-icon">🌍</div>
-    <h2>Jurisdiction Intelligence</h2>
+    <h2>Jurisdiction, Made Visible</h2>
     <span class="jurisdiction-badge">Exclusive to ToolRate</span>
   </div>
   <p class="jurisdiction-lead">
-    ToolRate is the only reliability layer that knows exactly <em>where</em> every tool
-    actually runs &mdash; and clearly surfaces data residency, privacy, and compliance
-    risk in every assessment.
-    From EU-hosted tools to high-risk jurisdictions, you get clear risk scoring and
-    intelligent alternatives in one call.
+    Every tool in ToolRate comes with clear, real-world jurisdiction data &mdash; hosting location, GDPR risk level, and confidence score. So your agents decide based on facts, not assumptions.
   </p>
 
-  <div class="jurisdiction-tiers">
-    <div class="tier tier-eu">
-      <div class="tier-label"><span class="tier-dot"></span>EU-hosted</div>
-      <p>Verified GDPR-compliant with low residency risk. Safe for regulated workloads and customer PII.</p>
-    </div>
-    <div class="tier tier-mid">
-      <div class="tier-label"><span class="tier-dot"></span>US &amp; Other Regions</div>
-      <p>Exact jurisdiction and transfer-risk level exposed so your agent weighs it against the alternatives in real time.</p>
-    </div>
-    <div class="tier tier-high">
-      <div class="tier-label"><span class="tier-dot"></span>High-risk Jurisdictions</div>
-      <p>Explicitly flagged. Never silently routed through a regulated pipeline or privileged workflow.</p>
-    </div>
-  </div>
-
-  <div class="jurisdiction-benefits-title">Built into every response</div>
   <ul class="jurisdiction-benefits">
-    <li><strong>EU-first routing</strong> &mdash; sensitive calls land in GDPR territory automatically, with no policy code in your agent.</li>
-    <li><strong>Assess-time enforcement</strong> &mdash; non-compliant tools are blocked before the request ever leaves the process.</li>
-    <li><strong>Compliant fallbacks</strong> &mdash; when a high-risk tool is the only option, a cleaner alternative is returned in the same response.</li>
-    <li><strong>Audit-ready sovereignty</strong> &mdash; every decision is timestamped, confidence-scored, and exportable for compliance review.</li>
+    <li><strong>Reliability first</strong> &mdash; every tool is scored neutrally, with no geographic penalty.</li>
+    <li><strong>GDPR risk made explicit</strong> &mdash; clear signals for data-residency compliance when it matters.</li>
+    <li><strong>Region as a choice, never a default</strong> &mdash; EU, US, and global tools ranked by performance.</li>
+    <li><strong>Your rules, your ranking</strong> &mdash; pass <code>preferences</code> once via the SDK and ToolRate weighs every recommendation against your policy (e.g. <em>&ldquo;prefer EU for European data&rdquo;</em> or <em>&ldquo;optimize for lowest latency worldwide&rdquo;</em>).</li>
   </ul>
 
   <p class="jurisdiction-punch">
-    Your agent no longer guesses whether Stripe, OpenAI, Tavily, or Supabase is safe for a regulated workflow &mdash; it <strong>knows</strong>, with the confidence score attached to every assessment and a durable record of the decision.
+    From San Francisco to Berlin to Singapore, every agent builder gets the same transparent view &mdash; with full control to match how <strong>you</strong> actually build.
   </p>
 </section>
 
