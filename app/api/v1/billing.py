@@ -9,9 +9,17 @@ from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy import select, update
 
 from app.config import settings
-from app.dependencies import Db, AuthenticatedKey
+from app.dependencies import Db, AuthenticatedKey, RedisClient
 from app.models.api_key import ApiKey
 from app.services.audit import log_audit
+
+# Atomic Redis INCR+EXPIRE so a crash between the two commands cannot leave
+# a counter without a TTL and permanently lock out the IP. Shared by every
+# unauthenticated endpoint that needs per-IP abuse protection.
+_INCR_WITH_TTL_LUA = (
+    "local c = redis.call('INCR', KEYS[1]); "
+    "if c == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end; return c"
+)
 
 router = APIRouter()
 logger = logging.getLogger("nemoflow.billing")
@@ -44,8 +52,18 @@ class ContactSalesResponse(BaseModel):
         "wants to enable ToolRate for all of your users."
     ),
 )
-async def contact_sales(request: Request, body: ContactSalesRequest, db: Db):
+async def contact_sales(request: Request, body: ContactSalesRequest, db: Db, redis: RedisClient):
     client_ip = request.client.host if request.client else "unknown"
+
+    # Per-IP rate limit: 5 submissions/hour. Prevents form spam from flooding
+    # the sales inbox and the audit log without any legitimate friction.
+    rl_key = f"contact_sales:ip:{client_ip}"
+    count = await redis.eval(_INCR_WITH_TTL_LUA, 1, rl_key, 3600)
+    if count > 5:
+        raise HTTPException(
+            status_code=429,
+            detail="Too many submissions from this IP. Please try again in an hour.",
+        )
 
     logger.info(
         "Enterprise lead: company=%s email=%s volume=%s",

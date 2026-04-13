@@ -1,14 +1,50 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
+
+
+_MAX_SAMPLE_PAYLOAD_DEPTH = 6
+_MAX_SAMPLE_PAYLOAD_NODES = 1000
+
+
+def _payload_depth_and_size(obj, _depth=0):
+    """Walk a nested structure and return (max_depth, total_node_count).
+
+    Guards against JSON bombs submitted via sample_payload. We never store or
+    execute this value — it's only a hint for context-aware scoring — so we
+    reject anything pathologically deep or wide before Pydantic materialises
+    it further up the stack.
+    """
+    if _depth > _MAX_SAMPLE_PAYLOAD_DEPTH:
+        raise ValueError(f"sample_payload nested deeper than {_MAX_SAMPLE_PAYLOAD_DEPTH} levels")
+    count = 1
+    if isinstance(obj, dict):
+        for v in obj.values():
+            count += _payload_depth_and_size(v, _depth + 1)
+            if count > _MAX_SAMPLE_PAYLOAD_NODES:
+                raise ValueError(f"sample_payload exceeds {_MAX_SAMPLE_PAYLOAD_NODES} total nodes")
+    elif isinstance(obj, list):
+        for v in obj:
+            count += _payload_depth_and_size(v, _depth + 1)
+            if count > _MAX_SAMPLE_PAYLOAD_NODES:
+                raise ValueError(f"sample_payload exceeds {_MAX_SAMPLE_PAYLOAD_NODES} total nodes")
+    return count
 
 
 class AssessRequest(BaseModel):
     tool_identifier: str = Field(..., max_length=512, description="URL, name, or OpenAPI snippet identifying the tool")
     context: str = Field("", max_length=1024, description="Workflow context for context-bucketed scoring")
-    sample_payload: dict | None = Field(None, description="Optional sample payload (not stored)")
+    sample_payload: dict | None = Field(None, description="Optional sample payload (not stored). Capped at 6 levels deep / 1000 nodes.")
     eu_only: bool = Field(False, description="If true, surface EU-hosted alternatives in eu_alternatives")
     gdpr_required: bool = Field(False, description="If true, surface EU + GDPR-adequate alternatives in eu_alternatives")
+
+    @field_validator("sample_payload")
+    @classmethod
+    def _validate_sample_payload(cls, v):
+        if v is None:
+            return v
+        _payload_depth_and_size(v)
+        return v
 
     model_config = {
         "json_schema_extra": {

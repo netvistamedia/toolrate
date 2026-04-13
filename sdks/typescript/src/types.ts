@@ -2,6 +2,11 @@
 export interface ToolRateOptions {
   /** Override the default API base URL. */
   baseUrl?: string;
+  /**
+   * Request timeout in milliseconds. Defaults to 30000 (30s).
+   * Prevents agents from hanging indefinitely on a stalled connection.
+   */
+  timeoutMs?: number;
 }
 
 // ── Assess ──────────────────────────────────────────────────────────

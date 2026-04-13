@@ -20,10 +20,12 @@ import {
 } from "./types.js";
 
 const DEFAULT_BASE_URL = "https://api.toolrate.ai";
+const DEFAULT_TIMEOUT_MS = 30000;
 
 export class ToolRate {
   private readonly apiKey: string;
   private readonly baseUrl: string;
+  private readonly timeoutMs: number;
 
   constructor(apiKey: string, options?: ToolRateOptions) {
     if (!apiKey) {
@@ -31,6 +33,7 @@ export class ToolRate {
     }
     this.apiKey = apiKey;
     this.baseUrl = (options?.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
+    this.timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   }
 
   // ── Assessment ─────────────────────────────────────────────────
@@ -456,54 +459,58 @@ export class ToolRate {
       Object.entries(body).filter(([, v]) => v !== undefined),
     );
 
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Api-Key": this.apiKey,
-      },
-      body: JSON.stringify(clean),
-    });
-
-    const responseBody: unknown = await response.json();
-
-    if (!response.ok) {
-      throw new ToolRateError(
-        `ToolRate API error: ${response.status} ${response.statusText}`,
-        response.status,
-        responseBody,
-      );
-    }
-
-    return responseBody as T;
+    return this.request<T>("POST", path, JSON.stringify(clean));
   }
 
   private async get<T>(path: string): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      method: "GET",
-      headers: { "X-Api-Key": this.apiKey },
-    });
-
-    const responseBody: unknown = await response.json();
-
-    if (!response.ok) {
-      throw new ToolRateError(
-        `ToolRate API error: ${response.status} ${response.statusText}`,
-        response.status,
-        responseBody,
-      );
-    }
-
-    return responseBody as T;
+    return this.request<T>("GET", path);
   }
 
   private async del<T>(path: string): Promise<T> {
-    const response = await fetch(`${this.baseUrl}${path}`, {
-      method: "DELETE",
-      headers: { "X-Api-Key": this.apiKey },
-    });
+    return this.request<T>("DELETE", path);
+  }
 
-    const responseBody: unknown = await response.json();
+  private async request<T>(
+    method: "GET" | "POST" | "DELETE",
+    path: string,
+    body?: string,
+  ): Promise<T> {
+    const headers: Record<string, string> = { "X-Api-Key": this.apiKey };
+    if (body !== undefined) headers["Content-Type"] = "application/json";
+
+    // AbortSignal.timeout() is available in Node 18.17+, modern browsers, and
+    // all supported Bun/Deno runtimes. It enforces the per-request timeout so
+    // an unresponsive server cannot leave an agent hanging forever.
+    let response: Response;
+    try {
+      response = await fetch(`${this.baseUrl}${path}`, {
+        method,
+        headers,
+        body,
+        signal: AbortSignal.timeout(this.timeoutMs),
+      });
+    } catch (e) {
+      const err = e instanceof Error ? e : new Error(String(e));
+      if (err.name === "TimeoutError" || err.name === "AbortError") {
+        throw new ToolRateError(
+          `ToolRate request timed out after ${this.timeoutMs}ms`,
+          0,
+          undefined,
+        );
+      }
+      throw new ToolRateError(
+        `ToolRate network error: ${err.message}`,
+        0,
+        undefined,
+      );
+    }
+
+    let responseBody: unknown = undefined;
+    try {
+      responseBody = await response.json();
+    } catch {
+      // Non-JSON body (e.g. 502 HTML from an upstream proxy). Leave undefined.
+    }
 
     if (!response.ok) {
       throw new ToolRateError(

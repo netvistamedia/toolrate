@@ -282,7 +282,17 @@ __SITE_HEADER_HTML__
 </div><!-- /.page -->
 
 <script>
-const STORAGE_KEY = 'nemoflow_user_key';
+const STORAGE_KEY = 'toolrate_user_key';
+// Migrate pre-rename key so existing users stay logged in after the
+// nemoflow → toolrate transition. Safe to remove after 2026-07.
+const LEGACY_STORAGE_KEY = 'nemoflow_user_key';
+(function migrateLegacyKey() {
+  var legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+  if (legacy && !localStorage.getItem(STORAGE_KEY)) {
+    localStorage.setItem(STORAGE_KEY, legacy);
+  }
+  if (legacy) localStorage.removeItem(LEGACY_STORAGE_KEY);
+})();
 let refreshTimer = null;
 
 function getKey() { return localStorage.getItem(STORAGE_KEY); }

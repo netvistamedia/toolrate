@@ -340,7 +340,17 @@ __SITE_HEADER_HTML__
 </div><!-- /.page -->
 
 <script>
-const STORAGE_KEY = 'nemoflow_admin_key';
+const STORAGE_KEY = 'toolrate_admin_key';
+// Migrate pre-rename admin key so the dashboard session survives the
+// nemoflow → toolrate transition. Safe to remove after 2026-07.
+const LEGACY_STORAGE_KEY = 'nemoflow_admin_key';
+(function migrateLegacyKey() {
+  var legacy = localStorage.getItem(LEGACY_STORAGE_KEY);
+  if (legacy && !localStorage.getItem(STORAGE_KEY)) {
+    localStorage.setItem(STORAGE_KEY, legacy);
+  }
+  if (legacy) localStorage.removeItem(LEGACY_STORAGE_KEY);
+})();
 let refreshTimer = null;
 
 function getKey() { return localStorage.getItem(STORAGE_KEY); }
