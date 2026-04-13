@@ -232,14 +232,18 @@ async def compute_score(
     sr_30d = round(successes_total / total * 100) if total else 0
     success_rate_str = f"{sr_30d}% (last 30 days, {total} calls)"
 
-    # Step 6: Structured pitfalls and mitigations
+    # Step 6: Structured pitfalls and mitigations. Tool-specific mitigations
+    # (set by the on-demand LLM assessment) win over the generic MITIGATIONS
+    # dict, so a payment API gets payment-specific advice instead of the
+    # boilerplate "Add request throttling".
     total_failures = sum(1 for r in reports if not r.success)
     sorted_errors = sorted(error_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+    tool_mitigations = tool.mitigations_by_category or {}
     pitfalls: list[PitfallDetail] = []
     mitigations: list[str] = []
     for category, count in sorted_errors:
         pct = round(count / total_failures * 100) if total_failures else 0
-        mitigation = MITIGATIONS.get(category)
+        mitigation = tool_mitigations.get(category) or MITIGATIONS.get(category)
         pitfalls.append(PitfallDetail(
             category=category,
             percentage=pct,
@@ -411,7 +415,7 @@ async def _get_alternatives(db: AsyncSession, tool_id) -> list[AlternativeTool]:
             AlternativeTool(
                 tool=alt_tool.identifier,
                 score=round(alt.relevance_score * 100, 1),
-                reason="Alternative provider",
+                reason=alt.reason or "Alternative provider",
             )
         )
         if len(alternatives) >= 3:

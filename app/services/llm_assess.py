@@ -24,47 +24,87 @@ from app.core.security import make_fingerprint
 
 logger = logging.getLogger("nemoflow.llm_assess")
 
-ASSESS_PROMPT = """You are a senior DevOps engineer assessing API reliability for AI agents.
+ASSESS_PROMPT = """You are a senior site-reliability engineer rating an external API for an AI agent that's about to call it. Your output drives whether the agent calls this tool, retries, or switches to an alternative — so be precise and honest.
 
-An AI agent wants to use this tool: {tool_identifier}
+# Tool to assess
+{tool_identifier}
 {context_line}
 
-Assess this tool AND suggest up to 3 better or comparable alternatives that serve the same purpose. Alternatives should be real, production-ready APIs.
+# Your task
+1. Identify the tool. If you do NOT recognize it (unfamiliar domain, no public docs you've seen), set "recognized": false and use conservative defaults — do NOT invent specific failure modes or alternatives.
+2. Estimate real-world reliability based on what you know about the provider's track record, status pages, and common failure modes.
+3. List 3-5 concrete failure modes paired with specific, actionable mitigations. Vague advice ("retry with backoff") is worthless — name the parameter ("exponential backoff starting at 500ms, max 30s, 5 attempts, jitter ±20%").
+4. Suggest 0-3 real alternatives that solve the SAME problem the agent is solving (use the context). Only include alternatives you are confident actually exist as production APIs. If you cannot name real alternatives with high confidence, return an empty array — DO NOT invent URLs.
 
-Return a JSON object with this exact structure:
+# Reliability calibration
+- 0.98-1.00 — top-tier infrastructure (Stripe, AWS S3, Twilio core SMS, GitHub raw): >99.9% uptime, mature retry semantics, multi-region
+- 0.94-0.97 — solid commercial API with occasional incidents (OpenAI, GitHub API, SendGrid, Anthropic)
+- 0.88-0.93 — newer or single-region API, status page shows monthly incidents
+- 0.80-0.87 — beta/community API, frequent rate limits, no published SLA
+- below 0.80 — known unstable, or specific reasons to distrust it
+- If "recognized": false → use 0.85 as conservative default and leave issues/alternatives sparse
+
+# Mitigation quality bar
+Each mitigation MUST be specific enough that a developer can implement it without further research. Include numbers, header names, status codes, retry intervals, or endpoint paths where relevant.
+
+✅ GOOD: "Set request timeout to 60s on /v1/chat/completions; OpenAI's 99th-percentile response time exceeds 30s for gpt-4 with long contexts."
+❌ BAD: "Use longer timeouts."
+
+✅ GOOD: "Read the X-RateLimit-Remaining header on every response; pre-emptively pause when it drops below 10 to avoid the 429 cliff."
+❌ BAD: "Handle rate limits gracefully."
+
+# Output: a JSON object exactly matching this schema (no markdown, no commentary, no preamble)
 {{
-  "display_name": "Human-readable name",
-  "category": "category (e.g. LLM APIs, Payment APIs, Email APIs, Developer Tools, etc.)",
-  "reliability_estimate": 0.94,
-  "avg_latency_ms": 450,
+  "recognized": true,
+  "display_name": "Stripe Payment Intents",
+  "category": "Payment APIs",
+  "reliability_estimate": 0.97,
+  "avg_latency_ms": 380,
   "common_errors": [
-    {{"category": "timeout", "frequency": 0.4}},
-    {{"category": "rate_limit", "frequency": 0.35}},
-    {{"category": "server_error", "frequency": 0.15}},
-    {{"category": "auth_failure", "frequency": 0.1}}
+    {{"category": "rate_limit", "frequency": 0.45}},
+    {{"category": "validation_error", "frequency": 0.30}},
+    {{"category": "timeout", "frequency": 0.15}},
+    {{"category": "auth_failure", "frequency": 0.10}}
   ],
-  "pitfalls": ["Issue 1", "Issue 2", "Issue 3"],
-  "mitigations": ["Fix 1", "Fix 2", "Fix 3"],
+  "issues": [
+    {{
+      "category": "rate_limit",
+      "pitfall": "Stripe enforces 100 read / 100 write requests per second per account in live mode; bursts return HTTP 429 with no Retry-After header.",
+      "mitigation": "Implement a client-side token bucket at 80 req/s. On 429, back off exponentially starting at 500ms, max 30s, 5 attempts, with ±20% jitter to avoid thundering herds."
+    }},
+    {{
+      "category": "validation_error",
+      "pitfall": "Idempotency key collisions: replaying the same key with a different request body silently returns the original response, masking client bugs.",
+      "mitigation": "Generate a fresh UUIDv4 idempotency key per logical operation. Set the Idempotency-Key header on every POST. Never reuse keys across retries that may carry different payloads."
+    }},
+    {{
+      "category": "timeout",
+      "pitfall": "PaymentIntent confirmation with 3DS authentication can take 5-15s end-to-end; the default 30s HTTP client timeout is too tight under load.",
+      "mitigation": "Set request timeout to 60s on /v1/payment_intents/*/confirm. Prefer webhooks (payment_intent.succeeded) over polling for terminal status."
+    }}
+  ],
   "alternatives": [
     {{
-      "identifier": "https://api.alternative.com/v1",
-      "display_name": "Alternative Name",
-      "reliability_estimate": 0.97,
-      "reason": "Why this is a good alternative (e.g. higher uptime, lower latency, better rate limits)"
+      "identifier": "https://api.lemonsqueezy.com/v1/checkouts",
+      "display_name": "Lemon Squeezy Checkouts",
+      "reliability_estimate": 0.95,
+      "reason": "Merchant-of-record handles VAT and global sales tax automatically — useful for SaaS selling internationally without registering for tax in every jurisdiction. Simpler API surface than Stripe but less flexible for complex billing."
+    }},
+    {{
+      "identifier": "https://api.paddle.com/transactions",
+      "display_name": "Paddle Transactions",
+      "reliability_estimate": 0.94,
+      "reason": "Also merchant-of-record; better than Lemon Squeezy for B2B SaaS thanks to built-in invoicing, dunning, and seat-based billing primitives."
     }}
   ]
 }}
 
-Rules:
-- reliability_estimate: 0.0-1.0, probability a single API call succeeds
-- common_errors frequencies must sum to 1.0 (distribution among failures)
-- Error categories: timeout, rate_limit, server_error, auth_failure, validation_error, connection_error, not_found, permission_denied
-- Be honest. If you don't recognize the tool, estimate conservatively (0.85-0.90).
-- avg_latency_ms = estimated real-world P50 latency
-- alternatives: include ONLY if there are genuinely better or comparable options. Use real API base URLs.
-- If the requested tool is already the best in its category, return an empty alternatives array.
-
-Return ONLY the JSON object, no other text."""
+# Hard rules
+- common_errors frequencies MUST sum to exactly 1.0 (rounded to 2 decimals).
+- Error categories MUST be one of: timeout, rate_limit, server_error, auth_failure, validation_error, connection_error, not_found, permission_denied.
+- "issues": 3-5 entries. Each "category" MUST match one of the categories listed in common_errors. Pitfalls and mitigations must be specific to THIS tool — generic API advice is rejected.
+- "alternatives": 0-3 entries. Each identifier MUST be a real, currently-operating API base URL you are confident about. If unsure, omit it. The "reason" must explain WHY this alternative fits the agent's context (if provided).
+- Output ONLY the JSON object. No markdown fences, no explanation, no preamble."""
 
 
 async def assess_tool_with_llm(tool_identifier: str, context: str = "") -> dict | None:
@@ -80,8 +120,8 @@ async def assess_tool_with_llm(tool_identifier: str, context: str = "") -> dict 
 
         msg = await asyncio.to_thread(
             client.messages.create,
-            model="claude-sonnet-4-20250514",
-            max_tokens=1500,
+            model="claude-sonnet-4-6",
+            max_tokens=2500,
             messages=[{
                 "role": "user",
                 "content": ASSESS_PROMPT.format(
@@ -119,6 +159,19 @@ async def create_tool_from_assessment(
     reliability = assessment.get("reliability_estimate", 0.9)
     avg_latency = assessment.get("avg_latency_ms", 500)
     errors = assessment.get("common_errors", [])
+
+    # Persist tool-specific mitigations keyed by error category. scoring.py
+    # prefers these over the generic MITIGATIONS dict, so the response shows
+    # advice tailored to THIS tool instead of boilerplate.
+    issues = assessment.get("issues", [])
+    mitigations_by_cat: dict[str, str] = {}
+    for issue in issues:
+        cat = (issue.get("category") or "").strip()
+        mit = (issue.get("mitigation") or "").strip()
+        if cat and mit:
+            # Last write wins if the LLM emits two issues for the same category.
+            mitigations_by_cat[cat] = mit
+    tool.mitigations_by_category = mitigations_by_cat or None
 
     # Generate synthetic reports
     num_reports = random.randint(30, 50)
@@ -183,14 +236,20 @@ async def create_tool_from_assessment(
                 Alternative.alternative_tool_id == alt_tool.id,
             )
         )
-        if not result.scalar_one_or_none():
+        existing = result.scalar_one_or_none()
+        alt_reason = (alt_data.get("reason") or "").strip() or None
+        if not existing:
             alt_score = alt_data.get("reliability_estimate", 0.9)
             alt = Alternative(
                 tool_id=tool.id,
                 alternative_tool_id=alt_tool.id,
                 relevance_score=alt_score,
+                reason=alt_reason,
             )
             db.add(alt)
+        elif alt_reason and not existing.reason:
+            # Backfill reason on links created before this column existed.
+            existing.reason = alt_reason
 
     await db.commit()
 

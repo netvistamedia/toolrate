@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import String, Integer, DateTime, Text
+from sqlalchemy import String, Integer, DateTime, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models import Base
@@ -28,3 +28,9 @@ class Tool(Base):
     jurisdiction_source: Mapped[str | None] = mapped_column(String(32))
     jurisdiction_confidence: Mapped[str | None] = mapped_column(String(16))
     notes: Mapped[str | None] = mapped_column(Text)
+
+    # Per-tool mitigation overrides keyed by error category, e.g.
+    # {"rate_limit": "Stripe enforces 100 req/s per account...", ...}.
+    # Populated by the on-demand LLM assessment; scoring.compute_score prefers
+    # these over the generic MITIGATIONS dict when present.
+    mitigations_by_category: Mapped[dict | None] = mapped_column(JSON, nullable=True)
