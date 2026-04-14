@@ -1,3 +1,4 @@
+import asyncio
 import hashlib
 
 from fastapi import APIRouter, HTTPException, Request, status
@@ -13,6 +14,10 @@ from app.config import settings
 from app.services.audit import log_audit
 
 router = APIRouter()
+
+# Strong references to in-flight welcome-email tasks so asyncio's weak-ref
+# GC can't collect them mid-send. See the note in app/services/payg_meter.py.
+_pending_welcome_tasks: set[asyncio.Task] = set()
 
 
 class RegisterRequest(BaseModel):
@@ -101,7 +106,10 @@ async def register(
                     detail={"tier": "free"}, client_ip=client_ip)
     await db.commit()
 
-    # Send welcome email (fire-and-forget, don't block registration)
+    # Send welcome email (fire-and-forget, don't block registration).
+    # Hold a strong reference to the task in a module-level set — asyncio
+    # only keeps weak refs, so a bare create_task() can be GC'd mid-flight
+    # and the email silently lost.
     import asyncio
     import logging as _logging
     from app.services.email import send_welcome_email
@@ -112,7 +120,9 @@ async def register(
         except Exception as e:
             _logging.getLogger("nemoflow.auth").warning("Welcome email failed for %s***: %s", body.email[:3], e)
 
-    asyncio.create_task(_safe_send())
+    task = asyncio.create_task(_safe_send())
+    _pending_welcome_tasks.add(task)
+    task.add_done_callback(_pending_welcome_tasks.discard)
 
     quickstart = (
         f"# Install (we recommend uv: https://github.com/astral-sh/uv)\n"

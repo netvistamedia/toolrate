@@ -16,6 +16,23 @@ logger = logging.getLogger("nemoflow.payg")
 # buffer for calendar alignment.
 ASSESS_DAILY_TTL_SECONDS = 35 * 24 * 3600
 
+# Strong references to in-flight background tasks. asyncio's event loop
+# only keeps WEAK references, so a task we create_task() without holding
+# on to can be garbage-collected mid-execution — a documented footgun
+# (see https://docs.python.org/3/library/asyncio-task.html#asyncio.create_task).
+# For PAYG metering this would silently drop Stripe meter events under
+# GC pressure, causing under-billing.
+_pending_meter_tasks: set[asyncio.Task] = set()
+
+
+def _on_meter_task_done(task: asyncio.Task) -> None:
+    _pending_meter_tasks.discard(task)
+    if task.cancelled():
+        return
+    exc = task.exception()
+    if exc is not None:
+        logger.warning("PAYG meter task crashed: %s", exc, exc_info=exc)
+
 
 async def record_assessment(redis: Redis, api_key: ApiKey) -> dict:
     """Called once per billable /v1/assess call. Returns an info dict used by
@@ -49,7 +66,9 @@ async def record_assessment(redis: Redis, api_key: ApiKey) -> dict:
                 f"payg_billable:{api_key.key_hash}:{datetime.now(timezone.utc).strftime('%Y-%m')}",
                 40 * 24 * 3600,
             )
-            asyncio.create_task(_report_meter_event(api_key))
+            task = asyncio.create_task(_report_meter_event(api_key))
+            _pending_meter_tasks.add(task)
+            task.add_done_callback(_on_meter_task_done)
 
     return info
 
