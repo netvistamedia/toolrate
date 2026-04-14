@@ -12,8 +12,16 @@ _PRIVACY_TEMPLATE = r"""<!DOCTYPE html>
 <meta name="robots" content="index,follow">
 <meta property="og:title" content="Privacy Policy — ToolRate">
 <meta property="og:description" content="How ToolRate handles your data. GDPR compliant. Hosted in Germany.">
-<meta property="og:image" content="https://toolrate.ai/toolrate-logo.webp">
+<meta property="og:image" content="https://toolrate.ai/toolrate-og.jpg">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="720">
+<meta property="og:image:alt" content="ToolRate — stop AI agents from failing in production.">
 <meta property="og:url" content="https://toolrate.ai/privacy">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Privacy Policy — ToolRate">
+<meta name="twitter:description" content="How ToolRate handles your data. GDPR compliant. Hosted in Germany.">
+<meta name="twitter:image" content="https://toolrate.ai/toolrate-og.jpg">
+<meta name="twitter:image:alt" content="ToolRate — stop AI agents from failing in production.">
 <link rel="canonical" href="https://toolrate.ai/privacy">
 <link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">

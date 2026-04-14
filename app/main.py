@@ -139,6 +139,11 @@ async def brand_favicon():
     return FileResponse("app/static/toolrate-favicon.png", media_type="image/png")
 
 
+@app.get("/toolrate-og.jpg", include_in_schema=False)
+async def brand_og_image():
+    return FileResponse("app/static/toolrate-og.jpg", media_type="image/jpeg")
+
+
 @app.get("/favicon.ico", include_in_schema=False)
 async def favicon_ico():
     return FileResponse("app/static/toolrate-favicon.png", media_type="image/png")

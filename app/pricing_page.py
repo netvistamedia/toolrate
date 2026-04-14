@@ -11,8 +11,16 @@ _PRICING_TEMPLATE = r"""<!DOCTYPE html>
 <meta name="description" content="ToolRate pricing — Free for hackers, Pay-as-you-go at $0.008 per assessment (best for agents and bots), Pro $29/mo for power users, Enterprise / Platform for AI platforms.">
 <meta property="og:title" content="ToolRate — Pricing">
 <meta property="og:description" content="Four clean plans for the reliability oracle for AI agents — Free, Pay-as-you-go, Pro, and Enterprise.">
-<meta property="og:image" content="https://toolrate.ai/toolrate-logo.webp">
+<meta property="og:image" content="https://toolrate.ai/toolrate-og.jpg">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="720">
+<meta property="og:image:alt" content="ToolRate — stop AI agents from failing in production.">
 <meta property="og:url" content="https://toolrate.ai/pricing">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ToolRate — Pricing">
+<meta name="twitter:description" content="Four clean plans for the reliability oracle for AI agents — Free, Pay-as-you-go, Pro, and Enterprise.">
+<meta name="twitter:image" content="https://toolrate.ai/toolrate-og.jpg">
+<meta name="twitter:image:alt" content="ToolRate — stop AI agents from failing in production.">
 <link rel="canonical" href="https://toolrate.ai/pricing">
 <link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">

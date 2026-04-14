@@ -26,13 +26,17 @@ _DEMO_TEMPLATE = r"""<!DOCTYPE html>
 <meta name="description" content="Watch Claude catch a failing Stripe charge before it costs 40k tokens, then run the exact same 1-minute demo on your own machine. No API keys required.">
 <meta property="og:title" content="ToolRate live demo — agent catches a failing Stripe charge">
 <meta property="og:description" content="1-minute walkthrough plus the copy-paste Python script that simulates guard() + auto-fallback.">
-<meta property="og:image" content="https://toolrate.ai/toolrate-logo.webp">
+<meta property="og:image" content="https://toolrate.ai/toolrate-og.jpg">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="720">
+<meta property="og:image:alt" content="ToolRate — stop AI agents from failing in production.">
 <meta property="og:url" content="https://toolrate.ai/demo">
 <meta property="og:type" content="video.other">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ToolRate live demo — agent catches a failing Stripe charge">
 <meta name="twitter:description" content="Watch an AI agent avoid a 62/100 tool and auto-fallback to a 96/100 alternative, live.">
-<meta name="twitter:image" content="https://toolrate.ai/toolrate-logo.webp">
+<meta name="twitter:image" content="https://toolrate.ai/toolrate-og.jpg">
+<meta name="twitter:image:alt" content="ToolRate — stop AI agents from failing in production.">
 <link rel="canonical" href="https://toolrate.ai/demo">
 <link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <link rel="preconnect" href="https://fonts.googleapis.com">

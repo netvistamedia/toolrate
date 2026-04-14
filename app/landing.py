@@ -11,13 +11,17 @@ _LANDING_TEMPLATE = r"""<!DOCTYPE html>
 <meta name="description" content="ToolRate delivers objective, crowdsourced reliability ratings and actionable intelligence from thousands of real agent executions. Know before you call. Choose correctly the first time.">
 <meta property="og:title" content="ToolRate — Real advice for every tool your agent considers">
 <meta property="og:description" content="Objective, crowdsourced reliability ratings and actionable intelligence for AI agents — based on thousands of real agent executions across production workloads. Know before you call.">
-<meta property="og:image" content="https://toolrate.ai/toolrate-logo.webp">
+<meta property="og:image" content="https://toolrate.ai/toolrate-og.jpg">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="720">
+<meta property="og:image:alt" content="ToolRate — stop AI agents from failing in production. Reliability scores, smart fallbacks, powered by real agent runs.">
 <meta property="og:url" content="https://toolrate.ai">
 <meta property="og:type" content="website">
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ToolRate — Real advice for every tool your agent considers">
 <meta name="twitter:description" content="Objective, crowdsourced reliability ratings and actionable intelligence from thousands of real agent executions. Know before you call.">
-<meta name="twitter:image" content="https://toolrate.ai/toolrate-logo.webp">
+<meta name="twitter:image" content="https://toolrate.ai/toolrate-og.jpg">
+<meta name="twitter:image:alt" content="ToolRate — stop AI agents from failing in production.">
 <link rel="canonical" href="https://toolrate.ai">
 <link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <script type="application/ld+json">
