@@ -318,14 +318,20 @@ async def create_tool_from_assessment(
                 )
                 alt_tool = result.scalar_one()
 
-        # Check if alternative link already exists
+        # Check if alternative link already exists. Use .first() — not
+        # scalar_one_or_none — because the `alternatives` table has no
+        # unique constraint on (tool_id, alternative_tool_id), so a prior
+        # seed/import run may legitimately have left duplicates. Without
+        # this, any cold-start refresh touching one of those duplicated
+        # pairs would crash with MultipleResultsFound and take the whole
+        # LLM assessment down.
         result = await db.execute(
             select(Alternative).where(
                 Alternative.tool_id == tool.id,
                 Alternative.alternative_tool_id == alt_tool.id,
             )
         )
-        existing = result.scalar_one_or_none()
+        existing = result.scalars().first()
         alt_reason = (alt_data.get("reason") or "").strip() or None
         if not existing:
             alt_score = alt_data.get("reliability_estimate", 0.9)
