@@ -14,6 +14,7 @@ import random
 from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
@@ -286,20 +287,36 @@ async def create_tool_from_assessment(
         if not alt_identifier:
             continue
 
-        # Find or create the alternative tool
+        # Find or create the alternative tool. The insert is wrapped in a
+        # SAVEPOINT so that a concurrent cold-start recommending the same
+        # alternative URL only rolls back this one insert — the parent
+        # transaction (newly generated reports, mitigations, etc.) stays
+        # intact. Without this, a race on the unique identifier constraint
+        # would 500 the caller AND lose every pending row it had queued.
         result = await db.execute(select(Tool).where(Tool.identifier == alt_identifier))
         alt_tool = result.scalar_one_or_none()
         if not alt_tool:
-            alt_tool = Tool(
+            pending_alt = Tool(
                 identifier=alt_identifier,
                 display_name=alt_data.get("display_name", alt_identifier),
                 category=normalize_category(assessment.get("category")) or "Other APIs",
             )
-            db.add(alt_tool)
-            await db.flush()
-            # Enrich jurisdiction for the newly created alternative
-            from app.services.jurisdiction import enrich_tool
-            await enrich_tool(alt_tool)
+            db.add(pending_alt)
+            try:
+                async with db.begin_nested():
+                    await db.flush()
+                alt_tool = pending_alt
+                # Enrich jurisdiction for the newly created alternative
+                from app.services.jurisdiction import enrich_tool
+                await enrich_tool(alt_tool)
+            except IntegrityError:
+                # Another cold-start raced us. Drop the rejected in-memory
+                # copy and refetch the row that actually won.
+                db.expunge(pending_alt)
+                result = await db.execute(
+                    select(Tool).where(Tool.identifier == alt_identifier)
+                )
+                alt_tool = result.scalar_one()
 
         # Check if alternative link already exists
         result = await db.execute(
