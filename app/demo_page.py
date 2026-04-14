@@ -439,7 +439,7 @@ __SITE_HEADER_HTML__
 
   <section class="demo-hero">
     <div class="demo-eyebrow">· Live walkthrough ·</div>
-    <h1>Watch an agent catch a failing<br><span>Stripe charge</span> before it costs 40k tokens.</h1>
+    <h1>Copy-paste ready demo &ndash; Stripe &rarr; <span>Lemon Squeezy</span> fallback in &lt; 60 seconds</h1>
     <p class="lead">
       A 1-minute demo of <strong>toolrate.guard()</strong> in action — the
       agent consults ToolRate, sees a 62/100 reliability score, and automatically
