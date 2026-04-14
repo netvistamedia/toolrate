@@ -20,6 +20,12 @@ logger = logging.getLogger("nemoflow.webhooks")
 
 _client: httpx.AsyncClient | None = None
 
+# Strong references to in-flight deliveries. Without this the `task` local
+# goes out of scope on the next loop iteration and asyncio's weak-ref GC can
+# collect the task mid-delivery — the done_callback below is attached to the
+# Task object itself, so it vanishes with it.
+_pending_deliveries: set[asyncio.Task] = set()
+
 
 def _get_client() -> httpx.AsyncClient:
     global _client
@@ -72,13 +78,19 @@ async def dispatch_score_change(
 
     for wh in webhooks:
         task = asyncio.create_task(_deliver(wh.id, wh.url, wh.secret, payload))
+        _pending_deliveries.add(task)
         task.add_done_callback(_log_task_exception)
 
 
 def _log_task_exception(task: "asyncio.Task") -> None:
-    """Surface background-task failures. Without this hook, exceptions raised
-    inside `_deliver` (e.g. a DB outage while updating failure_count) are
-    only emitted as an asyncio 'never retrieved' warning at GC time."""
+    """Surface background-task failures AND release the strong reference.
+
+    Without the discard, `_pending_deliveries` grows without bound. Without
+    the logging, exceptions raised inside `_deliver` (e.g. a DB outage while
+    updating failure_count) are only emitted as an asyncio "task exception
+    never retrieved" warning at GC time.
+    """
+    _pending_deliveries.discard(task)
     if task.cancelled():
         return
     exc = task.exception()
