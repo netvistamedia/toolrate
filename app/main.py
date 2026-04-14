@@ -256,6 +256,12 @@ async def root(db: Db, redis: RedisClient):
     return html
 
 
+@app.get("/demo", include_in_schema=False, response_class=HTMLResponse)
+async def demo_page():
+    from app.demo_page import DEMO_HTML
+    return DEMO_HTML
+
+
 @app.get("/register", include_in_schema=False, response_class=HTMLResponse)
 async def register_page():
     return """<!DOCTYPE html>

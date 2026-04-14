@@ -158,6 +158,7 @@ SITE_HEADER_HTML = """
   </button>
   <nav class="site-topbar-nav" id="site-topbar-nav">
     <a href="/">Home</a>
+    <a href="/demo">Demo</a>
     <a href="/pricing">Pricing</a>
     <a href="/docs">Docs</a>
     <a href="/redoc">API Reference</a>

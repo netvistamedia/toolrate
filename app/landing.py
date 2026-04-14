@@ -964,6 +964,7 @@ __SITE_HEADER_HTML__
     <p class="hero-kicker"><strong>Know before you call.</strong></p>
     <div class="hero-actions">
       <a href="/docs" class="btn btn-primary">Get Started Free</a>
+      <a href="/demo" class="btn btn-ghost">▶ Watch 45s Demo</a>
       <a href="https://github.com/netvistamedia/toolrate" class="btn btn-ghost">View on GitHub</a>
     </div>
   </div>
