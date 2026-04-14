@@ -23,9 +23,9 @@ _DEMO_TEMPLATE = r"""<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Live Demo — Watch an AI agent avoid a 62/100 tool · ToolRate</title>
-<meta name="description" content="Watch Claude catch a failing Stripe charge before it costs 40k tokens, then run the exact same 45-second demo on your own machine. No API keys required.">
+<meta name="description" content="Watch Claude catch a failing Stripe charge before it costs 40k tokens, then run the exact same 1-minute demo on your own machine. No API keys required.">
 <meta property="og:title" content="ToolRate live demo — agent catches a failing Stripe charge">
-<meta property="og:description" content="45-second walkthrough plus the copy-paste Python script that simulates guard() + auto-fallback.">
+<meta property="og:description" content="1-minute walkthrough plus the copy-paste Python script that simulates guard() + auto-fallback.">
 <meta property="og:image" content="https://toolrate.ai/toolrate-logo.webp">
 <meta property="og:url" content="https://toolrate.ai/demo">
 <meta property="og:type" content="video.other">
@@ -441,7 +441,7 @@ __SITE_HEADER_HTML__
     <div class="demo-eyebrow">· Live walkthrough ·</div>
     <h1>Watch an agent catch a failing<br><span>Stripe charge</span> before it costs 40k tokens.</h1>
     <p class="lead">
-      A 45-second demo of <strong>toolrate.guard()</strong> in action — the
+      A 1-minute demo of <strong>toolrate.guard()</strong> in action — the
       agent consults ToolRate, sees a 62/100 reliability score, and automatically
       falls back to a 96/100 alternative. <strong>No retries. No wasted tokens.
       No duplicate charges.</strong>
@@ -456,7 +456,7 @@ __SITE_HEADER_HTML__
         allowfullscreen
         referrerpolicy="strict-origin-when-cross-origin"></iframe>
     </div>
-    <p class="video-caption">45 seconds · <span>turn sound on</span> for the live commentary</p>
+    <p class="video-caption">1 minute · <span>turn sound on</span> for the live commentary</p>
 
     <div class="demo-stats">
       <div class="demo-stats-cell">
