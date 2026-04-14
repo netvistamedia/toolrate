@@ -9,7 +9,7 @@ import redis.asyncio as aioredis
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
@@ -669,18 +669,26 @@ async def robots_txt():
     return ROBOTS_TXT
 
 
-@app.api_route("/sitemap.xml", methods=["GET", "HEAD"], include_in_schema=False, response_class=PlainTextResponse)
+@app.api_route("/sitemap.xml", methods=["GET", "HEAD"], include_in_schema=False)
 async def sitemap_xml():
-    return """<?xml version="1.0" encoding="UTF-8"?>
+    # Google/Bing require application/xml on sitemaps — they treat
+    # text/plain as "probably not a sitemap" and skip it. PlainTextResponse
+    # was silently breaking discoverability of every page listed here.
+    from datetime import datetime, timezone
+    lastmod = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    xml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://toolrate.ai/</loc><priority>1.0</priority></url>
-  <url><loc>https://toolrate.ai/pricing</loc><priority>0.9</priority></url>
-  <url><loc>https://toolrate.ai/register</loc><priority>0.8</priority></url>
-  <url><loc>https://toolrate.ai/llms.txt</loc><priority>0.7</priority></url>
-  <url><loc>https://toolrate.ai/llms-full.txt</loc><priority>0.7</priority></url>
-  <url><loc>https://api.toolrate.ai/docs</loc><priority>0.9</priority></url>
-  <url><loc>https://api.toolrate.ai/redoc</loc><priority>0.9</priority></url>
+  <url><loc>https://toolrate.ai/</loc><lastmod>{lastmod}</lastmod><priority>1.0</priority></url>
+  <url><loc>https://toolrate.ai/demo</loc><lastmod>{lastmod}</lastmod><priority>0.95</priority></url>
+  <url><loc>https://toolrate.ai/pricing</loc><lastmod>{lastmod}</lastmod><priority>0.9</priority></url>
+  <url><loc>https://toolrate.ai/register</loc><lastmod>{lastmod}</lastmod><priority>0.8</priority></url>
+  <url><loc>https://toolrate.ai/privacy</loc><lastmod>{lastmod}</lastmod><priority>0.4</priority></url>
+  <url><loc>https://toolrate.ai/llms.txt</loc><lastmod>{lastmod}</lastmod><priority>0.7</priority></url>
+  <url><loc>https://toolrate.ai/llms-full.txt</loc><lastmod>{lastmod}</lastmod><priority>0.7</priority></url>
+  <url><loc>https://api.toolrate.ai/docs</loc><lastmod>{lastmod}</lastmod><priority>0.9</priority></url>
+  <url><loc>https://api.toolrate.ai/redoc</loc><lastmod>{lastmod}</lastmod><priority>0.9</priority></url>
 </urlset>"""
+    return Response(content=xml, media_type="application/xml")
 
 
 @app.get("/health")
