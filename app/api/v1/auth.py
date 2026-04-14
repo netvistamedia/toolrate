@@ -65,11 +65,18 @@ async def register(
     # Hash email for privacy + dedup
     email_hash = hashlib.sha256(body.email.lower().strip().encode()).hexdigest()
 
-    # Check if email already registered (by checking key_prefix pattern won't work,
-    # so we store email hash in data_pool field as "email:<hash>" for free keys)
+    # Check if email already registered. We store the email hash in the
+    # `data_pool` field as `email:<hash>` for free keys. Only ACTIVE keys
+    # count — after a rotate-key or account-delete, the old row is retained
+    # for audit with `is_active=False`. Without the active filter a retried
+    # registration after rotation would hit `MultipleResultsFound` and 500
+    # instead of returning a clean 409.
     email_tag = f"email:{email_hash[:16]}"
     result = await db.execute(
-        select(ApiKey).where(ApiKey.data_pool == email_tag)
+        select(ApiKey).where(
+            ApiKey.data_pool == email_tag,
+            ApiKey.is_active == True,  # noqa: E712
+        )
     )
     existing = result.scalar_one_or_none()
 

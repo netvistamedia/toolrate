@@ -149,7 +149,6 @@ SITE_HEADER_HTML = """
 <header class="site-topbar">
   <a href="/" class="site-topbar-left">
     <img src="https://toolrate.ai/toolrate-logo.webp" alt="ToolRate" class="site-topbar-logo">
-    <span class="site-topbar-tag">v0.1</span>
   </a>
   <button type="button" class="site-topbar-hamburger"
           aria-label="Toggle menu" aria-expanded="false"

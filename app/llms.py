@@ -1,8 +1,14 @@
-"""LLM-readable site content — llms.txt and llms-full.txt (llmstxt.org standard)."""
+"""LLM-readable site content — llms.txt and llms-full.txt (llmstxt.org standard).
+
+The `__LANDING_TOOLS_COUNT__` and `__LANDING_REPORTS_COUNT__` placeholders are
+substituted at request time by the handlers in `app/main.py`, so the
+crawler-facing counts always reflect current DB state instead of drifting
+every time a batch of tools is seeded.
+"""
 
 LLMS_TXT = """# ToolRate
 
-> Real advice for every tool your agent considers. Objective, crowdsourced reliability ratings and actionable intelligence for 600+ tools and APIs, based on thousands of real agent executions across production workloads.
+> Real advice for every tool your agent considers. Objective, crowdsourced reliability ratings and actionable intelligence for __LANDING_TOOLS_COUNT__ tools and APIs, based on thousands of real agent executions across production workloads.
 
 ToolRate delivers real-time reliability scores, failure risk, jurisdiction intelligence, common pitfalls, and smart alternatives for every external tool your agent calls. Know before you call. Choose correctly the first time.
 
@@ -43,7 +49,7 @@ All API endpoints require an API key via the `X-Api-Key` header.
 
 LLMS_FULL_TXT = """# ToolRate — Full Documentation for LLMs
 
-> Real advice for every tool your agent considers. Objective, crowdsourced reliability ratings and actionable intelligence for 600+ tools and APIs, based on thousands of real agent executions across production workloads.
+> Real advice for every tool your agent considers. Objective, crowdsourced reliability ratings and actionable intelligence for __LANDING_TOOLS_COUNT__ tools and APIs, based on thousands of real agent executions across production workloads.
 
 ToolRate delivers real-time reliability scores, failure risk, jurisdiction intelligence, common pitfalls, and smart alternatives for every external tool your agent calls. Each assessment is timestamped and ships with a confidence interval and per-error-category breakdown, so agents, developers, and enterprise compliance teams all get the same objective view. Know before you call. Choose correctly the first time. The data pool grows with every report, making the intelligence sharper for everyone.
 
@@ -412,8 +418,8 @@ ToolRate uses a multi-factor scoring algorithm:
 
 ## Key Facts
 
-- **637+ tools rated** across payment, email, storage, AI, and more
-- **68,400+ data points** from real agent executions
+- **__LANDING_TOOLS_COUNT__ tools rated** across payment, email, storage, AI, and more
+- **__LANDING_REPORTS_COUNT__ data points** from real agent executions
 - **<8ms average response time**
 - **10 LLM sources** contributing assessment data
 - **GDPR compliant**, hosted in Germany (Hetzner Cloud)

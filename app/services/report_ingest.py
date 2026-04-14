@@ -80,7 +80,9 @@ async def ingest_report(
         update(Tool).where(Tool.id == tool.id).values(report_count=Tool.report_count + 1)
     )
 
-    # Read old cached score BEFORE commit (avoids race with cache invalidation)
+    # Read old cached score BEFORE commit (avoids race with cache invalidation).
+    # We read the __global__ bucket because that's what webhook score-change
+    # comparisons are keyed on. Context-specific buckets can diverge freely.
     tool_id_str = str(tool.id)
     global_cache_key = f"score:{tool_id_str}:__global__:{data_pool or '__default__'}"
     old_score_raw = await redis.get(global_cache_key)
@@ -94,9 +96,14 @@ async def ingest_report(
 
     await db.commit()
 
-    # Invalidate cache
-    await redis.delete(f"score:{tool_id_str}:{ctx_hash}:{data_pool or '__default__'}")
-    await redis.delete(global_cache_key)
+    # Invalidate ALL cached score buckets for this tool — every context the
+    # tool was ever assessed under would otherwise keep serving a stale score
+    # until its TTL expires. Deleting only the reporter's current context
+    # left every other caller staring at pre-report data for hours.
+    pattern = f"score:{tool_id_str}:*"
+    stale_keys = [key async for key in redis.scan_iter(match=pattern, count=100)]
+    if stale_keys:
+        await redis.delete(*stale_keys)
 
     # Dispatch webhooks if score changed significantly
     if old_score is not None:

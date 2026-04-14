@@ -36,7 +36,7 @@ from toolrate import ToolRate, guard
 # 1. Initialize ToolRate client
 # ---------------------------------------------------------------------------
 
-nemo = ToolRate(os.environ.get("TOOLRATE_API_KEY", "nf_live_your_key_here"))
+client = ToolRate(os.environ.get("TOOLRATE_API_KEY", "nf_live_your_key_here"))
 
 
 # ---------------------------------------------------------------------------
@@ -61,7 +61,7 @@ class ToolRateSearchTool(BaseTool):
     def _run(self, query: str) -> str:
         """Execute search with ToolRate guard for auto-fallback."""
         return guard(
-            nemo,
+            client,
             "https://serpapi.com/search",
             lambda: self._call_serpapi(query),
             context="crewai-crew:research",
@@ -109,7 +109,7 @@ class ToolRateAPITool(BaseTool):
 
         # --- ASSESS: Check reliability before committing to the call ---
         try:
-            assessment = nemo.assess(endpoint, context=context)
+            assessment = client.assess(endpoint, context=context)
             score = assessment["reliability_score"]
             confidence = assessment["confidence"]
             risk = assessment["predicted_failure_risk"]
@@ -132,7 +132,7 @@ class ToolRateAPITool(BaseTool):
 
             # Quality gate: refuse to call extremely unreliable tools
             if score < 20:
-                nemo.report(endpoint, success=False,
+                client.report(endpoint, success=False,
                             error_category="skipped_low_score", context=context)
                 return (f"Skipped {endpoint} -- reliability score {score}/100 is too low. "
                         f"Pitfalls: {assessment.get('common_pitfalls', [])}")
@@ -148,14 +148,14 @@ class ToolRateAPITool(BaseTool):
             latency_ms = int((time.perf_counter() - start) * 1000)
 
             # --- REPORT: Feed success data back to the community ---
-            nemo.report(endpoint, success=True, latency_ms=latency_ms, context=context)
+            client.report(endpoint, success=True, latency_ms=latency_ms, context=context)
             return result
 
         except Exception as e:
             latency_ms = int((time.perf_counter() - start) * 1000)
 
             # --- REPORT: Feed failure data back so others can avoid pitfalls ---
-            nemo.report(endpoint, success=False, latency_ms=latency_ms,
+            client.report(endpoint, success=False, latency_ms=latency_ms,
                         error_category="server_error", context=context)
             return f"API call to {endpoint} failed: {e}"
 
@@ -244,7 +244,7 @@ def main() -> None:
     # Find hidden gems -- tools other agents found reliable as fallbacks.
     # The API returns success rates as 0-100 percentages, so format directly.
     print("Hidden Gems (tools that work great as fallbacks):")
-    gems = nemo.discover_hidden_gems(category="search", limit=5)
+    gems = client.discover_hidden_gems(category="search", limit=5)
     for gem in gems.get("hidden_gems", []):
         print(f"  {gem['tool']}: "
               f"fallback success {gem['fallback_success_rate']:.1f}%, "
@@ -252,13 +252,13 @@ def main() -> None:
 
     # Get fallback chain -- what to try when SerpAPI fails
     print("\nFallback Chain for SerpAPI:")
-    chain = nemo.discover_fallback_chain("https://serpapi.com/search", limit=3)
+    chain = client.discover_fallback_chain("https://serpapi.com/search", limit=3)
     for alt in chain.get("fallback_chain", []):
         print(f"  -> {alt['fallback_tool']}: "
               f"success {alt['success_rate']:.1f}%, "
               f"avg latency {alt.get('avg_latency_ms', 'N/A')}ms")
 
-    nemo.close()
+    client.close()
 
 
 if __name__ == "__main__":

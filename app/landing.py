@@ -65,7 +65,7 @@ _LANDING_TEMPLATE = r"""<!DOCTYPE html>
     "url": "https://toolrate.ai"
   },
   "featureList": [
-    "Real-time reliability scoring for 600+ tools and APIs",
+    "Real-time reliability scoring for __LANDING_TOOLS_COUNT__ tools and APIs",
     "Bayesian-smoothed scores with recency weighting",
     "Auto-fallback with guard() function",
     "Hidden gem tool discovery",
@@ -972,11 +972,11 @@ __SITE_HEADER_HTML__
 <!-- Readout -->
 <div class="readout">
   <div class="readout-cell">
-    <div class="readout-value">637</div>
+    <div class="readout-value">__LANDING_TOOLS_COUNT__</div>
     <div class="readout-label">Tools Rated</div>
   </div>
   <div class="readout-cell">
-    <div class="readout-value">68.4K</div>
+    <div class="readout-value">__LANDING_REPORTS_COUNT__</div>
     <div class="readout-label">Data Points</div>
   </div>
   <div class="readout-cell">
@@ -1201,9 +1201,16 @@ __SITE_HEADER_JS__
 </html>"""
 
 
-LANDING_HTML = (
+# Rendered once at import — `main.py` substitutes the live-stat placeholders
+# (`__LANDING_TOOLS_COUNT__`, `__LANDING_REPORTS_COUNT__`) at request time so
+# the homepage always reflects the current DB numbers without re-reading the
+# whole template on every hit.
+LANDING_HTML_TEMPLATE = (
     _LANDING_TEMPLATE
     .replace("__SITE_HEADER_CSS__", SITE_HEADER_CSS)
     .replace("__SITE_HEADER_HTML__", SITE_HEADER_HTML)
     .replace("__SITE_HEADER_JS__", SITE_HEADER_JS)
 )
+
+# Kept as an alias so any legacy importer still works.
+LANDING_HTML = LANDING_HTML_TEMPLATE

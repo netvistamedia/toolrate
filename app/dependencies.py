@@ -27,8 +27,15 @@ async def get_api_key(
     db: Annotated[AsyncSession, Depends(get_db)],
     redis: Annotated[Redis, Depends(get_redis)],
     request: Request,
-    x_api_key: Annotated[str, Header()],
+    # Optional at the Pydantic layer so a missing header returns a clean
+    # 401 ("API key is required") instead of a generic 422 validation error.
+    # A 422 tells the caller "your request body is malformed", which is the
+    # wrong diagnosis for the common case of forgetting the X-Api-Key header.
+    x_api_key: Annotated[str | None, Header()] = None,
 ) -> ApiKey:
+    if not x_api_key:
+        raise InvalidApiKey()
+
     # Per-IP burst protection runs BEFORE the DB lookup so a flood of
     # requests with bogus keys can't chew through the Postgres connection
     # pool — each bogus call was costing a full `SELECT FROM api_keys`.

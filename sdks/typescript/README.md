@@ -13,7 +13,7 @@ npm install toolrate
 ```typescript
 import { ToolRate } from "toolrate";
 
-const client = new ToolRate("tr_live_...");
+const client = new ToolRate("nf_live_...");
 
 // Wrap any tool call — assess, execute, report, auto-fallback
 const result = await client.guard(

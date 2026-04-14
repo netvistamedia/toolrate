@@ -1,5 +1,6 @@
 import ipaddress
 import secrets
+import socket
 import uuid as _uuid
 from urllib.parse import urlparse
 
@@ -12,35 +13,97 @@ from app.models.webhook import Webhook
 
 router = APIRouter()
 
-# IP ranges that must be blocked for webhook URLs (SSRF prevention)
+# IP ranges that must be blocked for webhook URLs (SSRF prevention).
+# These cover every RFC1918 private block, loopback (v4 and v6), link-local,
+# and the cloud metadata ranges that AWS/GCP/Azure expose on 169.254.169.254.
 _BLOCKED_NETWORKS = [
-    ipaddress.ip_network("127.0.0.0/8"),       # Loopback
+    ipaddress.ip_network("0.0.0.0/8"),          # "this network" / unspecified
     ipaddress.ip_network("10.0.0.0/8"),         # Private
+    ipaddress.ip_network("100.64.0.0/10"),      # Carrier-grade NAT
+    ipaddress.ip_network("127.0.0.0/8"),        # Loopback
+    ipaddress.ip_network("169.254.0.0/16"),     # Link-local / cloud metadata
     ipaddress.ip_network("172.16.0.0/12"),      # Private
+    ipaddress.ip_network("192.0.0.0/24"),       # IETF protocol assignments
     ipaddress.ip_network("192.168.0.0/16"),     # Private
-    ipaddress.ip_network("169.254.0.0/16"),     # Link-local / AWS metadata
+    ipaddress.ip_network("198.18.0.0/15"),      # Benchmarking
     ipaddress.ip_network("::1/128"),            # IPv6 loopback
-    ipaddress.ip_network("fc00::/7"),           # IPv6 private
+    ipaddress.ip_network("fc00::/7"),           # IPv6 ULA
     ipaddress.ip_network("fe80::/10"),          # IPv6 link-local
+    ipaddress.ip_network("::ffff:0:0/96"),      # IPv4-mapped IPv6 (SSRF vector)
 ]
+
+# Hostnames that should never be allowed regardless of how they resolve —
+# the cloud-metadata hosts in particular can serve credentials on 169.254.169.254.
+_BLOCKED_HOSTNAMES = frozenset({
+    "localhost",
+    "0.0.0.0",
+    "metadata",
+    "metadata.google.internal",
+    "metadata.internal",
+    "instance-data",
+    "instance-data.ec2.internal",
+})
+
+
+def _ip_is_blocked(addr: ipaddress._BaseAddress) -> bool:
+    return any(addr in net for net in _BLOCKED_NETWORKS)
+
+
+def _resolve_hostname(hostname: str) -> list[ipaddress._BaseAddress]:
+    """Return every A/AAAA record for `hostname`, empty on failure.
+
+    Uses a blocking getaddrinfo. That's acceptable because this runs inside
+    a Pydantic validator on the (low-volume) webhook-registration path.
+    """
+    try:
+        infos = socket.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP)
+    except socket.gaierror:
+        return []
+    out: list[ipaddress._BaseAddress] = []
+    for info in infos:
+        sockaddr = info[4]
+        if not sockaddr:
+            continue
+        ip_str = sockaddr[0]
+        try:
+            out.append(ipaddress.ip_address(ip_str))
+        except ValueError:
+            continue
+    return out
 
 
 def _is_public_url(url: str) -> bool:
-    """Validate that a webhook URL points to a public address (SSRF prevention)."""
+    """Reject URLs that would let a user probe internal infrastructure.
+
+    Strategy:
+      1. Reject obvious internal hostnames (localhost, metadata endpoints).
+      2. If the host is a literal IP, reject anything in `_BLOCKED_NETWORKS`.
+      3. Otherwise resolve the hostname NOW and reject if *any* resolved IP
+         is blocked. A hostname that currently resolves publicly but later
+         flips to an internal IP (DNS rebinding) is not defended against at
+         this layer — mitigate that with an outbound egress policy.
+    """
     parsed = urlparse(str(url))
     hostname = parsed.hostname
     if not hostname:
         return False
-    # Block obvious internal hostnames
-    if hostname in ("localhost", "0.0.0.0", "metadata.google.internal"):
+    if hostname.lower() in _BLOCKED_HOSTNAMES:
         return False
-    # Try to parse as IP and check against blocked ranges
+
+    # Literal IP — check directly.
     try:
         addr = ipaddress.ip_address(hostname)
-        return not any(addr in net for net in _BLOCKED_NETWORKS)
+        return not _ip_is_blocked(addr)
     except ValueError:
-        pass  # It's a hostname, not an IP — allow it (DNS resolution happens at delivery time)
-    return True
+        pass
+
+    # Hostname — resolve and reject if any record is blocked. A hostname
+    # that fails DNS entirely is also rejected: we'd rather force the user
+    # to register a real URL than silently accept a dead endpoint.
+    resolved = _resolve_hostname(hostname)
+    if not resolved:
+        return False
+    return all(not _ip_is_blocked(ip) for ip in resolved)
 
 
 class WebhookCreate(BaseModel):

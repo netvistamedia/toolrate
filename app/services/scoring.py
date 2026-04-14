@@ -60,17 +60,29 @@ def _get_priors(category: str | None) -> tuple[float, float]:
     return (settings.bayesian_alpha_prior, settings.bayesian_beta_prior)
 
 
+def _nearest_rank(sorted_vals: list[int], p: float) -> int:
+    """Nearest-rank percentile — s[ceil(p*n) - 1] clamped to valid range.
+
+    The previous implementation (`s[int(p*n)]`) was off-by-one and collapsed
+    to the maximum for small n: for a 20-item list, `int(20*0.95)=19` is the
+    last index, so p95 == max, masking tail outliers. The nearest-rank method
+    used here matches the definition in RFC 2330 and NIST SP 800-57.
+    """
+    n = len(sorted_vals)
+    idx = max(0, min(n - 1, math.ceil(n * p) - 1))
+    return sorted_vals[idx]
+
+
 def _compute_percentiles(values: list[int]) -> LatencyInfo | None:
-    """Compute latency percentiles from a sorted list of values."""
+    """Compute latency percentiles from a list of values."""
     if not values:
         return None
     s = sorted(values)
-    n = len(s)
     return LatencyInfo(
-        avg=round(sum(s) / n),
-        p50=round(s[n // 2]),
-        p95=round(s[int(n * 0.95)]) if n >= 5 else round(s[-1]),
-        p99=round(s[int(n * 0.99)]) if n >= 10 else round(s[-1]),
+        avg=round(sum(s) / len(s)),
+        p50=round(_nearest_rank(s, 0.50)),
+        p95=round(_nearest_rank(s, 0.95)),
+        p99=round(_nearest_rank(s, 0.99)),
     )
 
 

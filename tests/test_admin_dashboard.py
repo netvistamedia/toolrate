@@ -69,7 +69,7 @@ async def test_dashboard_rejects_non_admin(client_and_db):
 async def test_dashboard_rejects_missing_key(client_and_db):
     ac, _, _ = client_and_db
     r = await ac.get("/v1/admin/dashboard")
-    assert r.status_code == 422  # missing header
+    assert r.status_code == 401  # missing X-Api-Key → 401 Unauthorized
 
 
 @pytest.mark.asyncio

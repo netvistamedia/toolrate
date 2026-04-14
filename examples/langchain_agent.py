@@ -36,7 +36,7 @@ from toolrate import ToolRate, guard
 # 1. Initialize ToolRate client
 # ---------------------------------------------------------------------------
 
-nemo = ToolRate(os.environ.get("TOOLRATE_API_KEY", "nf_live_your_key_here"))
+client = ToolRate(os.environ.get("TOOLRATE_API_KEY", "nf_live_your_key_here"))
 
 
 # ---------------------------------------------------------------------------
@@ -73,7 +73,7 @@ def _get_weather(city: str) -> str:
 def toolrate_search(query: str) -> str:
     """Web search with ToolRate reliability guard and automatic fallback."""
     return guard(
-        nemo,
+        client,
         "https://serpapi.com/search",                       # primary tool
         lambda: _search_web(query),                          # primary call
         context="langchain-agent:web-search",                # workflow context
@@ -92,7 +92,7 @@ def toolrate_weather(city: str) -> str:
     tool_url = "https://api.openweathermap.org/data/2.5/weather"
 
     # Step 1: Assess -- check the tool's current reliability
-    assessment = nemo.assess(tool_url, context="langchain-agent:weather")
+    assessment = client.assess(tool_url, context="langchain-agent:weather")
     print(f"  [ToolRate] Weather API reliability: {assessment['reliability_score']}/100 "
           f"(confidence: {assessment['confidence']})")
 
@@ -106,7 +106,7 @@ def toolrate_weather(city: str) -> str:
         latency_ms = int((time.perf_counter() - start) * 1000)
 
         # Step 3: Report success -- feed data back to the community
-        nemo.report(tool_url, success=True, latency_ms=latency_ms,
+        client.report(tool_url, success=True, latency_ms=latency_ms,
                      context="langchain-agent:weather")
         return result
 
@@ -114,7 +114,7 @@ def toolrate_weather(city: str) -> str:
         latency_ms = int((time.perf_counter() - start) * 1000)
 
         # Step 3 (failure): Report the failure so other agents learn too
-        nemo.report(tool_url, success=False, latency_ms=latency_ms,
+        client.report(tool_url, success=False, latency_ms=latency_ms,
                      error_category="server_error",
                      context="langchain-agent:weather")
         return f"Weather API failed: {e}"
@@ -177,17 +177,17 @@ def main() -> None:
     # Note: the API returns success rates as 0-100 percentages already, so
     # format them as-is rather than as a 0.0-1.0 fraction.
     print("=== Discovering Hidden Gems ===")
-    gems = nemo.discover_hidden_gems(category="search", limit=3)
+    gems = client.discover_hidden_gems(category="search", limit=3)
     for gem in gems.get("hidden_gems", []):
         print(f"  - {gem['tool']}: fallback success rate {gem['fallback_success_rate']:.1f}%")
 
     # Bonus: Get fallback chain for a tool
     print("\n=== Fallback Chain for SerpAPI ===")
-    chain = nemo.discover_fallback_chain("https://serpapi.com/search")
+    chain = client.discover_fallback_chain("https://serpapi.com/search")
     for alt in chain.get("fallback_chain", []):
         print(f"  - {alt['fallback_tool']}: success rate {alt['success_rate']:.1f}%")
 
-    nemo.close()
+    client.close()
 
 
 if __name__ == "__main__":

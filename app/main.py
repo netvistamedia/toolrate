@@ -14,6 +14,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.db.session import engine
+from app.dependencies import Db, RedisClient
 from app.site_header import SITE_HEADER_CSS, SITE_HEADER_HTML, SITE_HEADER_JS
 
 # Structured logging
@@ -193,10 +194,66 @@ from app.api.v1.router import router as v1_router  # noqa: E402
 app.include_router(v1_router)
 
 
+def _humanize_count(n: int) -> str:
+    """Format a large integer for display ('94,747' → '94K', '1,230,000' → '1.2M')."""
+    if n >= 1_000_000:
+        return f"{n / 1_000_000:.1f}M"
+    if n >= 1_000:
+        return f"{n // 1_000}K"
+    return str(n)
+
+
+async def _get_landing_stats(db, redis) -> tuple[int, int]:
+    """Return (tool_count, report_count), cached in Redis for 5 minutes.
+
+    The homepage is rendered with live DB counts so the readout never drifts
+    past reality. Without the cache, every home-page hit would cost two
+    `SELECT count(*)` queries; with the 5-minute TTL the cost amortises to
+    essentially zero even under heavy traffic.
+    """
+    import json
+    from sqlalchemy import select, func
+    from app.models.tool import Tool
+    from app.models.report import ExecutionReport
+
+    cache_key = "landing:stats:v1"
+    raw = await redis.get(cache_key)
+    if raw:
+        try:
+            data = json.loads(raw)
+            return int(data["tools"]), int(data["reports"])
+        except (ValueError, KeyError, TypeError):
+            pass
+
+    tool_count = (await db.execute(select(func.count()).select_from(Tool))).scalar() or 0
+    report_count = (await db.execute(select(func.count()).select_from(ExecutionReport))).scalar() or 0
+    await redis.set(
+        cache_key,
+        json.dumps({"tools": int(tool_count), "reports": int(report_count)}),
+        ex=300,
+    )
+    return int(tool_count), int(report_count)
+
+
 @app.get("/", include_in_schema=False, response_class=HTMLResponse)
-async def root():
-    from app.landing import LANDING_HTML
-    return LANDING_HTML
+async def root(db: Db, redis: RedisClient):
+    from app.landing import LANDING_HTML_TEMPLATE
+
+    try:
+        tools, reports = await _get_landing_stats(db, redis)
+    except Exception:
+        # Never break the homepage because of a DB/cache hiccup — fall back
+        # to conservative placeholder numbers so visitors always see a
+        # coherent readout.
+        logger.exception("Landing stats fetch failed; using static fallback")
+        tools, reports = 800, 94000
+
+    html = (
+        LANDING_HTML_TEMPLATE
+        .replace("__LANDING_TOOLS_COUNT__", f"{tools:,}")
+        .replace("__LANDING_REPORTS_COUNT__", _humanize_count(reports))
+    )
+    return html
 
 
 @app.get("/register", include_in_schema=False, response_class=HTMLResponse)
@@ -559,16 +616,34 @@ a{color:#0a95fd;text-decoration:none;font-weight:600}a:hover{text-decoration:und
 </body></html>"""
 
 
+async def _render_llms_doc(template: str, db: Db, redis: RedisClient) -> str:
+    """Fill the __LANDING_*__ placeholders in llms.txt / llms-full.txt.
+
+    Reuses the same 5-minute stats cache as the homepage so every
+    crawler-facing doc surfaces the same live numbers.
+    """
+    try:
+        tools, reports = await _get_landing_stats(db, redis)
+    except Exception:
+        logger.exception("llms.txt stats fetch failed; using static fallback")
+        tools, reports = 800, 94000
+    return (
+        template
+        .replace("__LANDING_TOOLS_COUNT__", f"{tools:,}")
+        .replace("__LANDING_REPORTS_COUNT__", f"{reports:,}")
+    )
+
+
 @app.api_route("/llms.txt", methods=["GET", "HEAD"], include_in_schema=False, response_class=PlainTextResponse)
-async def llms_txt():
+async def llms_txt(db: Db, redis: RedisClient):
     from app.llms import LLMS_TXT
-    return LLMS_TXT
+    return await _render_llms_doc(LLMS_TXT, db, redis)
 
 
 @app.api_route("/llms-full.txt", methods=["GET", "HEAD"], include_in_schema=False, response_class=PlainTextResponse)
-async def llms_full_txt():
+async def llms_full_txt(db: Db, redis: RedisClient):
     from app.llms import LLMS_FULL_TXT
-    return LLMS_FULL_TXT
+    return await _render_llms_doc(LLMS_FULL_TXT, db, redis)
 
 
 @app.api_route("/robots.txt", methods=["GET", "HEAD"], include_in_schema=False, response_class=PlainTextResponse)

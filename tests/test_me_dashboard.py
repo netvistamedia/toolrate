@@ -61,7 +61,7 @@ async def _make_key(
 async def test_rejects_missing_key(client_and_db):
     ac, _, _ = client_and_db
     r = await ac.get("/v1/me/dashboard")
-    assert r.status_code == 422  # missing X-Api-Key header
+    assert r.status_code == 401  # missing X-Api-Key → 401 Unauthorized
 
 
 @pytest.mark.asyncio

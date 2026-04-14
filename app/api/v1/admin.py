@@ -88,6 +88,10 @@ SCORE_BUCKETS = [
         "top tools by activity and failure rate, error category breakdown, and "
         "a billing snapshot."
     ),
+    # Hidden from the public OpenAPI/Swagger UI — this endpoint only serves
+    # the internal admin dashboard and doesn't need to advertise itself to
+    # random API explorers.
+    include_in_schema=False,
 )
 async def admin_dashboard(db: Db, redis: RedisClient, api_key: AdminKey):
     now = datetime.now(timezone.utc)
