@@ -262,6 +262,12 @@ async def demo_page():
     return DEMO_HTML
 
 
+@app.get("/privacy", include_in_schema=False, response_class=HTMLResponse)
+async def privacy_page():
+    from app.privacy_page import PRIVACY_HTML
+    return PRIVACY_HTML
+
+
 @app.get("/register", include_in_schema=False, response_class=HTMLResponse)
 async def register_page():
     return """<!DOCTYPE html>

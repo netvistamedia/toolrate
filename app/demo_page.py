@@ -528,7 +528,8 @@ __SITE_HEADER_HTML__
 <footer class="demo-footer">
   <p>
     ToolRate · <a href="/">Home</a> · <a href="/pricing">Pricing</a> ·
-    <a href="/docs">Docs</a> · <a href="https://github.com/netvistamedia/toolrate">GitHub</a>
+    <a href="/docs">Docs</a> · <a href="/privacy">Privacy</a> ·
+    <a href="https://github.com/netvistamedia/toolrate">GitHub</a>
   </p>
 </footer>
 

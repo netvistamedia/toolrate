@@ -1183,6 +1183,7 @@ curl -X POST https://api.toolrate.ai/v1/report \
   <div class="footer-right">
     <a href="/docs">Documentation</a>
     <a href="https://github.com/netvistamedia/toolrate">GitHub</a>
+    <a href="/privacy">Privacy</a>
     <a href="/health">Status</a>
   </div>
 </footer>
