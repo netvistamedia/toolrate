@@ -205,7 +205,11 @@ async def seed():
                             Alternative.alternative_tool_id == tool_b.id,
                         )
                     )
-                    if existing.scalar_one_or_none() is not None:
+                    # .first() — not scalar_one_or_none — because the
+                    # `alternatives` table has no unique constraint on this
+                    # pair, so a prior run could have left duplicates that
+                    # would otherwise crash MultipleResultsFound.
+                    if existing.scalars().first() is not None:
                         continue
                     db.add(Alternative(
                         tool_id=tool_a.id,
