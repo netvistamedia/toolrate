@@ -14,6 +14,7 @@ from app.db.session import async_session
 from app.models.tool import Tool
 from app.models.report import ExecutionReport
 from app.models.alternative import Alternative
+from app.core.categories import normalize_category
 from app.core.security import make_fingerprint
 
 # Top tools with curated reliability profiles
@@ -137,15 +138,21 @@ async def seed():
             result = await db.execute(
                 select(Tool).where(Tool.identifier == identifier)
             )
+            # The SEED_TOOLS list carries short snake-case category labels
+            # (e.g. "payment", "llm") that double as ERROR_PROFILES keys. The
+            # DB column must hold the canonical Title-Case name, so normalize
+            # at the write boundary while keeping `category` itself unchanged
+            # for the _pick_error lookup below.
+            canonical = normalize_category(category)
             tool = result.scalar_one_or_none()
             if tool:
                 tool.display_name = display_name
-                tool.category = category
+                tool.category = canonical
             else:
                 tool = Tool(
                     identifier=identifier,
                     display_name=display_name,
-                    category=category,
+                    category=canonical,
                 )
                 db.add(tool)
             tool_map[identifier] = tool

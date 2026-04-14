@@ -221,9 +221,12 @@ async def create_tool_from_assessment(
     now = datetime.now(timezone.utc)
     fingerprint = make_fingerprint("llm_ondemand", "llm_ondemand")
 
-    # Update tool metadata
+    # Update tool metadata. Route the LLM-returned category through the
+    # canonical normalizer so a model that emits "payment_apis" or "llm"
+    # still lands in the same bucket as the seed/import pipelines.
+    from app.core.categories import normalize_category
     tool.display_name = assessment.get("display_name", tool.identifier)
-    tool.category = assessment.get("category", "Other APIs")
+    tool.category = normalize_category(assessment.get("category")) or "Other APIs"
 
     reliability = assessment.get("reliability_estimate", 0.9)
     avg_latency = assessment.get("avg_latency_ms", 500)
@@ -290,7 +293,7 @@ async def create_tool_from_assessment(
             alt_tool = Tool(
                 identifier=alt_identifier,
                 display_name=alt_data.get("display_name", alt_identifier),
-                category=assessment.get("category", "Other APIs"),
+                category=normalize_category(assessment.get("category")) or "Other APIs",
             )
             db.add(alt_tool)
             await db.flush()

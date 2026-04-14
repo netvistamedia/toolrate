@@ -18,6 +18,7 @@ from pathlib import Path
 
 from sqlalchemy import select
 
+from app.core.categories import normalize_category
 from app.core.security import make_fingerprint
 from app.db.session import async_session
 from app.models.tool import Tool
@@ -60,7 +61,10 @@ def load_assessments(directory: str) -> list[dict]:
         merged_tool = {
             "identifier": identifier,
             "display_name": base.get("display_name", identifier),
-            "category": base.get("category", "other"),
+            # Normalize at the merge step so every downstream writer
+            # (seed + re-imports + LLM assessor) stores the same canonical
+            # spelling. An unknown/empty category becomes "Other APIs".
+            "category": normalize_category(base.get("category")) or "Other APIs",
             "reliability_estimate": sum(reliability_scores) / len(reliability_scores),
             "avg_latency_ms": int(sum(latencies) / len(latencies)) if latencies else 500,
             "common_errors": _merge_errors([a.get("common_errors", []) for a in assessments]),

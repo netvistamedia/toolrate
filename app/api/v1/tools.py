@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import case, func, select
 
+from app.core.categories import normalize_category
 from app.core.security import context_hash as _context_hash, effective_data_pool
 from app.dependencies import Db, RedisClient, AuthenticatedKey
 from app.models.report import ExecutionReport
@@ -21,7 +22,7 @@ async def list_tools(
     db: Db,
     api_key: AuthenticatedKey,
     q: str | None = Query(None, max_length=256, description="Search by name or identifier (case-insensitive substring match)"),
-    category: str | None = Query(None, max_length=128, description="Filter by category (e.g. 'email', 'llm', 'payment')"),
+    category: str | None = Query(None, max_length=128, description="Filter by category (e.g. 'LLM APIs', 'Payment APIs', 'Email APIs'). Short aliases like 'llm' or 'payment' are normalized to the canonical name."),
     offset: int = Query(0, ge=0, le=10000, description="Pagination offset"),
     limit: int = Query(50, ge=1, le=200, description="Results per page"),
 ):
@@ -36,7 +37,11 @@ async def list_tools(
         )
 
     if category:
-        stmt = stmt.where(Tool.category == category)
+        # Accept old lowercase aliases (?category=llm) and route them to the
+        # canonical Title-Case name the DB actually stores. Without this, the
+        # 2026-04-14 category merge silently broke every existing client that
+        # was filtering by the pre-merge spelling.
+        stmt = stmt.where(Tool.category == (normalize_category(category) or category))
 
     # Get total count
     count_stmt = select(func.count()).select_from(stmt.subquery())

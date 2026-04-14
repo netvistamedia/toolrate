@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Query
 
+from app.core.categories import normalize_category
 from app.dependencies import Db, AuthenticatedKey
 from app.services.discovery import get_hidden_gems, get_fallback_chains
 
@@ -13,10 +14,13 @@ router = APIRouter()
 async def hidden_gems(
     db: Db,
     api_key: AuthenticatedKey,
-    category: str | None = Query(None, description="Filter by category (e.g. 'email', 'llm', 'search')"),
+    category: str | None = Query(None, description="Filter by category (e.g. 'LLM APIs', 'Search APIs'). Short aliases are normalized to the canonical name."),
     limit: int = Query(10, ge=1, le=50, description="Max results"),
 ):
-    gems = await get_hidden_gems(db, category=category, limit=limit)
+    # Normalize so old clients (?category=llm) hit the same canonical name
+    # the DB stores post-2026-04-14 merge.
+    normalized_cat = normalize_category(category) if category else None
+    gems = await get_hidden_gems(db, category=normalized_cat, limit=limit)
     return {"hidden_gems": gems, "count": len(gems)}
 
 
