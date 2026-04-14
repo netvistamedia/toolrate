@@ -41,15 +41,29 @@ MITIGATIONS = {
     "permission_denied": "Check API key scopes; verify account permissions",
 }
 
-# Category-adaptive Bayesian priors — tuned per tool category
+# Category-adaptive Bayesian priors — tuned per canonical tool category.
+# Keys must match the canonical Title-Case names in the DB (see the category
+# merge run on 2026-04-14). Categories absent here fall through to the
+# default (settings.bayesian_alpha_prior / beta_prior).
 CATEGORY_PRIORS: dict[str, tuple[float, float]] = {
-    "Payment APIs": (8.0, 1.0),       # ~89% — payment providers are generally reliable
-    "Email APIs": (7.0, 1.0),         # ~87%
-    "Cloud Storage": (8.0, 1.0),      # ~89%
-    "LLM APIs": (6.0, 1.5),           # ~80% — LLMs have more variability
-    "Search APIs": (6.5, 1.0),        # ~87%
-    "Developer Tools": (6.0, 1.0),    # ~86%
-    "Communication APIs": (7.0, 1.0), # ~87%
+    "Payment APIs":           (8.0, 1.0),  # ~89% — payment providers are generally reliable
+    "Email APIs":             (7.0, 1.0),  # ~87%
+    "Cloud Storage":          (8.0, 1.0),  # ~89%
+    "LLM APIs":               (6.0, 1.5),  # ~80% — LLMs have more variability
+    "Search APIs":            (6.5, 1.0),  # ~87%
+    "Developer Tools":        (6.0, 1.0),  # ~86%
+    "Messaging":              (7.0, 1.0),  # ~87% — SMS/queues/event buses are mature infra
+    "Databases & BaaS":       (7.5, 1.0),  # ~88%
+    "Vector Databases":       (6.5, 1.0),  # ~87% — newer category, still mostly reliable
+    "Auth & Identity":        (7.5, 1.0),  # ~88%
+    "Monitoring & Analytics": (7.0, 1.0),  # ~87%
+    "CRM & Productivity":     (6.5, 1.0),  # ~87%
+    "Maps & Location":        (7.0, 1.0),  # ~87%
+    "Web Scraping":           (5.0, 2.0),  # ~71% — scrapers are inherently flaky
+    "Browser Automation":     (5.0, 2.0),  # ~71% — headless browsers are notoriously brittle
+    "Image/Media Generation": (6.0, 1.5),  # ~80% — creative AI has variable quality/uptime
+    "Code Execution":         (6.0, 1.5),  # ~80% — sandbox failures are common
+    "E-commerce":             (7.0, 1.0),  # ~87%
 }
 
 
