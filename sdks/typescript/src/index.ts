@@ -21,6 +21,7 @@ export {
   type CategoryItem,
   type CategoriesResponse,
   type PlatformStats,
+  type PlatformStatsTopTool,
   type PersonalStats,
   type WebhookResponse,
   type WebhookListResponse,

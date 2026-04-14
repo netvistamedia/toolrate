@@ -191,14 +191,46 @@ export class ToolRate {
 
   /** Get platform-wide statistics. */
   async getStats(): Promise<PlatformStats> {
-    const raw = await this.get<Record<string, unknown>>("/v1/stats");
-    return camelCaseKeys(raw) as PlatformStats;
+    const raw = await this.get<RawPlatformStats>("/v1/stats");
+    // Explicit mapping — `camelCaseKeys` only flattens the top level, which
+    // left the declared `totalTools` / `totalReports` fields as undefined at
+    // runtime on the actual nested response. This restores a shape that
+    // matches the PlatformStats interface.
+    return {
+      platform: {
+        totalTools: raw.platform.total_tools,
+        totalReports: raw.platform.total_reports,
+        totalApiKeys: raw.platform.total_api_keys,
+        journeyReports: raw.platform.journey_reports,
+      },
+      activity: {
+        reportsToday: raw.activity.reports_today,
+        reportsLast7d: raw.activity.reports_last_7d,
+      },
+      topTools: raw.top_tools.map((t) => ({
+        identifier: t.identifier,
+        displayName: t.display_name,
+        reportCount: t.report_count,
+      })),
+      generatedAt: raw.generated_at,
+    };
   }
 
   /** Get personal usage statistics (tier, limits, usage). */
   async getMyStats(): Promise<PersonalStats> {
-    const raw = await this.get<Record<string, unknown>>("/v1/stats/me");
-    return camelCaseKeys(raw) as PersonalStats;
+    const raw = await this.get<RawPersonalStats>("/v1/stats/me");
+    return {
+      keyPrefix: raw.key_prefix,
+      tier: raw.tier,
+      billingPeriod: raw.billing_period,
+      limit: raw.limit,
+      used: raw.used,
+      remaining: raw.remaining,
+      dailyLimit: raw.daily_limit,
+      dailyUsed: raw.daily_used,
+      dailyRemaining: raw.daily_remaining,
+      createdAt: raw.created_at,
+    };
   }
 
   // ── Webhooks ───────────────────────────────────────────────────
@@ -506,10 +538,14 @@ export class ToolRate {
     }
 
     let responseBody: unknown = undefined;
+    let parseError = false;
     try {
       responseBody = await response.json();
     } catch {
-      // Non-JSON body (e.g. 502 HTML from an upstream proxy). Leave undefined.
+      // Non-JSON body (e.g. 502 HTML from an upstream proxy). Leave undefined
+      // and remember we couldn't parse — we'll only throw if the response was
+      // otherwise "ok", so error responses still surface their status cleanly.
+      parseError = true;
     }
 
     if (!response.ok) {
@@ -517,6 +553,20 @@ export class ToolRate {
         `ToolRate API error: ${response.status} ${response.statusText}`,
         response.status,
         responseBody,
+      );
+    }
+
+    // 2xx but no usable JSON body (empty body, literal JSON null, or a
+    // garbled response from a broken upstream). Without this guard the SDK
+    // would happily return `undefined as T` and every caller's response
+    // mapping (`raw.reliability_score`, etc.) would crash with a bare
+    // `TypeError: Cannot read properties of undefined` instead of a clean
+    // ToolRateError the caller can catch.
+    if (parseError || responseBody === null || responseBody === undefined) {
+      throw new ToolRateError(
+        `ToolRate API returned an empty or malformed response body (HTTP ${response.status})`,
+        response.status,
+        undefined,
       );
     }
 
@@ -583,15 +633,6 @@ function mapAssessResponse(raw: RawAssessResponse): AssessResponse {
       : null,
     lastUpdated: raw.last_updated,
   };
-}
-
-function camelCaseKeys(obj: Record<string, unknown>): Record<string, unknown> {
-  const result: Record<string, unknown> = {};
-  for (const [key, value] of Object.entries(obj)) {
-    const camel = key.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
-    result[camel] = value;
-  }
-  return result;
 }
 
 // ── Error classification ─────────────────────────────────────────
@@ -721,4 +762,36 @@ interface RawRotateKeyResponse {
   old_key_prefix: string;
   tier: string;
   daily_limit: number;
+}
+
+interface RawPlatformStats {
+  platform: {
+    total_tools: number;
+    total_reports: number;
+    total_api_keys: number;
+    journey_reports: number;
+  };
+  activity: {
+    reports_today: number;
+    reports_last_7d: number;
+  };
+  top_tools: Array<{
+    identifier: string;
+    display_name: string | null;
+    report_count: number;
+  }>;
+  generated_at: string;
+}
+
+interface RawPersonalStats {
+  key_prefix: string;
+  tier: string;
+  billing_period: "daily" | "monthly";
+  limit: number;
+  used: number;
+  remaining: number;
+  daily_limit: number;
+  daily_used: number;
+  daily_remaining: number;
+  created_at: string | null;
 }

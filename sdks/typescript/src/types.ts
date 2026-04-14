@@ -155,16 +155,41 @@ export interface CategoriesResponse {
 
 // ── Stats ───────────────────────────────────────────────────────────
 
+export interface PlatformStatsTopTool {
+  identifier: string;
+  displayName: string | null;
+  reportCount: number;
+}
+
 export interface PlatformStats {
-  totalTools: number;
-  totalReports: number;
-  [key: string]: unknown;
+  platform: {
+    totalTools: number;
+    totalReports: number;
+    totalApiKeys: number;
+    journeyReports: number;
+  };
+  activity: {
+    reportsToday: number;
+    reportsLast7d: number;
+  };
+  topTools: PlatformStatsTopTool[];
+  generatedAt: string;
 }
 
 export interface PersonalStats {
+  keyPrefix: string;
   tier: string;
+  billingPeriod: "daily" | "monthly";
+  limit: number;
+  used: number;
+  remaining: number;
+  /** @deprecated Use `limit` — kept for back-compat with pre-0.3 SDKs. */
   dailyLimit: number;
-  [key: string]: unknown;
+  /** @deprecated Use `used` — kept for back-compat with pre-0.3 SDKs. */
+  dailyUsed: number;
+  /** @deprecated Use `remaining` — kept for back-compat with pre-0.3 SDKs. */
+  dailyRemaining: number;
+  createdAt: string | null;
 }
 
 // ── Webhooks ────────────────────────────────────────────────────────

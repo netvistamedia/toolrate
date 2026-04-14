@@ -1,6 +1,6 @@
 {
   "name": "toolrate",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Reliability oracle for AI agents — real advice for every tool your agent considers",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -29,7 +29,7 @@
     "url": "https://github.com/netvistamedia/toolrate"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=18.17.0"
   },
   "devDependencies": {
     "typescript": "^6.0.2"
