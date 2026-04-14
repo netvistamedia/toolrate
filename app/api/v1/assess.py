@@ -130,15 +130,17 @@ async def batch_assess_tools(
     # against the period counter, but a batch holds up to 20 assessments.
     # Without this step, a user on a 100/day free tier could issue twenty
     # batches of 20 and get 2,000 assessments while only registering 20
-    # rate-limit hits. Count the remaining (N-1) items up-front so the
-    # quota matches the billable work.
+    # rate-limit hits. Reserve the remaining (N-1) items atomically so the
+    # quota matches the billable work — and so a rejected batch rolls back
+    # cleanly instead of leaving the counter at limit+excess and locking
+    # the user out for the rest of the period.
     from app.core.exceptions import RateLimitExceeded
-    from app.services.rate_limiter import check_rate_limit
+    from app.services.rate_limiter import reserve_rate_limit
     period = api_key.billing_period or "daily"  # type: ignore[assignment]
     extra = len(body.tools) - 1
-    for _ in range(extra):
-        allowed, _count = await check_rate_limit(
-            redis, api_key.key_hash, api_key.daily_limit, period,
+    if extra > 0:
+        allowed, _count = await reserve_rate_limit(
+            redis, api_key.key_hash, extra, api_key.daily_limit, period,
         )
         if not allowed:
             raise RateLimitExceeded()
