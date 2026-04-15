@@ -22,13 +22,19 @@ from app.schemas.assess import AlternativeTool, AssessResponse
 from app.services.scoring import (
     _STRATEGY_WEIGHTS,
     _CATEGORY_MEDIAN_CACHE,
+    _CATEGORY_LATENCY_MEDIAN_CACHE,
     _annotate_alternatives_within_budget,
     _apply_cost_adjustment,
     _budget_explanation,
+    _build_reasoning,
     _category_median_cost,
+    _category_median_latency_ms,
     _cost_adjusted_score,
     _effective_cost,
     _is_within_budget,
+    _per_call_cost_for_tokens,
+    _pick_recommended_model,
+    _tool_latency_ms,
     compute_score,
     finalize_response,
 )
@@ -78,11 +84,100 @@ class TestEffectiveCost:
         pricing = {"base_usd_per_call": -0.01}
         assert _effective_cost(pricing, None) == 0.0
 
+    def test_expected_tokens_prefers_per_million_math(self):
+        # 1000 tokens at 30/70 split = 300 in + 700 out
+        # 300 * $3/M + 700 * $15/M = $0.0009 + $0.0105 = $0.0114
+        pricing = {
+            "usd_per_million_input_tokens": 3.0,
+            "usd_per_million_output_tokens": 15.0,
+            "typical_usd_per_call": 0.999,  # intentionally wrong to prove we pick per-token
+        }
+        assert _effective_cost(pricing, None, expected_tokens=1000) == pytest.approx(0.0114, rel=1e-6)
+
+    def test_expected_tokens_falls_back_when_per_million_missing(self):
+        # No per-M pricing → fall through to typical_usd_per_call
+        pricing = {"typical_usd_per_call": 0.005}
+        assert _effective_cost(pricing, None, expected_tokens=1000) == 0.005
+
+    def test_expected_tokens_zero_falls_back_to_blend(self):
+        # zero or None tokens = blend math
+        pricing = {
+            "usd_per_million_input_tokens": 3.0,
+            "usd_per_million_output_tokens": 15.0,
+            "typical_usd_per_call": 0.02,
+        }
+        assert _effective_cost(pricing, None, expected_tokens=0) == 0.02
+        assert _effective_cost(pricing, None, expected_tokens=None) == 0.02
+
+
+class TestPerCallCostForTokens:
+    def test_returns_none_without_expected_tokens(self):
+        pricing = {
+            "usd_per_million_input_tokens": 3.0,
+            "usd_per_million_output_tokens": 15.0,
+        }
+        assert _per_call_cost_for_tokens(pricing, None) is None
+        assert _per_call_cost_for_tokens(pricing, 0) is None
+
+    def test_returns_none_without_per_million_fields(self):
+        assert _per_call_cost_for_tokens({}, 1000) is None
+        assert _per_call_cost_for_tokens(
+            {"usd_per_million_input_tokens": 3.0}, 1000
+        ) is None
+
+    def test_30_70_split_matches_hand_computed(self):
+        # 1000 tokens: 300 in * 2.50/M + 700 out * 10/M
+        # = 0.00075 + 0.00700 = 0.00775
+        pricing = {
+            "usd_per_million_input_tokens": 2.50,
+            "usd_per_million_output_tokens": 10.00,
+        }
+        assert _per_call_cost_for_tokens(pricing, 1000) == pytest.approx(0.00775, rel=1e-6)
+
+    def test_groq_cheap_model_rounds_to_micropennies(self):
+        # Groq 8B: $0.05/M in, $0.08/M out — 1000 tokens ≈ $0.000071
+        pricing = {
+            "usd_per_million_input_tokens": 0.05,
+            "usd_per_million_output_tokens": 0.08,
+        }
+        cost = _per_call_cost_for_tokens(pricing, 1000)
+        assert cost == pytest.approx(0.000071, rel=1e-3)
+
+    def test_custom_input_ratio(self):
+        # 50/50 split: 500 in + 500 out at $1/M/$1/M = $0.001
+        pricing = {
+            "usd_per_million_input_tokens": 1.0,
+            "usd_per_million_output_tokens": 1.0,
+        }
+        assert _per_call_cost_for_tokens(pricing, 1000, input_ratio=0.5) == pytest.approx(0.001, rel=1e-6)
+
+    def test_negative_price_clamped(self):
+        pricing = {
+            "usd_per_million_input_tokens": -5.0,
+            "usd_per_million_output_tokens": 10.0,
+        }
+        # input is clamped to 0, only output contributes
+        # 700 out * $10/M = $0.007
+        assert _per_call_cost_for_tokens(pricing, 1000) == pytest.approx(0.007, rel=1e-6)
+
 
 class TestCostAdjustedScore:
     def test_strategy_weights_sum_to_one(self):
-        for strategy, (w_rel, w_cost) in _STRATEGY_WEIGHTS.items():
-            assert w_rel + w_cost == pytest.approx(1.0), strategy
+        # All four strategies are 3-tuples (reliability, cost, latency) and
+        # must sum to exactly 1.0 so the score math scales 0-100 cleanly.
+        for strategy, weights in _STRATEGY_WEIGHTS.items():
+            assert len(weights) == 3, strategy
+            assert sum(weights) == pytest.approx(1.0), strategy
+
+    def test_preserved_two_axis_strategy_weights(self):
+        # The three legacy strategies were locked in on 2026-04-15 — they
+        # must not drift. speed_first is new; the other three stay pinned.
+        assert _STRATEGY_WEIGHTS["reliability_first"] == (0.80, 0.20, 0.00)
+        assert _STRATEGY_WEIGHTS["balanced"] == (0.55, 0.45, 0.00)
+        assert _STRATEGY_WEIGHTS["cost_first"] == (0.25, 0.75, 0.00)
+
+    def test_speed_first_weights(self):
+        assert _STRATEGY_WEIGHTS["speed_first"] == (0.35, 0.45, 0.20)
 
     def test_free_tool_gets_full_cost_bonus(self):
         # reliability=90, cost=0, median=0.01 → cost_norm=0, cost side = 100
@@ -113,6 +208,44 @@ class TestCostAdjustedScore:
         # peer group is all-free but this tool costs → full cost penalty
         # 0.80 * 90 + 0.20 * 0 = 72
         assert _cost_adjusted_score(90.0, 0.01, None, "reliability_first") == 72.0
+
+    def test_speed_first_without_latency_data_degrades_gracefully(self):
+        # No latency signal → fold 0.20 latency weight into reliability
+        # so the score stays meaningful. 0.55 * 90 + 0.45 * 50 = 72.0
+        score = _cost_adjusted_score(
+            90.0, 0.005, 0.01, "speed_first",
+            latency_ms=None, category_median_latency_ms=None,
+        )
+        # reliability effective weight = 0.35 + 0.20 = 0.55
+        # 0.55 * 90 + 0.45 * 50 + 0.0 * 0 = 49.5 + 22.5 = 72.0
+        assert score == 72.0
+
+    def test_speed_first_with_latency_at_median(self):
+        # latency == median → lat_norm = 1.0 → lat_side = 0
+        # 0.35 * 90 + 0.45 * 50 + 0.20 * 0 = 31.5 + 22.5 + 0 = 54.0
+        score = _cost_adjusted_score(
+            90.0, 0.005, 0.01, "speed_first",
+            latency_ms=1000.0, category_median_latency_ms=1000.0,
+        )
+        assert score == 54.0
+
+    def test_speed_first_rewards_fast_tool(self):
+        # latency at half the median → lat_norm = 0.5 → lat_side = 50
+        # 0.35 * 90 + 0.45 * 50 + 0.20 * 50 = 31.5 + 22.5 + 10.0 = 64.0
+        score = _cost_adjusted_score(
+            90.0, 0.005, 0.01, "speed_first",
+            latency_ms=500.0, category_median_latency_ms=1000.0,
+        )
+        assert score == 64.0
+
+    def test_speed_first_caps_slow_tool_at_full_latency_penalty(self):
+        # latency at 10x median → clamped to 1.0 → lat_side = 0
+        # identical to at-median case: 54.0
+        score = _cost_adjusted_score(
+            90.0, 0.005, 0.01, "speed_first",
+            latency_ms=10000.0, category_median_latency_ms=1000.0,
+        )
+        assert score == 54.0
 
 
 class TestIsWithinBudget:
@@ -224,30 +357,39 @@ class TestApplyCostAdjustment:
             pricing=pricing,
         )
 
+    def _apply(self, resp, tool, **kwargs):
+        """Thin wrapper that fills in the new task_complexity + expected_tokens
+        + category_median_latency_ms kwargs so individual tests stay focused
+        on whatever they care about. Kwargs override the defaults."""
+        base = dict(
+            max_price_per_call=None,
+            max_monthly_budget=None,
+            expected_calls_per_month=None,
+            expected_tokens=None,
+            task_complexity="medium",
+            budget_strategy="reliability_first",
+            category_median=0.01,
+            category_median_latency_ms=None,
+        )
+        base.update(kwargs)
+        _apply_cost_adjustment(resp, tool, **base)
+
     def test_tool_without_pricing_and_no_budget_leaves_everything_none(self):
         resp = self._make_response()
         tool = self._make_tool(None)
-        _apply_cost_adjustment(
-            resp, tool,
-            max_price_per_call=None, max_monthly_budget=None,
-            expected_calls_per_month=None, budget_strategy="reliability_first",
-            category_median=0.01,
-        )
+        self._apply(resp, tool)
         assert resp.price_per_call is None
         assert resp.pricing_model is None
         assert resp.cost_adjusted_score is None
         assert resp.within_budget is None
         assert resp.budget_explanation is None
+        # reasoning is always populated now, even for pricing-less tools
+        assert resp.reasoning is not None
 
     def test_tool_without_pricing_with_budget_explains(self):
         resp = self._make_response()
         tool = self._make_tool(None)
-        _apply_cost_adjustment(
-            resp, tool,
-            max_price_per_call=0.01, max_monthly_budget=None,
-            expected_calls_per_month=None, budget_strategy="reliability_first",
-            category_median=0.01,
-        )
+        self._apply(resp, tool, max_price_per_call=0.01)
         assert resp.budget_explanation == "No pricing data available for this tool."
 
     def test_tool_with_pricing_populates_cost_fields(self):
@@ -257,12 +399,7 @@ class TestApplyCostAdjustment:
             "base_usd_per_call": 0.005,
             "typical_usd_per_call": None,
         })
-        _apply_cost_adjustment(
-            resp, tool,
-            max_price_per_call=None, max_monthly_budget=None,
-            expected_calls_per_month=None, budget_strategy="reliability_first",
-            category_median=0.01,
-        )
+        self._apply(resp, tool)
         assert resp.price_per_call == 0.005
         assert resp.pricing_model == "per_call"
         # cost_norm = 0.005/0.01 = 0.5 → cost side = 50
@@ -272,11 +409,9 @@ class TestApplyCostAdjustment:
     def test_expected_calls_drives_estimated_monthly_cost(self):
         resp = self._make_response()
         tool = self._make_tool({"model": "per_call", "base_usd_per_call": 0.001})
-        _apply_cost_adjustment(
+        self._apply(
             resp, tool,
-            max_price_per_call=None, max_monthly_budget=None,
             expected_calls_per_month=10000,
-            budget_strategy="reliability_first",
             category_median=0.001,
         )
         assert resp.estimated_monthly_cost == 10.0  # 10000 * 0.001
@@ -286,11 +421,10 @@ class TestApplyCostAdjustment:
     def test_over_budget_sets_within_budget_false_and_flag(self):
         resp = self._make_response()
         tool = self._make_tool({"model": "per_call", "base_usd_per_call": 0.10})
-        _apply_cost_adjustment(
+        self._apply(
             resp, tool,
-            max_price_per_call=0.01, max_monthly_budget=None,
-            expected_calls_per_month=None, budget_strategy="balanced",
-            category_median=0.01,
+            max_price_per_call=0.01,
+            budget_strategy="balanced",
         )
         assert resp.within_budget is False
         assert "exceeds" in resp.budget_explanation
@@ -300,18 +434,26 @@ class TestApplyCostAdjustment:
         scores: dict[str, float] = {}
         for strategy in ("reliability_first", "balanced", "cost_first"):
             resp = self._make_response(reliability=90.0)
-            _apply_cost_adjustment(
-                resp, tool,
-                max_price_per_call=None, max_monthly_budget=None,
-                expected_calls_per_month=None, budget_strategy=strategy,
-                category_median=0.01,
-            )
+            self._apply(resp, tool, budget_strategy=strategy)
             scores[strategy] = resp.cost_adjusted_score
 
         # Expensive tool (2x median) should score worst under cost_first
         # and best under reliability_first.
         assert scores["reliability_first"] > scores["balanced"]
         assert scores["balanced"] > scores["cost_first"]
+
+    def test_reasoning_populated_on_priced_tool(self):
+        resp = self._make_response(reliability=95.0)
+        tool = self._make_tool({
+            "model": "per_token",
+            "typical_usd_per_call": 0.01,
+            "recommended_model": "claude-sonnet-4-6",
+        })
+        self._apply(resp, tool, budget_strategy="reliability_first")
+        assert resp.reasoning is not None
+        assert "reliability-first" in resp.reasoning
+        assert "claude-sonnet-4-6" in resp.reasoning
+        assert resp.recommended_model == "claude-sonnet-4-6"
 
 
 class TestAnnotateAlternativesWithinBudget:
@@ -335,6 +477,205 @@ class TestAnnotateAlternativesWithinBudget:
         assert alts[2].within_budget is None  # pricing unknown
 
 
+class TestToolLatencyMs:
+    def test_none_and_empty(self):
+        assert _tool_latency_ms(None) is None
+        assert _tool_latency_ms({}) is None
+
+    def test_top_level_value_wins(self):
+        pricing = {"typical_latency_ms": 1200, "models": [
+            {"typical_latency_ms": 50},
+        ]}
+        assert _tool_latency_ms(pricing) == 1200.0
+
+    def test_catalog_median_fallback(self):
+        pricing = {"models": [
+            {"typical_latency_ms": 500},
+            {"typical_latency_ms": 1200},
+            {"typical_latency_ms": 2500},
+        ]}
+        assert _tool_latency_ms(pricing) == 1200.0
+
+    def test_catalog_median_even_count(self):
+        pricing = {"models": [
+            {"typical_latency_ms": 500},
+            {"typical_latency_ms": 1500},
+        ]}
+        assert _tool_latency_ms(pricing) == 1000.0
+
+    def test_catalog_without_latency_returns_none(self):
+        pricing = {"models": [{"name": "foo"}, {"name": "bar"}]}
+        assert _tool_latency_ms(pricing) is None
+
+
+class TestPickRecommendedModel:
+    _CATALOG = {
+        "recommended_model": "fallback-hint",
+        "models": [
+            {
+                "name": "tiny",
+                "tier": "low",
+                "usd_per_million_input_tokens": 0.10,
+                "usd_per_million_output_tokens": 0.20,
+                "typical_latency_ms": 200,
+            },
+            {
+                "name": "medium",
+                "tier": "medium",
+                "usd_per_million_input_tokens": 1.00,
+                "usd_per_million_output_tokens": 3.00,
+                "typical_latency_ms": 800,
+            },
+            {
+                "name": "big",
+                "tier": "very_high",
+                "usd_per_million_input_tokens": 15.00,
+                "usd_per_million_output_tokens": 75.00,
+                "typical_latency_ms": 3000,
+            },
+        ],
+    }
+
+    def test_returns_none_for_empty_pricing(self):
+        name, entry = _pick_recommended_model(None, "medium", "balanced")
+        assert name is None
+        assert entry is None
+
+    def test_string_hint_fallback_when_no_catalog(self):
+        name, entry = _pick_recommended_model(
+            {"recommended_model": "claude-sonnet-4-6"}, "medium", "balanced"
+        )
+        assert name == "claude-sonnet-4-6"
+        assert entry is None
+
+    def test_cost_first_picks_cheapest_capable(self):
+        # task=low → all three capable → cheapest = tiny
+        name, entry = _pick_recommended_model(self._CATALOG, "low", "cost_first")
+        assert name == "tiny"
+        assert entry is not None and entry["tier"] == "low"
+
+    def test_cost_first_filters_incapable_models(self):
+        # task=high → only "big" qualifies (very_high rank=3 ≥ 2)
+        name, _ = _pick_recommended_model(self._CATALOG, "high", "cost_first")
+        assert name == "big"
+
+    def test_speed_first_picks_lowest_latency_capable(self):
+        # task=medium → medium + big qualify; medium has 800ms < big's 3000ms
+        name, _ = _pick_recommended_model(self._CATALOG, "medium", "speed_first")
+        assert name == "medium"
+
+    def test_reliability_first_hedges_toward_most_capable(self):
+        # task=low → all capable → reliability_first picks highest tier = big
+        name, _ = _pick_recommended_model(self._CATALOG, "low", "reliability_first")
+        assert name == "big"
+
+    def test_balanced_prefers_middle_ground(self):
+        # task=low → all capable → balanced penalizes cost + latency,
+        # rewards tier → medium wins over tiny (slightly pricier but
+        # stronger) and over big (dramatically pricier).
+        name, _ = _pick_recommended_model(self._CATALOG, "low", "balanced")
+        assert name in ("tiny", "medium")  # both are reasonable; medium is the expected pick
+
+    def test_very_high_complexity_returns_top_tier(self):
+        name, _ = _pick_recommended_model(self._CATALOG, "very_high", "cost_first")
+        assert name == "big"
+
+    def test_no_capable_model_widens_pool(self):
+        # Catalog of only "low" tier models, asking for very_high → widen.
+        pricing = {
+            "models": [
+                {"name": "only-low", "tier": "low", "usd_per_million_input_tokens": 0.1, "usd_per_million_output_tokens": 0.2},
+            ],
+        }
+        name, _ = _pick_recommended_model(pricing, "very_high", "cost_first")
+        assert name == "only-low"
+
+
+class TestBuildReasoning:
+    def _make_response(self, **overrides) -> AssessResponse:
+        base = dict(
+            reliability_score=92.5,
+            confidence=0.85,
+            data_source="empirical",
+            historical_success_rate="92% (last 30 days, 1500 calls)",
+            predicted_failure_risk="low",
+            trend=None,
+            common_pitfalls=[],
+            recommended_mitigations=[],
+            top_alternatives=[],
+            estimated_latency_ms=None,
+            latency=None,
+            last_updated=__import__("datetime").datetime.now(
+                __import__("datetime").timezone.utc
+            ),
+        )
+        base.update(overrides)
+        return AssessResponse(**base)
+
+    def test_includes_score_and_risk(self):
+        resp = self._make_response()
+        msg = _build_reasoning(
+            None, resp,
+            task_complexity="medium",
+            budget_strategy="balanced",
+            recommended_model=None,
+            within_budget=None,
+            latency_ms=None,
+        )
+        assert "92.5/100" in msg
+        assert "low risk" in msg
+        assert "balanced" in msg
+        assert "medium" in msg
+
+    def test_uses_display_name_over_identifier(self):
+        tool = Tool(
+            id=uuid.uuid4(),
+            identifier="https://api.anthropic.com/v1/messages",
+            display_name="Anthropic Messages",
+        )
+        resp = self._make_response()
+        msg = _build_reasoning(
+            tool, resp,
+            task_complexity="high",
+            budget_strategy="reliability_first",
+            recommended_model="claude-sonnet-4-6",
+            within_budget=True,
+            latency_ms=1200,
+        )
+        assert "Anthropic Messages" in msg
+        assert "claude-sonnet-4-6" in msg
+        assert "~1200ms" in msg
+        assert "Fits within your budget" in msg
+
+    def test_over_budget_flagged(self):
+        resp = self._make_response(price_per_call=0.10)
+        msg = _build_reasoning(
+            None, resp,
+            task_complexity="medium",
+            budget_strategy="cost_first",
+            recommended_model=None,
+            within_budget=False,
+            latency_ms=None,
+        )
+        assert "Over budget" in msg
+
+    def test_includes_cost_and_projection(self):
+        resp = self._make_response(
+            price_per_call=0.0075,
+            estimated_monthly_cost=75.0,
+        )
+        msg = _build_reasoning(
+            None, resp,
+            task_complexity="medium",
+            budget_strategy="balanced",
+            recommended_model=None,
+            within_budget=True,
+            latency_ms=None,
+        )
+        assert "$0.0075/call" in msg
+        assert "$75.00/mo projected" in msg
+
+
 # ──────────────────────────────────────────────────────────────────────────
 # Integration tests — DB-backed median lookup + end-to-end finalize_response
 # ──────────────────────────────────────────────────────────────────────────
@@ -351,8 +692,9 @@ async def db():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
     await engine.dispose()
-    # The median cache is process-global — each test expects a fresh state.
+    # Both median caches are process-global — each test expects fresh state.
     _CATEGORY_MEDIAN_CACHE.clear()
+    _CATEGORY_LATENCY_MEDIAN_CACHE.clear()
 
 
 async def _priced_tool(db, identifier: str, category: str, base: float | None, typical: float | None = None) -> Tool:
@@ -548,3 +890,233 @@ class TestToolPricingHistoryModel:
         assert history.pricing["base_usd_per_call"] == 0.001
         assert history.source == "manual"
         assert history.observed_at is not None
+
+
+# Seed helper that bakes latency into the pricing JSON so the latency-median
+# tests and the speed_first integration test share a single factory.
+async def _priced_tool_with_latency(
+    db, identifier: str, category: str, base: float, latency_ms: int,
+) -> Tool:
+    tool = Tool(
+        id=uuid.uuid4(),
+        identifier=identifier,
+        display_name=identifier.split("/")[-1],
+        category=category,
+        pricing={
+            "model": "per_call",
+            "base_usd_per_call": base,
+            "typical_latency_ms": latency_ms,
+        },
+        report_count=20,
+    )
+    db.add(tool)
+    await db.flush()
+    return tool
+
+
+class TestCategoryMedianLatency:
+    @pytest.mark.asyncio
+    async def test_returns_none_when_no_peers(self, db):
+        await db.commit()
+        assert await _category_median_latency_ms(db, "empty-cat") is None
+
+    @pytest.mark.asyncio
+    async def test_median_of_three(self, db):
+        await _priced_tool_with_latency(db, "fast", "speedy", 0.001, 200)
+        await _priced_tool_with_latency(db, "mid", "speedy", 0.001, 1000)
+        await _priced_tool_with_latency(db, "slow", "speedy", 0.001, 3000)
+        await db.commit()
+        assert await _category_median_latency_ms(db, "speedy") == 1000.0
+
+    @pytest.mark.asyncio
+    async def test_thin_category_falls_back_to_global(self, db):
+        # "solo" has 1 peer, global pool has 4 → global median wins
+        await _priced_tool_with_latency(db, "solo1", "solo", 0.001, 99999)
+        await _priced_tool_with_latency(db, "g1", "global", 0.001, 100)
+        await _priced_tool_with_latency(db, "g2", "global", 0.001, 500)
+        await _priced_tool_with_latency(db, "g3", "global", 0.001, 1500)
+        await db.commit()
+        # Global pool sorted = [100, 500, 1500, 99999] → median = (500+1500)/2 = 1000
+        assert await _category_median_latency_ms(db, "solo") == 1000.0
+
+
+class TestFinalizeResponseSpeedFirst:
+    @pytest.mark.asyncio
+    async def test_speed_first_scores_fast_tool_higher_than_slow(self, db):
+        # Build three priced peers in the same category, two with latency.
+        await _priced_tool_with_latency(db, "peer1", "llm", 0.001, 500)
+        await _priced_tool_with_latency(db, "peer2", "llm", 0.003, 1500)
+        fast_tool = await _priced_tool_with_latency(db, "fast", "llm", 0.002, 300)
+        slow_tool = await _priced_tool_with_latency(db, "slow", "llm", 0.002, 2500)
+        await db.commit()
+
+        def _response(reliability: float) -> AssessResponse:
+            return AssessResponse(
+                reliability_score=reliability,
+                confidence=0.85,
+                data_source="empirical",
+                historical_success_rate="92%",
+                predicted_failure_risk="low",
+                trend=None,
+                common_pitfalls=[],
+                recommended_mitigations=[],
+                top_alternatives=[],
+                estimated_latency_ms=None,
+                latency=None,
+                last_updated=__import__("datetime").datetime.now(
+                    __import__("datetime").timezone.utc
+                ),
+            )
+
+        fast_resp = _response(90.0)
+        slow_resp = _response(90.0)
+        await finalize_response(
+            fast_resp, db, fast_tool,
+            max_price_per_call=None, max_monthly_budget=None,
+            expected_calls_per_month=None, expected_tokens=None,
+            task_complexity="medium", budget_strategy="speed_first",
+        )
+        await finalize_response(
+            slow_resp, db, slow_tool,
+            max_price_per_call=None, max_monthly_budget=None,
+            expected_calls_per_month=None, expected_tokens=None,
+            task_complexity="medium", budget_strategy="speed_first",
+        )
+
+        assert fast_resp.cost_adjusted_score > slow_resp.cost_adjusted_score
+        # Reasoning always populated
+        assert fast_resp.reasoning is not None and "speed-first" in fast_resp.reasoning
+        assert "~300ms" in fast_resp.reasoning
+        assert slow_resp.reasoning is not None and "~2500ms" in slow_resp.reasoning
+
+    @pytest.mark.asyncio
+    async def test_llm_catalog_recommended_model_populated(self, db):
+        # Minimal LLM provider with a model catalog, no DB peers.
+        pricing = {
+            "model": "per_token",
+            "typical_usd_per_call": 0.01,
+            "usd_per_million_input_tokens": 3.0,
+            "usd_per_million_output_tokens": 15.0,
+            "typical_latency_ms": 1200,
+            "recommended_model": "sonnet-default",
+            "models": [
+                {
+                    "name": "haiku",
+                    "tier": "low",
+                    "usd_per_million_input_tokens": 0.8,
+                    "usd_per_million_output_tokens": 4.0,
+                    "typical_latency_ms": 500,
+                },
+                {
+                    "name": "sonnet",
+                    "tier": "medium",
+                    "usd_per_million_input_tokens": 3.0,
+                    "usd_per_million_output_tokens": 15.0,
+                    "typical_latency_ms": 1200,
+                },
+                {
+                    "name": "opus",
+                    "tier": "very_high",
+                    "usd_per_million_input_tokens": 15.0,
+                    "usd_per_million_output_tokens": 75.0,
+                    "typical_latency_ms": 2500,
+                },
+            ],
+        }
+        tool = Tool(
+            id=uuid.uuid4(),
+            identifier="https://test.example.com/llm",
+            display_name="TestLLM",
+            category="LLM APIs",
+            pricing=pricing,
+            report_count=20,
+        )
+        db.add(tool)
+        await db.commit()
+
+        def _resp():
+            return AssessResponse(
+                reliability_score=95.0,
+                confidence=0.9,
+                data_source="empirical",
+                historical_success_rate="95%",
+                predicted_failure_risk="low",
+                trend=None,
+                common_pitfalls=[],
+                recommended_mitigations=[],
+                top_alternatives=[],
+                estimated_latency_ms=None,
+                latency=None,
+                last_updated=__import__("datetime").datetime.now(
+                    __import__("datetime").timezone.utc
+                ),
+            )
+
+        # cost_first + low complexity → haiku
+        r = _resp()
+        await finalize_response(
+            r, db, tool,
+            max_price_per_call=None, max_monthly_budget=None,
+            expected_calls_per_month=None, expected_tokens=1000,
+            task_complexity="low", budget_strategy="cost_first",
+        )
+        assert r.recommended_model == "haiku"
+        # Per-token math: 300 in * 0.8/M + 700 out * 4/M = 0.00024 + 0.00280 = 0.00304
+        assert r.price_per_call == pytest.approx(0.00304, rel=1e-3)
+
+        # very_high complexity filters out haiku/sonnet → only opus
+        r2 = _resp()
+        await finalize_response(
+            r2, db, tool,
+            max_price_per_call=None, max_monthly_budget=None,
+            expected_calls_per_month=None, expected_tokens=1000,
+            task_complexity="very_high", budget_strategy="balanced",
+        )
+        assert r2.recommended_model == "opus"
+
+    @pytest.mark.asyncio
+    async def test_task_complexity_default_is_medium(self, db):
+        # finalize_response signature default is task_complexity="medium"
+        pricing = {
+            "model": "per_token",
+            "typical_usd_per_call": 0.005,
+            "recommended_model": "default-hint",
+        }
+        tool = Tool(
+            id=uuid.uuid4(),
+            identifier="https://test.example.com/simple",
+            display_name="Simple",
+            category="test",
+            pricing=pricing,
+            report_count=20,
+        )
+        db.add(tool)
+        await db.commit()
+
+        response = AssessResponse(
+            reliability_score=90.0,
+            confidence=0.8,
+            data_source="empirical",
+            historical_success_rate="90%",
+            predicted_failure_risk="low",
+            trend=None,
+            common_pitfalls=[],
+            recommended_mitigations=[],
+            top_alternatives=[],
+            estimated_latency_ms=None,
+            latency=None,
+            last_updated=__import__("datetime").datetime.now(
+                __import__("datetime").timezone.utc
+            ),
+        )
+        # NOT passing task_complexity — must default to "medium"
+        await finalize_response(
+            response, db, tool,
+            max_price_per_call=None, max_monthly_budget=None,
+            expected_calls_per_month=None, expected_tokens=None,
+            budget_strategy="balanced",
+        )
+        assert response.reasoning is not None
+        assert "medium" in response.reasoning
+        # String-hint fallback wins since no catalog
+        assert response.recommended_model == "default-hint"

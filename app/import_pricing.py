@@ -109,79 +109,278 @@ MANUAL_PRICING: dict[str, dict[str, Any]] = {
         ),
     },
     # -- LLM APIs -----------------------------------------------------------
+    # The six LLM providers below carry a full `models` catalog + the
+    # provider-level per-million-token fields. The router reads these via
+    # `_pick_recommended_model` (catalog path A) and falls back to the
+    # `recommended_model` string hint (path B) for providers without a
+    # catalog. Keep `typical_usd_per_call` pinned to a 1000-token (30/70
+    # in/out) assumption so cached cost_adjusted_scores for callers that
+    # don't set `expected_tokens` stay stable.
     "https://api.openai.com/v1/chat/completions": {
         "model": "per_token",
         "base_usd_per_call": None,
-        "typical_usd_per_call": 0.01,
+        "typical_usd_per_call": 0.00745,  # 300 in * $2.50/M + 700 out * $10/M
         "estimated_tokens_per_call": 1000,
+        "usd_per_million_input_tokens": 2.50,
+        "usd_per_million_output_tokens": 10.00,
+        "typical_latency_ms": 1200,
+        "recommended_model": "gpt-4o",
         "free_tier_per_month": None,
         "flat_monthly_usd": None,
         "currency": "USD",
         "confidence": "high",
         "notes": (
-            "gpt-4o at $5/M input + $15/M output tokens. "
-            "typical_usd_per_call assumes 500 input + 500 output tokens "
-            "(≈ $0.0025 + $0.0075)."
+            "Default pricing reflects gpt-4o (provider-level). The models[] "
+            "catalog adds gpt-4o-mini for low-complexity tasks and o3-mini "
+            "for reasoning-heavy workloads. typical_usd_per_call assumes "
+            "1000 total tokens at a 30/70 input/output split."
         ),
+        "models": [
+            {
+                "name": "gpt-4o-mini",
+                "tier": "low",
+                "usd_per_million_input_tokens": 0.15,
+                "usd_per_million_output_tokens": 0.60,
+                "typical_latency_ms": 500,
+                "context_window": 128_000,
+                "notes": "Cheapest OpenAI chat model — ideal for classification, extraction, tagging.",
+            },
+            {
+                "name": "gpt-4o",
+                "tier": "medium",
+                "usd_per_million_input_tokens": 2.50,
+                "usd_per_million_output_tokens": 10.00,
+                "typical_latency_ms": 1200,
+                "context_window": 128_000,
+                "notes": "General-purpose flagship — balanced quality/speed/cost.",
+            },
+            {
+                "name": "o3-mini",
+                "tier": "high",
+                "usd_per_million_input_tokens": 1.10,
+                "usd_per_million_output_tokens": 4.40,
+                "typical_latency_ms": 4500,
+                "context_window": 200_000,
+                "notes": "Reasoning-tuned — good fit for planning and multi-step logic.",
+            },
+        ],
     },
     "https://api.anthropic.com/v1/messages": {
         "model": "per_token",
         "base_usd_per_call": None,
-        "typical_usd_per_call": 0.009,
+        "typical_usd_per_call": 0.0114,  # 300 in * $3/M + 700 out * $15/M
         "estimated_tokens_per_call": 1000,
+        "usd_per_million_input_tokens": 3.00,
+        "usd_per_million_output_tokens": 15.00,
+        "typical_latency_ms": 1200,
+        "recommended_model": "claude-sonnet-4-6",
         "free_tier_per_month": None,
         "flat_monthly_usd": None,
         "currency": "USD",
         "confidence": "high",
         "notes": (
-            "claude-sonnet at $3/M input + $15/M output tokens. "
-            "typical_usd_per_call assumes 500 input + 500 output tokens "
-            "(≈ $0.0015 + $0.0075)."
+            "Default pricing reflects Claude Sonnet 4.6 (provider-level). "
+            "The models[] catalog surfaces Haiku 4.5 for fast/cheap tasks "
+            "and Opus 4.6 for reasoning-heavy workloads. typical_usd_per_call "
+            "assumes 1000 total tokens at a 30/70 input/output split."
         ),
+        "models": [
+            {
+                "name": "claude-haiku-4-5",
+                "tier": "low",
+                "usd_per_million_input_tokens": 0.80,
+                "usd_per_million_output_tokens": 4.00,
+                "typical_latency_ms": 500,
+                "context_window": 200_000,
+                "notes": "Fastest Claude model — ideal for routing, tagging, short chats.",
+            },
+            {
+                "name": "claude-sonnet-4-6",
+                "tier": "medium",
+                "usd_per_million_input_tokens": 3.00,
+                "usd_per_million_output_tokens": 15.00,
+                "typical_latency_ms": 1200,
+                "context_window": 200_000,
+                "notes": "Default Anthropic flagship — coding, agentic workflows, most real work.",
+            },
+            {
+                "name": "claude-opus-4-6",
+                "tier": "very_high",
+                "usd_per_million_input_tokens": 15.00,
+                "usd_per_million_output_tokens": 75.00,
+                "typical_latency_ms": 2500,
+                "context_window": 200_000,
+                "notes": "Most capable Claude model — reasoning, research, high-stakes decisions.",
+            },
+        ],
     },
     "https://api.mistral.ai/v1/chat/completions": {
         "model": "per_token",
         "base_usd_per_call": None,
-        "typical_usd_per_call": 0.0004,
+        "typical_usd_per_call": 0.00042,  # 300 in * $0.20/M + 700 out * $0.60/M
         "estimated_tokens_per_call": 1000,
+        "usd_per_million_input_tokens": 0.20,
+        "usd_per_million_output_tokens": 0.60,
+        "typical_latency_ms": 600,
+        "recommended_model": "mistral-small-latest",
         "free_tier_per_month": None,
         "flat_monthly_usd": None,
         "currency": "USD",
         "confidence": "medium",
         "notes": (
-            "mistral-small at $0.20/M input + $0.60/M output. "
-            "typical_usd_per_call assumes 500 input + 500 output tokens."
+            "Default pricing reflects mistral-small-latest. mistral-large in "
+            "the catalog is the stronger, pricier variant. typical_usd_per_call "
+            "assumes 1000 total tokens at a 30/70 input/output split."
         ),
+        "models": [
+            {
+                "name": "mistral-small-latest",
+                "tier": "low",
+                "usd_per_million_input_tokens": 0.20,
+                "usd_per_million_output_tokens": 0.60,
+                "typical_latency_ms": 600,
+                "context_window": 128_000,
+                "notes": "Efficient open-weight model — cheap, fast, good for volume.",
+            },
+            {
+                "name": "mistral-large-latest",
+                "tier": "medium",
+                "usd_per_million_input_tokens": 2.00,
+                "usd_per_million_output_tokens": 6.00,
+                "typical_latency_ms": 1000,
+                "context_window": 128_000,
+                "notes": "Flagship Mistral model — stronger reasoning and multilingual quality.",
+            },
+        ],
     },
     "https://api.groq.com/openai/v1/chat/completions": {
         "model": "per_token",
         "base_usd_per_call": None,
-        "typical_usd_per_call": 0.00069,
+        "typical_usd_per_call": 0.000730,  # 300 in * $0.59/M + 700 out * $0.79/M
         "estimated_tokens_per_call": 1000,
+        "usd_per_million_input_tokens": 0.59,
+        "usd_per_million_output_tokens": 0.79,
+        "typical_latency_ms": 400,
+        "recommended_model": "llama-3.3-70b-versatile",
         "free_tier_per_month": None,
         "flat_monthly_usd": None,
         "currency": "USD",
         "confidence": "medium",
         "notes": (
-            "llama-3.3-70b-versatile at $0.59/M input + $0.79/M output. "
-            "typical_usd_per_call assumes 500 input + 500 output tokens. "
-            "Groq is the cheapest/fastest host of open-weight models in this seed."
+            "Default pricing reflects llama-3.3-70b-versatile. Groq is the "
+            "cheapest/fastest host of open-weight models in this seed — the "
+            "catalog adds the 8B instant model for ultra-low-latency tasks. "
+            "typical_usd_per_call assumes 1000 total tokens at a 30/70 split."
         ),
+        "models": [
+            {
+                "name": "llama-3.1-8b-instant",
+                "tier": "low",
+                "usd_per_million_input_tokens": 0.05,
+                "usd_per_million_output_tokens": 0.08,
+                "typical_latency_ms": 200,
+                "context_window": 128_000,
+                "notes": "Sub-200ms latency — ideal for real-time agents and routing.",
+            },
+            {
+                "name": "llama-3.3-70b-versatile",
+                "tier": "medium",
+                "usd_per_million_input_tokens": 0.59,
+                "usd_per_million_output_tokens": 0.79,
+                "typical_latency_ms": 400,
+                "context_window": 128_000,
+                "notes": "Best general-purpose Groq model — fast and capable for most tasks.",
+            },
+        ],
     },
     "https://api.together.xyz/v1/chat/completions": {
         "model": "per_token",
         "base_usd_per_call": None,
-        "typical_usd_per_call": 0.0005,
+        "typical_usd_per_call": 0.00088,  # 300 in * $0.88/M + 700 out * $0.88/M
         "estimated_tokens_per_call": 1000,
+        "usd_per_million_input_tokens": 0.88,
+        "usd_per_million_output_tokens": 0.88,
+        "typical_latency_ms": 800,
+        "recommended_model": "llama-3.3-70b-instruct-turbo",
         "free_tier_per_month": None,
         "flat_monthly_usd": None,
         "currency": "USD",
         "confidence": "medium",
         "notes": (
-            "llama-3.3-70b at roughly $0.88/M blended input+output. "
-            "typical_usd_per_call assumes 500 input + 500 output tokens. "
-            "Exact price varies by model; this is the mid-range reference."
+            "Default pricing reflects llama-3.3-70b-instruct-turbo. The "
+            "catalog covers the 8B variant and DeepSeek-v3 (hosted on "
+            "Together for OpenAI-compatible access). typical_usd_per_call "
+            "assumes 1000 total tokens at a 30/70 split."
         ),
+        "models": [
+            {
+                "name": "llama-3.1-8b-instruct-turbo",
+                "tier": "low",
+                "usd_per_million_input_tokens": 0.18,
+                "usd_per_million_output_tokens": 0.18,
+                "typical_latency_ms": 400,
+                "context_window": 128_000,
+                "notes": "Cheapest Llama on Together — classification, extraction, simple replies.",
+            },
+            {
+                "name": "llama-3.3-70b-instruct-turbo",
+                "tier": "medium",
+                "usd_per_million_input_tokens": 0.88,
+                "usd_per_million_output_tokens": 0.88,
+                "typical_latency_ms": 800,
+                "context_window": 128_000,
+                "notes": "Default Together model — broad coverage at mid-range cost.",
+            },
+            {
+                "name": "deepseek-ai/DeepSeek-V3",
+                "tier": "high",
+                "usd_per_million_input_tokens": 1.25,
+                "usd_per_million_output_tokens": 1.25,
+                "typical_latency_ms": 1500,
+                "context_window": 64_000,
+                "notes": "Strong reasoning model hosted by Together — cheaper than first-party flagships.",
+            },
+        ],
+    },
+    "https://api.deepseek.com/v1/chat/completions": {
+        "model": "per_token",
+        "base_usd_per_call": None,
+        "typical_usd_per_call": 0.00085,  # 300 in * $0.27/M + 700 out * $1.10/M
+        "estimated_tokens_per_call": 1000,
+        "usd_per_million_input_tokens": 0.27,
+        "usd_per_million_output_tokens": 1.10,
+        "typical_latency_ms": 1500,
+        "recommended_model": "deepseek-chat",
+        "free_tier_per_month": None,
+        "flat_monthly_usd": None,
+        "currency": "USD",
+        "confidence": "medium",
+        "notes": (
+            "DeepSeek first-party API. Provider-level defaults reflect "
+            "deepseek-chat; the reasoner model is the extended-thinking "
+            "variant used for very_high complexity tasks. typical_usd_per_call "
+            "assumes 1000 total tokens at a 30/70 input/output split."
+        ),
+        "models": [
+            {
+                "name": "deepseek-chat",
+                "tier": "medium",
+                "usd_per_million_input_tokens": 0.27,
+                "usd_per_million_output_tokens": 1.10,
+                "typical_latency_ms": 1500,
+                "context_window": 64_000,
+                "notes": "General-purpose DeepSeek chat model — cheapest capable flagship.",
+            },
+            {
+                "name": "deepseek-reasoner",
+                "tier": "very_high",
+                "usd_per_million_input_tokens": 0.55,
+                "usd_per_million_output_tokens": 2.19,
+                "typical_latency_ms": 5000,
+                "context_window": 64_000,
+                "notes": "Extended-thinking variant — still dramatically cheaper than o3/Opus.",
+            },
+        ],
     },
     # -- Email APIs ---------------------------------------------------------
     "https://api.sendgrid.com/v3/mail/send": {
@@ -356,6 +555,11 @@ _SIGNIFICANT_KEYS = (
     "base_usd_per_call",
     "typical_usd_per_call",
     "estimated_tokens_per_call",
+    "usd_per_million_input_tokens",
+    "usd_per_million_output_tokens",
+    "typical_latency_ms",
+    "recommended_model",
+    "models",
     "free_tier_per_month",
     "flat_monthly_usd",
     "currency",

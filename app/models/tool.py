@@ -45,9 +45,14 @@ class Tool(Base):
     #                                             # for budget math; required
     #                                             # when base_usd_per_call is
     #                                             # null
-    #     "estimated_tokens_per_call": 500 | None,# forward-compat; lets us
-    #                                             # later do exact per-token
-    #                                             # math without a migration
+    #     "estimated_tokens_per_call": 500 | None,# reference only now that
+    #                                             # per-M fields below exist
+    #     "usd_per_million_input_tokens": 3.0 | None,  # added with the LLM
+    #     "usd_per_million_output_tokens": 15.0 | None,# router feature; exact
+    #                                             # per-token math kicks in
+    #                                             # when both are non-null
+    #     "typical_latency_ms": 1200 | None,      # provider-level, used for
+    #                                             # speed_first normalization
     #     "free_tier_per_month": 1000 | None,     # calls, not dollars
     #     "flat_monthly_usd": null | float,       # for subscription tools
     #     "currency": "USD",
@@ -55,6 +60,19 @@ class Tool(Base):
     #     "confidence": "high"|"medium"|"low",
     #     "notes": "Stripe: 2.9% + $0.30 per successful charge",
     #     "last_updated": "2026-04-15T00:00:00Z",
+    #     "recommended_model": "claude-sonnet-4-6" | None,  # string hint (B)
+    #     "models": [                                        # catalog (A)
+    #       {
+    #         "name": "claude-sonnet-4-6",
+    #         "tier": "low"|"medium"|"high"|"very_high",
+    #         "usd_per_million_input_tokens": 3.0,
+    #         "usd_per_million_output_tokens": 15.0,
+    #         "typical_latency_ms": 1200,
+    #         "context_window": 200000,
+    #         "notes": "Default general-purpose model"
+    #       },
+    #       ...
+    #     ]
     #   }
     # Historical snapshots live in tool_pricing_history; this column is
     # always the current value, appended (never silently overwritten without

@@ -50,9 +50,22 @@ class AssessRequest(BaseModel):
         None, ge=0,
         description="Expected call volume. Used for estimated_monthly_cost projection and free-tier-aware effective cost.",
     )
-    budget_strategy: Literal["reliability_first", "balanced", "cost_first"] = Field(
+    expected_tokens: int | None = Field(
+        None, ge=0, le=1_000_000,
+        description="Expected total tokens per call (input + output) for LLM APIs. When set alongside a tool that advertises usd_per_million_input_tokens and usd_per_million_output_tokens, cost math switches from the blended typical_usd_per_call estimate to exact per-token pricing (30/70 input/output split).",
+    )
+    task_complexity: Literal["low", "medium", "high", "very_high"] = Field(
+        "medium",
+        description="Semantic difficulty of the work the tool will do. Used to pick the right model variant inside a provider (e.g. Haiku for low, Opus for very_high) and to shape the reasoning field. Default 'medium' matches what most chat/assistant workloads need.",
+    )
+    budget_strategy: Literal["reliability_first", "balanced", "cost_first", "speed_first"] = Field(
         "reliability_first",
-        description="How to trade reliability against cost when computing cost_adjusted_score. Weights: reliability_first 0.80/0.20, balanced 0.55/0.45, cost_first 0.25/0.75.",
+        description=(
+            "How to trade reliability, cost, and latency when computing cost_adjusted_score. "
+            "Weights: reliability_first 0.80/0.20, balanced 0.55/0.45, cost_first 0.25/0.75, "
+            "speed_first 0.35/0.45/0.20 (reliability/cost/latency). The three two-axis "
+            "strategies were locked in on 2026-04-15; speed_first adds a third axis."
+        ),
     )
 
     @field_validator("sample_payload")
@@ -131,10 +144,12 @@ class AssessResponse(BaseModel):
     eu_alternatives: list[AlternativeTool] = Field(default_factory=list, description="EU-hosted (or GDPR-adequate) alternatives when eu_only/gdpr_required is set")
     price_per_call: float | None = Field(None, description="USD cost per call for this tool (null when pricing is unknown)")
     pricing_model: str | None = Field(None, description="Pricing model: per_call, per_token, flat_monthly, freemium, or unknown")
-    cost_adjusted_score: float | None = Field(None, ge=0, le=100, description="Combined 0-100 score weighting reliability against cost, normalized against the category median and weighted by budget_strategy")
+    cost_adjusted_score: float | None = Field(None, ge=0, le=100, description="Combined 0-100 score weighting reliability against cost (and latency for speed_first), normalized against category medians and weighted by budget_strategy")
     estimated_monthly_cost: float | None = Field(None, description="Projected USD spend per month at expected_calls_per_month (null when not set)")
     within_budget: bool | None = Field(None, description="True when this tool fits the caller's budget (null when no budget cap was set or pricing is unknown)")
     budget_explanation: str | None = Field(None, description="Human-readable explanation comparing the tool's cost to the caller's budget constraints")
+    recommended_model: str | None = Field(None, description="Specific model name to use inside this provider (e.g. 'claude-sonnet-4-6'). Populated for LLM APIs with a model catalog; null for tools without one.")
+    reasoning: str | None = Field(None, description="Human-readable explanation of why this tool (and optional model) was scored the way it was — reliability, cost, strategy, task complexity, budget fit. Designed to be surfaced directly to agent developers for debugging routing decisions.")
 
     model_config = {
         "json_schema_extra": {

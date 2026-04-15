@@ -36,6 +36,8 @@ class ToolRate:
         max_price_per_call: Optional[float] = None,
         max_monthly_budget: Optional[float] = None,
         expected_calls_per_month: Optional[int] = None,
+        expected_tokens: Optional[int] = None,
+        task_complexity: Optional[str] = None,
         budget_strategy: Optional[str] = None,
     ) -> dict[str, Any]:
         """Assess a tool's reliability and get recommendations.
@@ -49,9 +51,17 @@ class ToolRate:
           ``expected_calls_per_month`` to evaluate the within_budget flag.
         - ``expected_calls_per_month``: drives ``estimated_monthly_cost`` and
           free-tier-aware effective pricing.
+        - ``expected_tokens``: total tokens per LLM call (input + output).
+          Triggers exact per-million-token math for providers that carry
+          ``usd_per_million_input_tokens``/``usd_per_million_output_tokens``
+          in their pricing. Used by the LLM router.
+        - ``task_complexity``: one of ``"low"``, ``"medium"`` (default on the
+          server), ``"high"``, ``"very_high"``. Picks the right model inside
+          a provider (e.g. Haiku for low, Opus for very_high) and shapes the
+          ``reasoning`` field.
         - ``budget_strategy``: one of ``"reliability_first"`` (default),
-          ``"balanced"``, or ``"cost_first"`` — how the returned
-          ``cost_adjusted_score`` weights reliability against cost.
+          ``"balanced"``, ``"cost_first"``, or ``"speed_first"``. Determines
+          how ``cost_adjusted_score`` weights reliability vs. cost vs. latency.
         """
         body: dict[str, Any] = {
             "tool_identifier": tool_identifier,
@@ -65,6 +75,10 @@ class ToolRate:
             body["max_monthly_budget"] = max_monthly_budget
         if expected_calls_per_month is not None:
             body["expected_calls_per_month"] = expected_calls_per_month
+        if expected_tokens is not None:
+            body["expected_tokens"] = expected_tokens
+        if task_complexity is not None:
+            body["task_complexity"] = task_complexity
         if budget_strategy is not None:
             body["budget_strategy"] = budget_strategy
 
@@ -282,6 +296,8 @@ class AsyncToolRate:
         max_price_per_call: Optional[float] = None,
         max_monthly_budget: Optional[float] = None,
         expected_calls_per_month: Optional[int] = None,
+        expected_tokens: Optional[int] = None,
+        task_complexity: Optional[str] = None,
         budget_strategy: Optional[str] = None,
     ) -> dict[str, Any]:
         """Assess a tool's reliability and get recommendations.
@@ -294,9 +310,15 @@ class AsyncToolRate:
           ``expected_calls_per_month``.
         - ``expected_calls_per_month``: drives ``estimated_monthly_cost`` and
           free-tier-aware effective pricing.
+        - ``expected_tokens``: total tokens per LLM call (input + output).
+          Triggers exact per-million-token math for providers that carry
+          the per-M pricing fields. Used by the LLM router.
+        - ``task_complexity``: ``"low"``, ``"medium"`` (default on the
+          server), ``"high"``, ``"very_high"``. Picks the right model
+          variant inside a provider.
         - ``budget_strategy``: ``"reliability_first"`` (default),
-          ``"balanced"``, or ``"cost_first"`` — weights for the returned
-          ``cost_adjusted_score``.
+          ``"balanced"``, ``"cost_first"``, or ``"speed_first"``. The last
+          strategy adds a latency dimension to the score.
         """
         body: dict[str, Any] = {
             "tool_identifier": tool_identifier,
@@ -310,6 +332,10 @@ class AsyncToolRate:
             body["max_monthly_budget"] = max_monthly_budget
         if expected_calls_per_month is not None:
             body["expected_calls_per_month"] = expected_calls_per_month
+        if expected_tokens is not None:
+            body["expected_tokens"] = expected_tokens
+        if task_complexity is not None:
+            body["task_complexity"] = task_complexity
         if budget_strategy is not None:
             body["budget_strategy"] = budget_strategy
 

@@ -32,6 +32,7 @@ SEED_TOOLS = [
     ("https://api.mistral.ai/v1/chat/completions", "Mistral Chat", "llm", 0.92, 1800),
     ("https://api.groq.com/openai/v1/chat/completions", "Groq Chat", "llm", 0.94, 300),
     ("https://api.together.xyz/v1/chat/completions", "Together AI", "llm", 0.90, 1500),
+    ("https://api.deepseek.com/v1/chat/completions", "DeepSeek Chat", "llm", 0.91, 1500),
     # Search & Web
     ("https://api.tavily.com/search", "Tavily Search", "search", 0.94, 800),
     ("https://serpapi.com/search", "SerpAPI", "search", 0.93, 1200),
@@ -109,7 +110,7 @@ ERROR_PROFILES = {
 # Alternatives mapping (by category)
 ALTERNATIVE_GROUPS = {
     "payment": ["https://api.stripe.com/v1/charges", "https://api.paypal.com/v2/checkout/orders", "https://api.lemonsqueezy.com/v1/checkouts"],
-    "llm": ["https://api.openai.com/v1/chat/completions", "https://api.anthropic.com/v1/messages", "https://api.groq.com/openai/v1/chat/completions", "https://api.mistral.ai/v1/chat/completions"],
+    "llm": ["https://api.openai.com/v1/chat/completions", "https://api.anthropic.com/v1/messages", "https://api.groq.com/openai/v1/chat/completions", "https://api.mistral.ai/v1/chat/completions", "https://api.deepseek.com/v1/chat/completions"],
     "search": ["https://api.tavily.com/search", "https://serpapi.com/search", "https://api.bing.microsoft.com/v7.0/search"],
     "email": ["https://api.sendgrid.com/v3/mail/send", "https://api.mailgun.net/v3/messages", "https://api.resend.com/emails"],
     "vector_db": ["https://api.pinecone.io", "https://cloud.qdrant.io", "https://api.weaviate.io/v1"],

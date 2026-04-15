@@ -28,7 +28,7 @@ async def _finalize_with_body(
     Thin wrapper around scoring.finalize_response so the five call sites
     (cache hit / cache miss / three cold-start branches) stay terse and
     share the single source of truth for which body fields feed into the
-    budget math.
+    budget math and LLM-router augmentation.
     """
     return await finalize_response(
         response,
@@ -37,6 +37,8 @@ async def _finalize_with_body(
         max_price_per_call=body.max_price_per_call,
         max_monthly_budget=body.max_monthly_budget,
         expected_calls_per_month=body.expected_calls_per_month,
+        expected_tokens=body.expected_tokens,
+        task_complexity=body.task_complexity,
         budget_strategy=body.budget_strategy,
     )
 
