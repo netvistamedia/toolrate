@@ -7,6 +7,7 @@ mimetypes.add_type("image/webp", ".webp")
 
 import redis.asyncio as aioredis
 from fastapi import FastAPI, HTTPException, Request, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
@@ -296,9 +297,18 @@ async def log_requests(request: Request, call_next):
 # Validation error handler
 @app.exception_handler(RequestValidationError)
 async def validation_error_handler(request: Request, exc: RequestValidationError):
+    # Pydantic v2's `exc.errors()` puts the original exception object
+    # (e.g. ValueError from a field_validator) into each error's `ctx`
+    # dict. Starlette's JSONResponse calls json.dumps directly, which
+    # raises TypeError on non-serializable values — turning a legitimate
+    # 422 into a 500. jsonable_encoder recursively converts raw Python
+    # objects (ValueError, datetime, UUID, etc.) to JSON-safe equivalents
+    # so the response keeps the full error context without crashing.
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"detail": "Validation error", "errors": exc.errors()},
+        content=jsonable_encoder(
+            {"detail": "Validation error", "errors": exc.errors()}
+        ),
     )
 
 
