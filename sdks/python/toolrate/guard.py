@@ -58,12 +58,16 @@ def guard(
     fallbacks: Fallbacks = None,
     resolvers: dict[str, Callable[[], T]] | None = None,
     max_fallbacks: int = 3,
+    max_price_per_call: float | None = None,
+    max_monthly_budget: float | None = None,
+    expected_calls_per_month: int | None = None,
+    budget_strategy: str | None = None,
 ) -> T:
-    """Execute a tool call with ToolRate reliability guard.
+    """Execute a tool call with ToolRate reliability and budget guards.
 
-    1. Assesses the tool's reliability score
-    2. If score < min_score and fallbacks exist, tries the best-scoring fallback
-    3. Executes the tool call
+    1. Assesses the tool's reliability score (and cost fit, if budget given)
+    2. Skips tools that fail ``min_score`` or are over-budget when options remain
+    3. Executes the chosen tool call
     4. Reports success/failure back to ToolRate
     5. On failure with fallbacks, automatically tries the next option
 
@@ -80,6 +84,16 @@ def guard(
             ToolRate matches candidate alternatives against these keys and only tries
             tools the caller has pre-registered a runner for.
         max_fallbacks: Max number of auto fallbacks to include (default 3).
+        max_price_per_call: USD cap per call. Tools flagged as over-budget are
+            skipped in favour of the next option, and only tried as a last
+            resort when everything else has been exhausted.
+        max_monthly_budget: USD monthly spend cap. Combined with
+            ``expected_calls_per_month`` for the budget check.
+        expected_calls_per_month: Expected call volume. Drives projected
+            monthly cost and free-tier-aware effective price.
+        budget_strategy: ``"reliability_first"`` (default), ``"balanced"``,
+            or ``"cost_first"``. Used when ``fallbacks="auto"`` so the auto
+            resolver prefers tools that fit the caller's budget.
 
     Returns:
         The result of the successful tool call
@@ -104,10 +118,23 @@ def guard(
         attempt = i + 1
         ident, call = all_tools[i]
 
-        # Assess
+        # Assess — forward budget params so within_budget is computed against
+        # the caller's constraints. Only pass the cost kwargs when actually
+        # set so older mock clients (and older SDK versions on the other end
+        # of a call) don't choke on unexpected keyword arguments.
+        assess_kwargs: dict[str, Any] = {"context": context}
+        if max_price_per_call is not None:
+            assess_kwargs["max_price_per_call"] = max_price_per_call
+        if max_monthly_budget is not None:
+            assess_kwargs["max_monthly_budget"] = max_monthly_budget
+        if expected_calls_per_month is not None:
+            assess_kwargs["expected_calls_per_month"] = expected_calls_per_month
+        if budget_strategy is not None:
+            assess_kwargs["budget_strategy"] = budget_strategy
+
         assessment: dict[str, Any] | None = None
         try:
-            assessment = client.assess(ident, context=context)
+            assessment = client.assess(ident, **assess_kwargs)
             score = assessment.get("reliability_score", 100)
         except Exception:
             score = 100  # If assess fails, don't block the tool call
@@ -124,6 +151,22 @@ def guard(
         if score < min_score and attempt < len(all_tools):
             _safe_report(
                 client, ident, success=False, error_category="skipped_low_score",
+                context=context, session_id=session_id, attempt_number=attempt,
+                previous_tool=all_tools[i - 1][0] if i > 0 else None,
+            )
+            i += 1
+            continue
+
+        # Skip if explicitly over budget and we have more options. Crucially,
+        # we only skip when ``within_budget`` is literally False — null means
+        # "no budget was asked about" and must not be treated as a failure.
+        if (
+            assessment is not None
+            and assessment.get("within_budget") is False
+            and attempt < len(all_tools)
+        ):
+            _safe_report(
+                client, ident, success=False, error_category="skipped_over_budget",
                 context=context, session_id=session_id, attempt_number=attempt,
                 previous_tool=all_tools[i - 1][0] if i > 0 else None,
             )
@@ -170,11 +213,16 @@ def toolrate_guard(
     fallbacks: Fallbacks = None,
     resolvers: dict[str, Callable[[], Any]] | None = None,
     max_fallbacks: int = 3,
+    max_price_per_call: float | None = None,
+    max_monthly_budget: float | None = None,
+    expected_calls_per_month: int | None = None,
+    budget_strategy: str | None = None,
 ):
-    """Decorator version of guard.
+    """Decorator version of guard. Accepts the same cost-aware kwargs.
 
     Usage:
-        @toolrate_guard(client, "https://api.stripe.com/v1/charges")
+        @toolrate_guard(client, "https://api.stripe.com/v1/charges",
+                        max_price_per_call=0.03, budget_strategy="balanced")
         def charge(amount, currency):
             return stripe.Charge.create(amount=amount, currency=currency)
     """
@@ -187,6 +235,10 @@ def toolrate_guard(
                 context=context, min_score=min_score,
                 fallbacks=fallbacks, resolvers=resolvers,
                 max_fallbacks=max_fallbacks,
+                max_price_per_call=max_price_per_call,
+                max_monthly_budget=max_monthly_budget,
+                expected_calls_per_month=expected_calls_per_month,
+                budget_strategy=budget_strategy,
             )
         return wrapper
     return decorator
@@ -199,17 +251,30 @@ def _resolve_auto_fallbacks(
     resolvers: dict[str, Callable[[], Any]],
     max_n: int,
 ) -> list[tuple[str, Callable[[], Any]]]:
-    """Pick fallback callables by matching ToolRate's alternatives against user resolvers."""
+    """Pick fallback callables by matching ToolRate's alternatives against user resolvers.
+
+    When the primary assessment carries ``within_budget`` on its
+    alternatives (i.e. the caller passed budget params), tools that fit the
+    budget are preferred over tools flagged as over-budget. Ties fall back
+    to the original reliability order.
+    """
     if not resolvers or max_n <= 0:
         return []
 
     candidates: list[str] = []
 
-    # 1. Reuse top_alternatives from the assessment we already fetched (no extra API call)
+    # 1. Reuse top_alternatives from the assessment we already fetched (no
+    #    extra API call). Sort by budget fit first (within_budget None/True
+    #    before False), then by the reliability order the API returned.
     if primary_assessment:
-        for alt in primary_assessment.get("top_alternatives") or []:
+        entries: list[tuple[int, int, str]] = []
+        for idx, alt in enumerate(primary_assessment.get("top_alternatives") or []):
             if isinstance(alt, dict) and alt.get("tool"):
-                candidates.append(alt["tool"])
+                within = alt.get("within_budget")
+                priority = 1 if within is False else 0
+                entries.append((priority, idx, alt["tool"]))
+        entries.sort()
+        candidates = [tool for _, _, tool in entries]
 
     # 2. If no alternatives in assess response, query fallback-chain endpoint
     if not candidates:

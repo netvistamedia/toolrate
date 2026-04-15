@@ -32,14 +32,41 @@ class ToolRate:
         tool_identifier: str,
         context: str = "",
         sample_payload: Optional[dict[str, Any]] = None,
+        *,
+        max_price_per_call: Optional[float] = None,
+        max_monthly_budget: Optional[float] = None,
+        expected_calls_per_month: Optional[int] = None,
+        budget_strategy: Optional[str] = None,
     ) -> dict[str, Any]:
-        """Assess a tool's reliability and get recommendations."""
+        """Assess a tool's reliability and get recommendations.
+
+        Cost-aware scoring (all optional):
+
+        - ``max_price_per_call``: flag tools whose price exceeds this USD cap
+          with ``within_budget: false`` (over-budget tools are surfaced, not
+          filtered — the response always shows the best match regardless).
+        - ``max_monthly_budget``: USD spend cap per month. Combines with
+          ``expected_calls_per_month`` to evaluate the within_budget flag.
+        - ``expected_calls_per_month``: drives ``estimated_monthly_cost`` and
+          free-tier-aware effective pricing.
+        - ``budget_strategy``: one of ``"reliability_first"`` (default),
+          ``"balanced"``, or ``"cost_first"`` — how the returned
+          ``cost_adjusted_score`` weights reliability against cost.
+        """
         body: dict[str, Any] = {
             "tool_identifier": tool_identifier,
             "context": context,
         }
         if sample_payload is not None:
             body["sample_payload"] = sample_payload
+        if max_price_per_call is not None:
+            body["max_price_per_call"] = max_price_per_call
+        if max_monthly_budget is not None:
+            body["max_monthly_budget"] = max_monthly_budget
+        if expected_calls_per_month is not None:
+            body["expected_calls_per_month"] = expected_calls_per_month
+        if budget_strategy is not None:
+            body["budget_strategy"] = budget_strategy
 
         resp = self._client.post("/v1/assess", json=body)
         resp.raise_for_status()
@@ -251,14 +278,40 @@ class AsyncToolRate:
         tool_identifier: str,
         context: str = "",
         sample_payload: Optional[dict[str, Any]] = None,
+        *,
+        max_price_per_call: Optional[float] = None,
+        max_monthly_budget: Optional[float] = None,
+        expected_calls_per_month: Optional[int] = None,
+        budget_strategy: Optional[str] = None,
     ) -> dict[str, Any]:
-        """Assess a tool's reliability and get recommendations."""
+        """Assess a tool's reliability and get recommendations.
+
+        Cost-aware scoring kwargs (all optional):
+
+        - ``max_price_per_call``: USD cap per call; tools above are flagged
+          with ``within_budget: false`` rather than being filtered out.
+        - ``max_monthly_budget``: monthly USD cap, combined with
+          ``expected_calls_per_month``.
+        - ``expected_calls_per_month``: drives ``estimated_monthly_cost`` and
+          free-tier-aware effective pricing.
+        - ``budget_strategy``: ``"reliability_first"`` (default),
+          ``"balanced"``, or ``"cost_first"`` — weights for the returned
+          ``cost_adjusted_score``.
+        """
         body: dict[str, Any] = {
             "tool_identifier": tool_identifier,
             "context": context,
         }
         if sample_payload is not None:
             body["sample_payload"] = sample_payload
+        if max_price_per_call is not None:
+            body["max_price_per_call"] = max_price_per_call
+        if max_monthly_budget is not None:
+            body["max_monthly_budget"] = max_monthly_budget
+        if expected_calls_per_month is not None:
+            body["expected_calls_per_month"] = expected_calls_per_month
+        if budget_strategy is not None:
+            body["budget_strategy"] = budget_strategy
 
         resp = await self._client.post("/v1/assess", json=body)
         resp.raise_for_status()

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -37,6 +38,22 @@ class AssessRequest(BaseModel):
     sample_payload: dict | None = Field(None, description="Optional sample payload (not stored). Capped at 6 levels deep / 1000 nodes.")
     eu_only: bool = Field(False, description="If true, surface EU-hosted alternatives in eu_alternatives")
     gdpr_required: bool = Field(False, description="If true, surface EU + GDPR-adequate alternatives in eu_alternatives")
+    max_price_per_call: float | None = Field(
+        None, ge=0,
+        description="Maximum USD the caller will pay per call. Tools above this are flagged with within_budget=false but still returned (no silent filtering).",
+    )
+    max_monthly_budget: float | None = Field(
+        None, ge=0,
+        description="Maximum USD spend per month. Combined with expected_calls_per_month to evaluate the within_budget flag.",
+    )
+    expected_calls_per_month: int | None = Field(
+        None, ge=0,
+        description="Expected call volume. Used for estimated_monthly_cost projection and free-tier-aware effective cost.",
+    )
+    budget_strategy: Literal["reliability_first", "balanced", "cost_first"] = Field(
+        "reliability_first",
+        description="How to trade reliability against cost when computing cost_adjusted_score. Weights: reliability_first 0.80/0.20, balanced 0.55/0.45, cost_first 0.25/0.75.",
+    )
 
     @field_validator("sample_payload")
     @classmethod
@@ -66,6 +83,8 @@ class AlternativeTool(BaseModel):
     tool: str = Field(..., description="Tool identifier")
     score: float = Field(..., description="Reliability score of the alternative (0-100)")
     reason: str = Field(..., description="Why this is a good alternative")
+    price_per_call: float | None = Field(None, description="USD cost per call for this alternative (null when pricing is unknown)")
+    within_budget: bool | None = Field(None, description="True when this alternative fits the caller's budget (null when no budget cap was set or pricing is unknown)")
 
 
 class PitfallDetail(BaseModel):
@@ -110,6 +129,12 @@ class AssessResponse(BaseModel):
     jurisdiction_notes: str | None = Field(None, description="Short explanation of the jurisdiction assignment")
     recommended_for: list[str] = Field(default_factory=list, description="Workflow tags this tool is suited for, e.g. 'eu_companies', 'gdpr_strict_workflows'")
     eu_alternatives: list[AlternativeTool] = Field(default_factory=list, description="EU-hosted (or GDPR-adequate) alternatives when eu_only/gdpr_required is set")
+    price_per_call: float | None = Field(None, description="USD cost per call for this tool (null when pricing is unknown)")
+    pricing_model: str | None = Field(None, description="Pricing model: per_call, per_token, flat_monthly, freemium, or unknown")
+    cost_adjusted_score: float | None = Field(None, ge=0, le=100, description="Combined 0-100 score weighting reliability against cost, normalized against the category median and weighted by budget_strategy")
+    estimated_monthly_cost: float | None = Field(None, description="Projected USD spend per month at expected_calls_per_month (null when not set)")
+    within_budget: bool | None = Field(None, description="True when this tool fits the caller's budget (null when no budget cap was set or pricing is unknown)")
+    budget_explanation: str | None = Field(None, description="Human-readable explanation comparing the tool's cost to the caller's budget constraints")
 
     model_config = {
         "json_schema_extra": {

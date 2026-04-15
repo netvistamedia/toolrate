@@ -44,6 +44,10 @@ export class ToolRate {
       tool_identifier: params.toolIdentifier,
       context: params.context,
       sample_payload: params.samplePayload,
+      max_price_per_call: params.maxPricePerCall,
+      max_monthly_budget: params.maxMonthlyBudget,
+      expected_calls_per_month: params.expectedCallsPerMonth,
+      budget_strategy: params.budgetStrategy,
     });
 
     return mapAssessResponse(raw);
@@ -325,6 +329,10 @@ export class ToolRate {
     const context = options?.context ?? "";
     const minScore = options?.minScore ?? 0;
     const maxFallbacks = options?.maxFallbacks ?? 3;
+    const maxPricePerCall = options?.maxPricePerCall;
+    const maxMonthlyBudget = options?.maxMonthlyBudget;
+    const expectedCallsPerMonth = options?.expectedCallsPerMonth;
+    const budgetStrategy = options?.budgetStrategy;
     const sessionId = makeSessionId();
 
     const autoMode = options?.fallbacks === "auto";
@@ -344,13 +352,19 @@ export class ToolRate {
       const tool = allTools[i];
       const previousTool = i > 0 ? allTools[i - 1].toolIdentifier : undefined;
 
-      // Assess
+      // Assess — forward budget params so `withinBudget` is evaluated against
+      // the caller's constraints. `this.post` strips undefined values, so
+      // unset params stay off the wire and older API versions stay happy.
       let score = 100;
       let assessment: AssessResponse | undefined;
       try {
         assessment = await this.assess({
           toolIdentifier: tool.toolIdentifier,
           context,
+          maxPricePerCall,
+          maxMonthlyBudget,
+          expectedCallsPerMonth,
+          budgetStrategy,
         });
         score = assessment.reliabilityScore;
       } catch {
@@ -376,6 +390,29 @@ export class ToolRate {
             toolIdentifier: tool.toolIdentifier,
             success: false,
             errorCategory: "skipped_low_score",
+            context,
+            sessionId,
+            attemptNumber: attempt,
+            previousTool,
+          });
+        } catch {
+          // Best-effort reporting
+        }
+        continue;
+      }
+
+      // Skip if explicitly over budget and we have more options. Only skip
+      // when `withinBudget` is literally false — null means "no budget was
+      // asked about" and must not be treated as a failure.
+      if (
+        assessment?.withinBudget === false &&
+        attempt < allTools.length
+      ) {
+        try {
+          await this.report({
+            toolIdentifier: tool.toolIdentifier,
+            success: false,
+            errorCategory: "skipped_over_budget",
             context,
             sessionId,
             attemptNumber: attempt,
@@ -439,7 +476,13 @@ export class ToolRate {
     throw lastError;
   }
 
-  /** Pick fallback callables by matching ToolRate's alternatives against user resolvers. */
+  /** Pick fallback callables by matching ToolRate's alternatives against user resolvers.
+   *
+   * When the primary assessment carries `withinBudget` on its alternatives
+   * (i.e. the caller passed budget params), tools that fit the budget are
+   * preferred over tools flagged as over-budget. Ties fall back to the
+   * reliability order the API returned.
+   */
   private async resolveAutoFallbacks<T>(
     primaryIdentifier: string,
     primaryAssessment: AssessResponse | undefined,
@@ -448,13 +491,24 @@ export class ToolRate {
   ): Promise<Array<{ toolIdentifier: string; fn: () => Promise<T> }>> {
     if (Object.keys(resolvers).length === 0 || maxN <= 0) return [];
 
-    const candidates: string[] = [];
+    let candidates: string[] = [];
 
-    // 1. Reuse top_alternatives from the assessment we already fetched
+    // 1. Reuse top_alternatives from the assessment we already fetched, with
+    //    a stable sort that keeps within-budget tools ahead of over-budget
+    //    ones without disturbing the underlying reliability order.
     if (primaryAssessment) {
-      for (const alt of primaryAssessment.topAlternatives ?? []) {
-        if (alt?.tool) candidates.push(alt.tool);
-      }
+      const entries: Array<{ priority: number; index: number; tool: string }> = [];
+      (primaryAssessment.topAlternatives ?? []).forEach((alt, index) => {
+        if (alt?.tool) {
+          entries.push({
+            priority: alt.withinBudget === false ? 1 : 0,
+            index,
+            tool: alt.tool,
+          });
+        }
+      });
+      entries.sort((a, b) => a.priority - b.priority || a.index - b.index);
+      candidates = entries.map((e) => e.tool);
     }
 
     // 2. If no alternatives in assess response, query the fallback-chain endpoint
@@ -621,6 +675,8 @@ function mapAssessResponse(raw: RawAssessResponse): AssessResponse {
       tool: a.tool,
       score: a.score,
       reason: a.reason,
+      pricePerCall: a.price_per_call ?? null,
+      withinBudget: a.within_budget ?? null,
     })),
     estimatedLatencyMs: raw.estimated_latency_ms,
     latency: raw.latency
@@ -632,6 +688,12 @@ function mapAssessResponse(raw: RawAssessResponse): AssessResponse {
         }
       : null,
     lastUpdated: raw.last_updated,
+    pricePerCall: raw.price_per_call ?? null,
+    pricingModel: raw.pricing_model ?? null,
+    costAdjustedScore: raw.cost_adjusted_score ?? null,
+    estimatedMonthlyCost: raw.estimated_monthly_cost ?? null,
+    withinBudget: raw.within_budget ?? null,
+    budgetExplanation: raw.budget_explanation ?? null,
   };
 }
 
@@ -680,10 +742,22 @@ interface RawAssessResponse {
     mitigation: string | null;
   }>;
   recommended_mitigations: string[];
-  top_alternatives: { tool: string; score: number; reason: string }[];
+  top_alternatives: Array<{
+    tool: string;
+    score: number;
+    reason: string;
+    price_per_call?: number | null;
+    within_budget?: boolean | null;
+  }>;
   estimated_latency_ms: number | null;
   latency: { avg: number | null; p50: number | null; p95: number | null; p99: number | null } | null;
   last_updated: string;
+  price_per_call?: number | null;
+  pricing_model?: string | null;
+  cost_adjusted_score?: number | null;
+  estimated_monthly_cost?: number | null;
+  within_budget?: boolean | null;
+  budget_explanation?: string | null;
 }
 
 interface RawBatchAssessResponse {

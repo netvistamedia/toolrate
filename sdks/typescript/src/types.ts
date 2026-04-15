@@ -15,12 +15,24 @@ export interface AssessParams {
   toolIdentifier: string;
   context?: string;
   samplePayload?: Record<string, unknown>;
+  /** USD cap per call. Tools above are flagged `withinBudget: false`, never silently filtered. */
+  maxPricePerCall?: number;
+  /** Monthly USD spend cap. Combines with `expectedCallsPerMonth` for the budget check. */
+  maxMonthlyBudget?: number;
+  /** Expected call volume. Drives `estimatedMonthlyCost` and free-tier-aware effective pricing. */
+  expectedCallsPerMonth?: number;
+  /** How to trade reliability against cost when computing `costAdjustedScore`. */
+  budgetStrategy?: "reliability_first" | "balanced" | "cost_first";
 }
 
 export interface AlternativeTool {
   tool: string;
   score: number;
   reason: string;
+  /** USD cost per call for this alternative (null when pricing is unknown). */
+  pricePerCall: number | null;
+  /** True when this alternative fits the caller's budget (null when no cap was set or pricing is unknown). */
+  withinBudget: boolean | null;
 }
 
 export interface PitfallDetail {
@@ -57,6 +69,18 @@ export interface AssessResponse {
   estimatedLatencyMs: number | null;
   latency: LatencyInfo | null;
   lastUpdated: string;
+  /** USD cost per call for this tool (null when pricing is unknown). */
+  pricePerCall: number | null;
+  /** Pricing model: per_call, per_token, flat_monthly, freemium, or unknown. */
+  pricingModel: string | null;
+  /** Combined 0-100 score weighting reliability against cost using `budgetStrategy` weights. */
+  costAdjustedScore: number | null;
+  /** Projected USD spend per month at `expectedCallsPerMonth` (null when not set). */
+  estimatedMonthlyCost: number | null;
+  /** True when this tool fits the caller's budget (null when no cap was set or pricing is unknown). */
+  withinBudget: boolean | null;
+  /** Human-readable explanation comparing the tool's cost to the caller's budget. */
+  budgetExplanation: string | null;
 }
 
 // ── Batch Assess ────────────────────────────────────────────────────
@@ -240,6 +264,14 @@ export interface GuardOptions<T> {
   resolvers?: Record<string, () => Promise<T>>;
   /** Max number of auto fallbacks to include (default 3). */
   maxFallbacks?: number;
+  /** USD cap per call. Over-budget tools are skipped in favour of the next option. */
+  maxPricePerCall?: number;
+  /** Monthly USD spend cap. Combines with `expectedCallsPerMonth`. */
+  maxMonthlyBudget?: number;
+  /** Expected call volume for projected monthly cost + free-tier math. */
+  expectedCallsPerMonth?: number;
+  /** How to trade reliability against cost — `"reliability_first"` | `"balanced"` | `"cost_first"`. */
+  budgetStrategy?: "reliability_first" | "balanced" | "cost_first";
 }
 
 // ── Errors ──────────────────────────────────────────────────────────

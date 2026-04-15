@@ -12,9 +12,33 @@ from app.models.tool import Tool
 from app.schemas.assess import AssessRequest, AssessResponse
 from app.services.cache import get_cached_score, set_cached_score
 from app.services.payg_meter import record_assessment
-from app.services.scoring import compute_score
+from app.services.scoring import compute_score, finalize_response
 
 router = APIRouter()
+
+
+async def _finalize_with_body(
+    response: AssessResponse,
+    db,
+    tool: Tool | None,
+    body: AssessRequest,
+) -> AssessResponse:
+    """Apply cost-aware augmentation using the request's budget params.
+
+    Thin wrapper around scoring.finalize_response so the five call sites
+    (cache hit / cache miss / three cold-start branches) stay terse and
+    share the single source of truth for which body fields feed into the
+    budget math.
+    """
+    return await finalize_response(
+        response,
+        db,
+        tool,
+        max_price_per_call=body.max_price_per_call,
+        max_monthly_budget=body.max_monthly_budget,
+        expected_calls_per_month=body.expected_calls_per_month,
+        budget_strategy=body.budget_strategy,
+    )
 
 
 class BatchAssessItem(BaseModel):
@@ -87,10 +111,11 @@ async def assess_tool(
                 await db.refresh(tool)
             await redis.set(enrich_mark_key, "1", ex=3600)
 
-    # Check cache. The cached score is invariant in eu_only/gdpr_required, so
-    # we still use the cache on those requests and augment with eu_alternatives
-    # after the fact. `eu_only` is the stricter filter (EU only) and must
-    # override `gdpr_required` (EU + GDPR-adequate) when both are set.
+    # Check cache. The cached score is invariant in eu_only/gdpr_required AND
+    # in the budget-related request params, so we still use the cache on those
+    # requests and augment with eu_alternatives + cost fields after the fact.
+    # `eu_only` is the stricter filter (EU only) and must override
+    # `gdpr_required` (EU + GDPR-adequate) when both are set.
     cached = await get_cached_score(redis, str(tool.id), ctx_hash, data_pool)
     if cached:
         if body.eu_only or body.gdpr_required:
@@ -99,7 +124,11 @@ async def assess_tool(
                 db, tool,
                 gdpr_required=body.gdpr_required and not body.eu_only,
             )
-        return cached
+        # Re-run cost augmentation with the CURRENT request's budget params.
+        # The cached row never carries budget-specific values, so different
+        # callers asking with different max_price_per_call / strategy each
+        # get a correctly-weighted response.
+        return await _finalize_with_body(cached, db, tool, body)
 
     # Compute score
     response = await compute_score(
@@ -107,12 +136,15 @@ async def assess_tool(
         eu_only=body.eu_only, gdpr_required=body.gdpr_required,
     )
 
-    # Cache it (without eu_alternatives so the cached entry is flag-invariant)
+    # Cache the flag-invariant version BEFORE applying cost augmentation, so
+    # the cached entry carries no eu_alternatives and no budget-dependent
+    # fields. Both are re-applied per request on cache hit via
+    # _finalize_with_body above.
     cacheable = response.model_copy(update={"eu_alternatives": []})
     ttl = settings.cache_ttl_hot if tool.report_count >= settings.hot_threshold_reports_7d else settings.cache_ttl_cold
     await set_cached_score(redis, str(tool.id), ctx_hash, data_pool, cacheable, ttl)
 
-    return response
+    return await _finalize_with_body(response, db, tool, body)
 
 
 @router.post("/assess/batch", tags=["Assessment"],
@@ -206,10 +238,11 @@ async def _cold_start(body: AssessRequest, db: Db, redis: RedisClient, ctx_hash:
                     db, tool, ctx_hash, data_pool,
                     eu_only=body.eu_only, gdpr_required=body.gdpr_required,
                 )
-                # Cache the flag-invariant version (eu_alternatives depends on flags).
+                # Cache the flag-invariant version BEFORE cost augmentation —
+                # budget-specific fields are re-computed per request.
                 cacheable = response.model_copy(update={"eu_alternatives": []})
                 await set_cached_score(redis, str(tool.id), ctx_hash, data_pool, cacheable, settings.cache_ttl_cold)
-                return response
+                return await _finalize_with_body(response, db, tool, body)
         else:
             # Another request is already running LLM assessment — wait briefly and check cache
             import asyncio
@@ -222,7 +255,7 @@ async def _cold_start(body: AssessRequest, db: Db, redis: RedisClient, ctx_hash:
                         db, tool,
                         gdpr_required=body.gdpr_required and not body.eu_only,
                     )
-                return cached
+                return await _finalize_with_body(cached, db, tool, body)
 
     # Tool has jurisdiction data from enrich_tool above; build the response from it.
     cold = _cold_start_response(datetime.now(timezone.utc), tool)
@@ -232,4 +265,4 @@ async def _cold_start(body: AssessRequest, db: Db, redis: RedisClient, ctx_hash:
             db, tool,
             gdpr_required=body.gdpr_required and not body.eu_only,
         )
-    return cold
+    return await _finalize_with_body(cold, db, tool, body)

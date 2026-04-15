@@ -100,6 +100,363 @@ def _compute_percentiles(values: list[int]) -> LatencyInfo | None:
     )
 
 
+# ---------------------------------------------------------------------------
+# Cost-aware scoring
+#
+# These helpers turn the `pricing` JSON on a Tool row into the cost fields on
+# an AssessResponse. The single public entry point is `finalize_response`,
+# which is called by compute_score (for fresh scores) and by /v1/assess (for
+# cached scores). Keeping both paths funnelling through one helper means a
+# request returning a cached score still sees budget math computed against
+# ITS request parameters, not the parameters of whichever request first
+# populated the cache.
+# ---------------------------------------------------------------------------
+
+_STRATEGY_WEIGHTS: dict[str, tuple[float, float]] = {
+    "reliability_first": (0.80, 0.20),
+    "balanced":          (0.55, 0.45),
+    "cost_first":        (0.25, 0.75),
+}
+
+# Category-median prices are essentially static within a 15-minute window,
+# so we cache them in-process to avoid an extra DB round-trip on every
+# assess call. Bounded by the number of distinct categories (~20), so the
+# memory footprint is trivial. Per-process; no Redis round-trip.
+_CATEGORY_MEDIAN_CACHE: dict[str, tuple[float | None, datetime]] = {}
+_CATEGORY_MEDIAN_TTL_SEC = 900
+
+
+def _effective_cost(
+    pricing: dict | None, expected_calls_per_month: int | None
+) -> float | None:
+    """Return the steady-state $/call implied by a pricing dict.
+
+    Prefers ``base_usd_per_call`` (per_call / freemium) and falls back to
+    ``typical_usd_per_call`` for per_token or transactional APIs. Honors
+    the free tier when we know the caller's expected volume — a caller
+    asking about 2000 calls/mo against a 3000/mo free tier gets $0 back.
+
+    Returns None when the pricing dict is missing or carries neither a
+    base nor typical price — callers can distinguish "no pricing" from
+    "price known to be zero" and show a different explanation.
+    """
+    if not pricing:
+        return None
+
+    base = pricing.get("base_usd_per_call")
+    typical = pricing.get("typical_usd_per_call")
+    raw = base if base is not None else typical
+    if raw is None:
+        return None
+
+    try:
+        raw_price = max(0.0, float(raw))
+    except (TypeError, ValueError):
+        return None
+
+    free_tier = pricing.get("free_tier_per_month")
+    if (
+        expected_calls_per_month
+        and free_tier
+        and expected_calls_per_month > 0
+    ):
+        try:
+            free_tier_int = int(free_tier)
+        except (TypeError, ValueError):
+            free_tier_int = 0
+        if free_tier_int > 0:
+            billable = max(0, expected_calls_per_month - free_tier_int)
+            if billable == 0:
+                return 0.0
+            return round((billable * raw_price) / expected_calls_per_month, 8)
+
+    return round(raw_price, 8)
+
+
+def _cost_adjusted_score(
+    reliability_score: float,
+    effective_cost: float,
+    category_median: float | None,
+    strategy: str,
+) -> float:
+    """Combined 0-100 score weighting reliability against normalized cost.
+
+    Cost is normalized against the category median so a $0.01 LLM call
+    isn't punished for being "more expensive" than a $0.000005 S3 write.
+    Strategy weights trade the reliability score against the normalized
+    cost penalty (reliability_first 0.80/0.20, balanced 0.55/0.45,
+    cost_first 0.25/0.75).
+    """
+    if category_median and category_median > 0:
+        cost_norm = min(1.0, effective_cost / category_median)
+    elif effective_cost <= 0:
+        # Peer group is all-free and so is this tool — no cost penalty.
+        cost_norm = 0.0
+    else:
+        # Peer group is all-free but this tool isn't — full cost penalty.
+        cost_norm = 1.0
+
+    w_rel, w_cost = _STRATEGY_WEIGHTS.get(
+        strategy, _STRATEGY_WEIGHTS["reliability_first"]
+    )
+    cost_adjusted = (w_rel * reliability_score) + (w_cost * (100.0 - (cost_norm * 100.0)))
+    return round(max(0.0, min(100.0, cost_adjusted)), 1)
+
+
+def _is_within_budget(
+    effective_cost: float,
+    max_price_per_call: float | None,
+    max_monthly_budget: float | None,
+    expected_calls_per_month: int | None,
+) -> bool:
+    """True when the effective cost satisfies every applicable budget cap."""
+    if max_price_per_call is not None and effective_cost > max_price_per_call:
+        return False
+    if (
+        max_monthly_budget is not None
+        and expected_calls_per_month
+        and expected_calls_per_month > 0
+    ):
+        if effective_cost * expected_calls_per_month > max_monthly_budget:
+            return False
+    return True
+
+
+def _budget_explanation(
+    tool: Tool | None,
+    effective_cost: float,
+    max_price_per_call: float | None,
+    max_monthly_budget: float | None,
+    expected_calls_per_month: int | None,
+    within_budget: bool,
+) -> str:
+    """Human-readable comparison of tool cost against the caller's budget."""
+    display = (
+        (tool.display_name or tool.identifier) if tool is not None else "This tool"
+    )
+
+    if within_budget:
+        parts: list[str] = []
+        if max_price_per_call is not None:
+            parts.append(
+                f"${effective_cost:.4f}/call within ${max_price_per_call:.4f} cap"
+            )
+        if (
+            max_monthly_budget is not None
+            and expected_calls_per_month
+            and expected_calls_per_month > 0
+        ):
+            monthly = effective_cost * expected_calls_per_month
+            parts.append(
+                f"${monthly:.2f}/mo within ${max_monthly_budget:.2f} budget"
+            )
+        if parts:
+            return f"{display} fits comfortably — " + "; ".join(parts) + "."
+        return f"{display} fits within budget."
+
+    reasons: list[str] = []
+    if max_price_per_call is not None and effective_cost > max_price_per_call:
+        over = effective_cost - max_price_per_call
+        reasons.append(
+            f"${effective_cost:.4f}/call exceeds your ${max_price_per_call:.4f} "
+            f"max_price_per_call by ${over:.4f}"
+        )
+    if (
+        max_monthly_budget is not None
+        and expected_calls_per_month
+        and expected_calls_per_month > 0
+    ):
+        monthly = effective_cost * expected_calls_per_month
+        if monthly > max_monthly_budget:
+            over = monthly - max_monthly_budget
+            reasons.append(
+                f"${monthly:.2f}/mo at {expected_calls_per_month} calls "
+                f"exceeds your ${max_monthly_budget:.2f} monthly budget "
+                f"by ${over:.2f}"
+            )
+    if reasons:
+        return f"{display} exceeds your budget: " + "; ".join(reasons) + "."
+    return f"{display} is flagged as over budget."
+
+
+async def _category_median_cost(
+    db: AsyncSession, category: str | None
+) -> float | None:
+    """Median effective $/call across priced peers in a category.
+
+    Falls back to the global median (all priced tools, any category) when a
+    category has fewer than 3 priced peers. This mirrors the thin-sample
+    heuristic in _get_eu_alternatives: below 3 peers the median is noise
+    and over-normalises the cost penalty.
+    """
+    cache_key = category or "__global__"
+    now = datetime.now(timezone.utc)
+    cached = _CATEGORY_MEDIAN_CACHE.get(cache_key)
+    if cached is not None:
+        median, ts = cached
+        if (now - ts).total_seconds() < _CATEGORY_MEDIAN_TTL_SEC:
+            return median
+
+    stmt = select(Tool).where(Tool.pricing.is_not(None))
+    if category:
+        stmt = stmt.where(Tool.category == category)
+    result = await db.execute(stmt)
+    peers = list(result.scalars().all())
+
+    costs: list[float] = []
+    for peer in peers:
+        c = _effective_cost(peer.pricing, expected_calls_per_month=None)
+        if c is not None:
+            costs.append(c)
+
+    if len(costs) < 3 and category is not None:
+        return await _category_median_cost(db, None)
+
+    if not costs:
+        _CATEGORY_MEDIAN_CACHE[cache_key] = (None, now)
+        return None
+
+    costs.sort()
+    n = len(costs)
+    mid = n // 2
+    median = costs[mid] if n % 2 else (costs[mid - 1] + costs[mid]) / 2.0
+    _CATEGORY_MEDIAN_CACHE[cache_key] = (median, now)
+    return median
+
+
+def _apply_cost_adjustment(
+    response: AssessResponse,
+    tool: Tool | None,
+    *,
+    max_price_per_call: float | None,
+    max_monthly_budget: float | None,
+    expected_calls_per_month: int | None,
+    budget_strategy: str,
+    category_median: float | None,
+) -> None:
+    """Populate cost-aware fields on the response in place.
+
+    Idempotent — safe to call on a response that already has cost fields.
+    Does nothing when the tool has no pricing, except to set
+    budget_explanation if the caller asked about a budget (so they get a
+    clear "no pricing data" reply instead of silent nulls).
+    """
+    has_budget_param = (
+        max_price_per_call is not None
+        or max_monthly_budget is not None
+        or expected_calls_per_month is not None
+    )
+
+    if tool is None or not tool.pricing:
+        if has_budget_param:
+            response.budget_explanation = (
+                "No pricing data available for this tool."
+            )
+        return
+
+    effective = _effective_cost(tool.pricing, expected_calls_per_month)
+    if effective is None:
+        if has_budget_param:
+            response.budget_explanation = (
+                "Pricing data is incomplete for this tool."
+            )
+        return
+
+    response.price_per_call = round(effective, 6)
+    response.pricing_model = tool.pricing.get("model")
+
+    if category_median is not None:
+        response.cost_adjusted_score = _cost_adjusted_score(
+            response.reliability_score, effective, category_median, budget_strategy
+        )
+    else:
+        # No peer group to normalise against — fall back to the plain
+        # reliability score so callers always have a sortable number.
+        response.cost_adjusted_score = round(response.reliability_score, 1)
+
+    if expected_calls_per_month is not None and expected_calls_per_month > 0:
+        response.estimated_monthly_cost = round(
+            effective * expected_calls_per_month, 4
+        )
+
+    has_budget_cap = (
+        max_price_per_call is not None or max_monthly_budget is not None
+    )
+    if has_budget_cap:
+        within = _is_within_budget(
+            effective, max_price_per_call, max_monthly_budget,
+            expected_calls_per_month,
+        )
+        response.within_budget = within
+        response.budget_explanation = _budget_explanation(
+            tool, effective, max_price_per_call, max_monthly_budget,
+            expected_calls_per_month, within,
+        )
+    elif expected_calls_per_month is not None and expected_calls_per_month > 0:
+        monthly = effective * expected_calls_per_month
+        response.budget_explanation = (
+            f"Projected cost: ${monthly:.2f}/mo at {expected_calls_per_month} "
+            f"calls/mo (no budget cap set)."
+        )
+
+
+def _annotate_alternatives_within_budget(
+    alternatives: list[AlternativeTool],
+    max_price_per_call: float | None,
+    max_monthly_budget: float | None,
+    expected_calls_per_month: int | None,
+) -> None:
+    """Set within_budget on each alternative that already has price_per_call."""
+    if max_price_per_call is None and max_monthly_budget is None:
+        return
+    for alt in alternatives:
+        if alt.price_per_call is None:
+            continue
+        alt.within_budget = _is_within_budget(
+            alt.price_per_call, max_price_per_call, max_monthly_budget,
+            expected_calls_per_month,
+        )
+
+
+async def finalize_response(
+    response: AssessResponse,
+    db: AsyncSession,
+    tool: Tool | None,
+    *,
+    max_price_per_call: float | None,
+    max_monthly_budget: float | None,
+    expected_calls_per_month: int | None,
+    budget_strategy: str,
+) -> AssessResponse:
+    """Apply the cost-aware augmentation step shared by every return site.
+
+    Compute_score calls this on fresh responses; /v1/assess calls it on
+    cached responses. Same request parameters in → same cost fields out,
+    cache hit or miss.
+    """
+    category_median = (
+        await _category_median_cost(db, tool.category) if tool is not None else None
+    )
+    _apply_cost_adjustment(
+        response,
+        tool,
+        max_price_per_call=max_price_per_call,
+        max_monthly_budget=max_monthly_budget,
+        expected_calls_per_month=expected_calls_per_month,
+        budget_strategy=budget_strategy,
+        category_median=category_median,
+    )
+    _annotate_alternatives_within_budget(
+        response.top_alternatives,
+        max_price_per_call, max_monthly_budget, expected_calls_per_month,
+    )
+    _annotate_alternatives_within_budget(
+        response.eu_alternatives,
+        max_price_per_call, max_monthly_budget, expected_calls_per_month,
+    )
+    return response
+
+
 async def compute_score(
     db: AsyncSession,
     tool: Tool,
@@ -413,6 +770,7 @@ async def _get_eu_alternatives(
                 tool=peer.identifier,
                 score=round(estimated_score, 1),
                 reason=f"{peer.jurisdiction_category} ({source_label}) in {tool.category or 'same category'}",
+                price_per_call=_effective_cost(peer.pricing, None),
             )
         )
     return out
@@ -442,6 +800,7 @@ async def _get_alternatives(db: AsyncSession, tool_id) -> list[AlternativeTool]:
                 tool=alt_tool.identifier,
                 score=round(alt.relevance_score * 100, 1),
                 reason=alt.reason or "Alternative provider",
+                price_per_call=_effective_cost(alt_tool.pricing, None),
             )
         )
         if len(alternatives) >= 3:
@@ -476,6 +835,7 @@ async def _get_alternatives(db: AsyncSession, tool_id) -> list[AlternativeTool]:
                 tool=peer.identifier,
                 score=round(estimated_score, 1),
                 reason=f"Top-rated in {tool.category}",
+                price_per_call=_effective_cost(peer.pricing, None),
             )
         )
 
