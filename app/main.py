@@ -334,6 +334,19 @@ input::placeholder{color:#5a5f75}
     </div>
     <p class="warning">Save this key now — it cannot be retrieved later. A copy has been sent to your email.</p>
     <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #282c40">
+      <p style="font-size:0.82rem;color:#d4d8e8;margin-bottom:0.5rem;font-weight:600">Next: install the SDK</p>
+      <pre style="background:#0a0b10;border:1px solid #282c40;border-radius:6px;padding:0.75rem;font-family:'Fira Code',monospace;font-size:0.72rem;color:#d4d8e8;overflow-x:auto;margin:0 0 0.5rem;line-height:1.5"><span style="color:#6a6f85"># Python — uv (recommended; no PEP 668 errors)</span>
+uv add toolrate
+
+<span style="color:#6a6f85"># Or with pip inside a venv</span>
+python3 -m venv .venv &amp;&amp; source .venv/bin/activate
+pip install toolrate
+
+<span style="color:#6a6f85"># TypeScript</span>
+npm install toolrate</pre>
+      <p style="font-size:0.7rem;color:#6a6f85;margin:0">Full quickstart in your welcome email · <a href="/docs" style="color:#0a95fd;text-decoration:none">API docs</a></p>
+    </div>
+    <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #282c40">
       <p style="font-size:0.82rem;color:#d4d8e8;margin-bottom:0.75rem">Need more than 100 calls/day?</p>
       <a href="/pricing" class="btn" style="display:block;text-align:center;text-decoration:none;margin-top:0">See pricing — PAYG $0.008/call or Pro $29/mo</a>
     </div>

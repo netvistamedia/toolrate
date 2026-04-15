@@ -1043,7 +1043,8 @@ __SITE_HEADER_HTML__
     </div>
   </div>
   <div class="code-block">
-    <div id="tab-python" class="code-panel active"><pre><span class="kw">from</span> toolrate <span class="kw">import</span> ToolRate, guard
+    <div id="tab-python" class="code-panel active"><pre><span class="cm"># Install: uv add toolrate  (or: pip install toolrate in a venv)</span>
+<span class="kw">from</span> toolrate <span class="kw">import</span> ToolRate, guard
 
 client = ToolRate(<span class="str">"nf_live_..."</span>)
 
@@ -1058,7 +1059,8 @@ result = <span class="fn">guard</span>(client, <span class="str">"https://api.st
                    (<span class="str">"https://api.lemonsqueezy.com/v1/checkouts"</span>,
                     <span class="kw">lambda</span>: lemon.create_checkout(...)),
                ])</pre></div>
-    <div id="tab-typescript" class="code-panel"><pre><span class="kw">import</span> { ToolRate } <span class="kw">from</span> <span class="str">"toolrate"</span>;
+    <div id="tab-typescript" class="code-panel"><pre><span class="cm">// Install: npm install toolrate  (Node 18+)</span>
+<span class="kw">import</span> { ToolRate } <span class="kw">from</span> <span class="str">"toolrate"</span>;
 
 <span class="kw">const</span> client = <span class="kw">new</span> <span class="fn">ToolRate</span>(<span class="str">"nf_live_..."</span>);
 

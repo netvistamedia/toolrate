@@ -510,7 +510,7 @@ __SITE_HEADER_HTML__
     </div>
 
     <p class="trust-line">
-      Based on <strong>1,284 real agent reports</strong> · Hosted in Germany · <strong>pip install toolrate</strong>
+      Based on <strong>1,284 real agent reports</strong> · Hosted in Germany · <strong>uv add toolrate</strong>
     </p>
   </section>
 

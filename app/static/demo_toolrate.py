@@ -177,7 +177,7 @@ def main():
     print()
     print(f"  {BOLD}{CYAN}  Try ToolRate{RESET}     {WHITE}▸{RESET}     "
           f"{BOLD}https://toolrate.ai{RESET}")
-    print(f"  {GRAY}  600+ tools rated  ·  free tier  ·  pip install toolrate{RESET}")
+    print(f"  {GRAY}  600+ tools rated  ·  free tier  ·  uv add toolrate{RESET}")
     print()
     rule("━", CYAN)
     print()
