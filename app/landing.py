@@ -893,6 +893,168 @@ __SITE_HEADER_CSS__
 .feature-code .fn { color: #c792ea; }
 .feature-code .str { color: #ecc48d; }
 
+/* ── LLM Router spotlight ── */
+.llm-router {
+  margin-bottom: 5rem;
+  animation: fadeUp 0.7s ease-out 0.6s both;
+  position: relative;
+}
+.llm-router-card {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(10, 149, 253, 0.08) 0%, rgba(47, 207, 250, 0.04) 100%);
+  border: 1px solid var(--brand-mid);
+  border-radius: 18px;
+  padding: 3rem 2.5rem;
+}
+.llm-router-card::before {
+  content: '';
+  position: absolute;
+  top: -60%;
+  left: -25%;
+  width: 85%;
+  height: 220%;
+  background: radial-gradient(ellipse, var(--brand-glow) 0%, transparent 60%);
+  opacity: 0.20;
+  pointer-events: none;
+}
+.llm-router-card > * { position: relative; z-index: 1; }
+.llm-router-badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 1rem;
+}
+.llm-router-card h2 {
+  font-size: clamp(1.7rem, 3vw, 2.25rem);
+  font-weight: 700;
+  color: var(--text-bright);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+  max-width: 720px;
+}
+.llm-router-lead {
+  font-size: 0.95rem;
+  font-weight: 300;
+  color: var(--text-dim);
+  line-height: 1.75;
+  max-width: 700px;
+  margin-bottom: 1.75rem;
+}
+.llm-router-strategies {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-bottom: 2.25rem;
+}
+.llm-router-strategy {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  padding: 0.42rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-bright);
+  background: var(--surface);
+  color: var(--text);
+  white-space: nowrap;
+}
+.llm-router-strategy strong {
+  color: var(--brand-light);
+  font-weight: 600;
+}
+.llm-router-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 2rem;
+  align-items: start;
+}
+.llm-router-code {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-bright);
+  background: #07080d;
+  border: 1px solid var(--border-bright);
+  border-radius: 12px;
+  padding: 1.25rem 1.35rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.7;
+  overflow-x: auto;
+  margin: 0;
+}
+.llm-router-code .cm { color: var(--text-dim); font-style: italic; }
+.llm-router-code .kw { color: var(--brand-light); font-weight: 500; }
+.llm-router-code .fn { color: #c792ea; }
+.llm-router-code .str { color: #ecc48d; }
+.llm-router-code .num { color: #f78c6c; }
+.llm-router-getlist h3 {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 0.9rem;
+  letter-spacing: -0.005em;
+}
+.llm-router-getlist ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.4rem;
+}
+.llm-router-getlist li {
+  font-size: 0.82rem;
+  color: var(--text-dim);
+  font-weight: 300;
+  line-height: 1.75;
+  padding-left: 1.1rem;
+  position: relative;
+  margin-bottom: 0.55rem;
+}
+.llm-router-getlist li:last-child { margin-bottom: 0; }
+.llm-router-getlist li::before {
+  content: '+';
+  position: absolute;
+  left: 0;
+  color: var(--brand);
+  font-weight: 600;
+}
+.llm-router-getlist li code {
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  color: var(--brand-light);
+  background: var(--brand-dim);
+  padding: 0.08rem 0.35rem;
+  border-radius: 4px;
+}
+.llm-router-providers {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+.llm-router-provider {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  padding: 0.48rem 0.6rem;
+  border-radius: 6px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  text-align: center;
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 860px) {
+  .llm-router-grid { grid-template-columns: 1fr; }
+  .llm-router-card { padding: 2rem 1.5rem; }
+  .llm-router-providers { grid-template-columns: repeat(2, 1fr); }
+}
+
 /* ── Pricing ── */
 .pricing {
   margin-bottom: 5rem;
@@ -1252,6 +1414,64 @@ curl -X POST https://api.toolrate.ai/v1/report \
       <div class="feature-num">06</div>
       <h3>MCP Server</h3>
       <p>Native integration with Claude Code, Cursor, and any MCP-aware client. Run assessments from inside your editor without breaking the loop.</p>
+    </div>
+  </div>
+</section>
+
+<!-- LLM Router spotlight -->
+<section class="llm-router">
+  <div class="llm-router-card">
+    <div class="llm-router-badge">NEW &middot; Intelligent Cost-Aware LLM Router</div>
+    <h2>Stop hardcoding your LLM. Start routing it.</h2>
+    <p class="llm-router-lead">
+      One API call picks the cheapest model that actually handles the task &mdash; across Claude,
+      GPT, Groq, Together, Mistral, and DeepSeek. Real-time reliability, exact per-token cost,
+      latency-aware scoring, and a specific model recommendation in every response.
+    </p>
+    <div class="llm-router-strategies">
+      <div class="llm-router-strategy"><strong>reliability_first</strong> &nbsp;80 / 20</div>
+      <div class="llm-router-strategy"><strong>balanced</strong> &nbsp;55 / 45</div>
+      <div class="llm-router-strategy"><strong>cost_first</strong> &nbsp;25 / 75</div>
+      <div class="llm-router-strategy"><strong>speed_first</strong> &nbsp;35 / 45 / 20</div>
+    </div>
+    <div class="llm-router-grid">
+      <div>
+<pre class="llm-router-code"><span class="cm"># Tell ToolRate your constraints, get the right model back.</span>
+<span class="kw">result</span> = client.<span class="fn">assess</span>(
+  tool_identifier=<span class="str">"https://api.anthropic.com/v1/messages"</span>,
+  task_complexity=<span class="str">"low"</span>,
+  expected_tokens=<span class="num">500</span>,
+  max_price_per_call=<span class="num">0.01</span>,
+  budget_strategy=<span class="str">"cost_first"</span>,
+)
+
+<span class="cm"># → recommended_model: "claude-haiku-4-5"</span>
+<span class="cm"># → price_per_call:    $0.00152  (exact per-token math)</span>
+<span class="cm"># → within_budget:     true</span>
+<span class="cm"># → reasoning:         "Anthropic Messages scored 91.7/100</span>
+<span class="cm">#                       for reliability (low risk). Recommended</span>
+<span class="cm">#                       model: claude-haiku-4-5. Cost: $0.0015/call.</span>
+<span class="cm">#                       Typical latency ~500ms. Strategy: cost-first;</span>
+<span class="cm">#                       task complexity: low. Fits within your budget."</span></pre>
+      </div>
+      <div class="llm-router-getlist">
+        <h3>What you get per call</h3>
+        <ul>
+          <li>Exact per-million-token cost at your expected volume</li>
+          <li>Specific model inside each provider (Haiku for low, Opus for reasoning)</li>
+          <li>Human-readable <code>reasoning</code> string &mdash; drop it in your logs</li>
+          <li>Over-budget tools flagged, never silently filtered</li>
+          <li>Drop-in <code>LLMRouter</code> class with automatic fallback cascade</li>
+        </ul>
+        <div class="llm-router-providers">
+          <div class="llm-router-provider">anthropic</div>
+          <div class="llm-router-provider">openai</div>
+          <div class="llm-router-provider">groq</div>
+          <div class="llm-router-provider">together</div>
+          <div class="llm-router-provider">mistral</div>
+          <div class="llm-router-provider">deepseek</div>
+        </div>
+      </div>
     </div>
   </div>
 </section>

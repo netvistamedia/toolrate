@@ -160,7 +160,7 @@ All endpoints except `/health` and `/v1/auth/register` require an API key via th
 
 ## Core endpoints
 
-- [POST /v1/assess](https://api.toolrate.ai/docs#/Assessment/assess_tool_v1_assess_post): Get reliability score for a tool before calling it
+- [POST /v1/assess](https://api.toolrate.ai/docs#/Assessment/assess_tool_v1_assess_post): Get reliability score for a tool before calling it. Also doubles as the **Cost-Aware LLM Router**: pass `expected_tokens`, `task_complexity` (low/medium/high/very_high), a `budget_strategy` (`reliability_first`, `balanced`, `cost_first`, `speed_first`), and optional per-call / monthly caps, and the response tells you which LLM provider to call AND which specific model to use inside it (Haiku for low, Opus for reasoning, Groq Llama-8B for speed-first). Returns `cost_adjusted_score`, `recommended_model`, `reasoning`, `within_budget`, and exact per-token `price_per_call`. Drop-in Python class: [LLMRouter example](https://github.com/netvistamedia/toolrate/blob/main/sdks/python/examples/llm_router.py).
 - [POST /v1/report](https://api.toolrate.ai/docs#/Reporting/report_result_v1_report_post): Report execution result (success/failure) to build the data moat
 - [GET /v1/discover/hidden-gems](https://api.toolrate.ai/docs#/Discovery): Find tools with high fallback success rates
 - [GET /v1/discover/fallback-chain](https://api.toolrate.ai/docs#/Discovery): Get best alternatives when a tool fails
@@ -310,15 +310,31 @@ Self-serve API key signup. No authentication required.
 
 ### POST /v1/assess
 
-Get a reliability score for a tool before calling it. Requires API key.
+Get a reliability score for a tool before calling it. Also doubles as the **Cost-Aware LLM Router** — see the dedicated section below for the full router feature. Requires API key.
 
-**Request body:**
+**Request body (minimal):**
 ```json
 {
   "tool_identifier": "https://api.stripe.com/v1/charges",
   "context": "payment processing for e-commerce checkout"
 }
 ```
+
+**Request body (cost-aware / LLM router — all fields optional):**
+```json
+{
+  "tool_identifier": "https://api.anthropic.com/v1/messages",
+  "context": "customer support chatbot",
+  "expected_tokens": 1200,
+  "task_complexity": "medium",
+  "max_price_per_call": 0.01,
+  "max_monthly_budget": 500.0,
+  "expected_calls_per_month": 50000,
+  "budget_strategy": "balanced"
+}
+```
+
+`task_complexity`: `low` (default `medium` server-side), `high`, `very_high`. `budget_strategy`: `reliability_first` (80/20 weights), `balanced` (55/45), `cost_first` (25/75), `speed_first` (35/45/20 — adds latency axis).
 
 **Response (200):**
 ```json
@@ -335,21 +351,32 @@ Get a reliability score for a tool before calling it. Requires API key.
   ],
   "recommended_mitigations": ["Increase timeout to 30s; retry with backoff"],
   "top_alternatives": [
-    {"tool": "https://api.lemonsqueezy.com/v1/checkouts", "score": 91.5, "reason": "Alternative provider"}
+    {"tool": "https://api.lemonsqueezy.com/v1/checkouts", "score": 91.5,
+     "reason": "Alternative provider", "price_per_call": 3.00, "within_budget": true}
   ],
   "estimated_latency_ms": 420,
   "latency": {"avg": 420, "p50": 380, "p95": 890, "p99": 1200},
-  "last_updated": "2026-04-11T09:05:00Z",
+  "last_updated": "2026-04-15T09:05:00Z",
   "hosting_jurisdiction": "Non-EU (United States)",
   "gdpr_compliant": false,
   "data_residency_risk": "medium",
   "recommended_for": ["general_purpose"],
-  "eu_alternatives": []
+  "eu_alternatives": [],
+  "price_per_call": 0.0114,
+  "pricing_model": "per_token",
+  "cost_adjusted_score": 74.8,
+  "estimated_monthly_cost": 570.0,
+  "within_budget": false,
+  "budget_explanation": "Anthropic Messages exceeds your budget: $570.00/mo at 50000 calls exceeds your $500.00 monthly budget by $70.00.",
+  "recommended_model": "claude-sonnet-4-6",
+  "reasoning": "Anthropic Messages scored 94.2/100 for reliability (low risk). Recommended model: claude-sonnet-4-6. Cost: $0.0114/call, $570.00/mo projected. Typical latency ~1200ms. Strategy: balanced (55% reliability / 45% cost); task complexity: medium. Over budget — flagged but returned for transparency."
 }
 ```
 
 `predicted_failure_risk` can be: `low`, `medium`, `high`, or `unknown`.
 `data_source` is one of `empirical`, `llm_estimated`, or `bayesian_prior`.
+`recommended_model` is populated for LLM providers with a model catalog (null for other tools).
+Over-budget tools are **flagged, not filtered** — the router always shows the best match even if it exceeds caps.
 
 ---
 
@@ -553,11 +580,76 @@ ToolRate uses a multi-factor scoring algorithm:
 3. **Confidence**: Based on effective sample size
 4. **Failure risk**: Includes 24-hour trend penalty
 5. **Error categories**: Aggregated for pitfall detection
+6. **Cost-aware augmentation**: Category-normalized cost penalty weighted by `budget_strategy`; latency axis added for `speed_first`. See the LLM Router section below for the full formula and strategies.
+
+## Cost-Aware LLM Router
+
+The `/v1/assess` endpoint doubles as an intelligent LLM router. For LLM providers that carry a full model catalog — **Anthropic, OpenAI, Groq, Together, Mistral, and DeepSeek** — the router returns a specific model recommendation inside each provider based on the caller's task complexity, expected token volume, budget caps, and strategy preference.
+
+### How it picks
+
+1. **Cost normalization**: `cost_norm = min(1, effective_cost / category_median)` — so a $0.01 LLM call isn't punished for being "more expensive" than a $0.000005 S3 write.
+2. **Exact per-token math**: when `expected_tokens` is set and the provider carries `usd_per_million_input_tokens` + `usd_per_million_output_tokens`, cost is computed from a 30/70 input/output split. Otherwise falls back to a blended `typical_usd_per_call`.
+3. **Task complexity filter**: `task_complexity` (`low`/`medium`/`high`/`very_high`) filters the provider's model catalog to variants capable of the task. A `very_high` task on Anthropic picks Opus; a `low` task picks Haiku.
+4. **Strategy weights** (locked in 2026-04-15, rows sum to 1.0):
+   - `reliability_first`: (0.80 reliability, 0.20 cost, 0.00 latency)
+   - `balanced`: (0.55, 0.45, 0.00)
+   - `cost_first`: (0.25, 0.75, 0.00)
+   - `speed_first`: (0.35, 0.45, 0.20) — third axis normalized against category-median latency
+5. **Model selection within provider**: once the capable pool is filtered, the strategy decides. `cost_first` → cheapest capable, `speed_first` → lowest latency capable, `reliability_first` → most capable (hedge toward power), `balanced` → combined cost + latency + tier penalty.
+6. **Within-budget flag, never filtered**: tools exceeding `max_price_per_call` or `max_monthly_budget` are returned with `within_budget: false` and a `budget_explanation` string, never silently filtered. Agents see the best match regardless of budget so they can decide to relax caps or pick an alternative.
+7. **Reasoning string**: every response carries a human-readable `reasoning` field describing the decision — reliability score, recommended model, cost, latency, strategy, task complexity, and budget fit. Drop it straight into agent logs.
+
+### LLM providers with full model catalogs
+
+| Provider | Models in catalog | Typical latency |
+|---|---|---|
+| `api.anthropic.com/v1/messages` | claude-haiku-4-5 (low), claude-sonnet-4-6 (medium), claude-opus-4-6 (very_high) | 500 – 2500 ms |
+| `api.openai.com/v1/chat/completions` | gpt-4o-mini (low), gpt-4o (medium), o3-mini (high) | 500 – 4500 ms |
+| `api.groq.com/openai/v1/chat/completions` | llama-3.1-8b-instant (low), llama-3.3-70b-versatile (medium) | 200 – 400 ms |
+| `api.together.xyz/v1/chat/completions` | llama-3.1-8b-instruct-turbo (low), llama-3.3-70b-instruct-turbo (medium), DeepSeek-V3 (high) | 400 – 1500 ms |
+| `api.mistral.ai/v1/chat/completions` | mistral-small-latest (low), mistral-large-latest (medium) | 600 – 1000 ms |
+| `api.deepseek.com/v1/chat/completions` | deepseek-chat (medium), deepseek-reasoner (very_high) | 1500 – 5000 ms |
+
+### Drop-in Python class
+
+A fully-documented `LLMRouter` class lives at [`sdks/python/examples/llm_router.py`](https://github.com/netvistamedia/toolrate/blob/main/sdks/python/examples/llm_router.py). It assesses all six providers in parallel via `asyncio.gather`, picks the winner, dispatches through a subclassable `_dispatch()` hook, falls back to the next-best candidate on failure, and reports every outcome back to `/v1/report` so the scoring loop self-corrects.
+
+```python
+import asyncio
+from toolrate import AsyncToolRate
+from llm_router import LLMRouter  # the example class
+
+class MyRouter(LLMRouter):
+    async def _dispatch(self, decision, prompt):
+        # Wire up your preferred provider SDK using decision.provider
+        # and decision.model. See the example file for a full version.
+        ...
+
+async def main():
+    async with AsyncToolRate(api_key="nf_live_...") as tr:
+        router = MyRouter(
+            tr,
+            max_price_per_call=0.01,
+            expected_calls_per_month=50_000,
+        )
+        result = await router.route(
+            prompt="Summarize this meeting transcript in 3 bullets.",
+            task_complexity="medium",
+            expected_tokens=1500,
+            budget_strategy="balanced",
+        )
+        print(result["response"])
+        print(result["routing"])  # RoutingDecision dataclass
+
+asyncio.run(main())
+```
 
 ## Key Facts
 
 - **__LANDING_TOOLS_COUNT__ tools rated** across payment, email, storage, AI, and more
 - **__LANDING_REPORTS_COUNT__ data points** from real agent executions
+- **6 LLM providers** with full model catalogs for the Cost-Aware Router (Anthropic, OpenAI, Groq, Together, Mistral, DeepSeek)
 - **<8ms average response time**
 - **10 LLM sources** contributing assessment data
 - **GDPR compliant**, hosted in Germany (Hetzner Cloud)
