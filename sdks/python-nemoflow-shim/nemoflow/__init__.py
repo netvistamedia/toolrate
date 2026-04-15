@@ -5,6 +5,13 @@ This module is a compatibility shim. It re-exports everything from
 
 To migrate::
 
+    # Recommended (modern & fastest):
+    curl -LsSf https://astral.sh/uv/install.sh | sh   # one-time
+    uv add toolrate
+
+    # Alternative (without uv):
+    python3 -m venv .venv
+    source .venv/bin/activate
     pip install toolrate
 
     # old
@@ -23,9 +30,10 @@ import warnings
 
 warnings.warn(
     "The 'nemoflow' package is deprecated and has been renamed to 'toolrate'. "
-    "Please run `pip install toolrate` and update your imports from "
-    "`from nemoflow import NemoFlowClient` to `from toolrate import ToolRate`. "
-    "This compatibility shim will be removed in a future release.",
+    "Please run `uv add toolrate` (or `pip install toolrate` inside a venv) "
+    "and update your imports from `from nemoflow import NemoFlowClient` to "
+    "`from toolrate import ToolRate`. This compatibility shim will be removed "
+    "in a future release.",
     DeprecationWarning,
     stacklevel=2,
 )

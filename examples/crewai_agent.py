@@ -5,12 +5,19 @@ A CrewAI crew with ToolRate acting as a quality gate for tool execution.
 ToolRate checks tool reliability before each call, reports results back,
 and automatically falls back to alternatives when tools are unreliable.
 
-Install (we recommend uv — https://github.com/astral-sh/uv):
+Install ToolRate + CrewAI:
+
+  Recommended (modern & fastest):
+    curl -LsSf https://astral.sh/uv/install.sh | sh   # one-time
     uv add toolrate crewai crewai-tools
 
-Or with pip inside a virtual environment:
-    python3 -m venv .venv && source .venv/bin/activate
+  Alternative (without uv):
+    python3 -m venv .venv
+    source .venv/bin/activate
     pip install toolrate crewai crewai-tools
+
+  Note: a bare `pip install` triggers PEP 668 "externally-managed-environment"
+  on macOS Homebrew and recent Linux distros — use one of the methods above.
 
 Set environment variables:
     export TOOLRATE_API_KEY="nf_live_..."

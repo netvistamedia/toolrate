@@ -22,33 +22,40 @@ ToolRate is a reliability oracle for AI agents. It scores 600+ tools and APIs in
 
 ## Install
 
-**Python** — we recommend [uv](https://github.com/astral-sh/uv), the fast, modern Python package manager. It handles virtual environments for you and avoids the `externally-managed-environment` errors plain `pip` raises on macOS Homebrew and recent Linux distros.
+### Python
+
+**Recommended (modern & fastest):**
 
 ```bash
-# One-time: install uv (skip if you already have it)
+# Install uv (one-time)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Add ToolRate to your project
 uv add toolrate
 ```
 
-**TypeScript / Node.js**
+**Alternative (without uv):**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install toolrate
+```
+
+> **Note:** If you see a `PEP 668` "externally-managed-environment" error with plain `pip`, that is because of Homebrew Python. Use one of the methods above instead.
+
+### TypeScript / Node.js
 
 ```bash
 npm install toolrate
 ```
 
+Node 18+ required.
+
 <details>
-<summary><b>Other ways to install</b> — pip, poetry, pdm, rye, pnpm, yarn, bun</summary>
+<summary><b>Other package managers</b> — poetry, pdm, rye, pnpm, yarn, bun</summary>
 
 <br>
-
-**Python with pip** (inside a virtual environment):
-
-```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install toolrate
-```
 
 **Python with poetry / pdm / rye:**
 

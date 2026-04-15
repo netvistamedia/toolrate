@@ -69,21 +69,35 @@ X-Api-Key: nf_live_your_key_here
 | Pro | 10,000 assessments / month ($29/mo flat) |
 | Enterprise | Custom |
 
-## SDKs
+## SDKs — Python
 
-**Python** (we recommend [uv](https://github.com/astral-sh/uv) — fast, modern, no PEP 668 headaches):
+**Recommended (modern & fastest):**
 
 ```bash
+# Install uv (one-time)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Add ToolRate to your project
 uv add toolrate
-# or, with pip in a venv:
-python3 -m venv .venv && source .venv/bin/activate && pip install toolrate
 ```
 
-**TypeScript / Node.js**:
+**Alternative (without uv):**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install toolrate
+```
+
+> **Note:** If you see a `PEP 668` "externally-managed-environment" error with plain `pip`, that is because of Homebrew Python. Use one of the methods above instead.
+
+## SDKs — TypeScript / Node.js
 
 ```bash
 npm install toolrate
 ```
+
+Node 18+ required.
 """
 
 app = FastAPI(
@@ -334,17 +348,23 @@ input::placeholder{color:#5a5f75}
     </div>
     <p class="warning">Save this key now — it cannot be retrieved later. A copy has been sent to your email.</p>
     <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #282c40">
-      <p style="font-size:0.82rem;color:#d4d8e8;margin-bottom:0.5rem;font-weight:600">Next: install the SDK</p>
-      <pre style="background:#0a0b10;border:1px solid #282c40;border-radius:6px;padding:0.75rem;font-family:'Fira Code',monospace;font-size:0.72rem;color:#d4d8e8;overflow-x:auto;margin:0 0 0.5rem;line-height:1.5"><span style="color:#6a6f85"># Python — uv (recommended; no PEP 668 errors)</span>
-uv add toolrate
+      <p style="font-size:0.82rem;color:#d4d8e8;margin-bottom:0.75rem;font-weight:600">Next: install the SDK</p>
 
-<span style="color:#6a6f85"># Or with pip inside a venv</span>
-python3 -m venv .venv &amp;&amp; source .venv/bin/activate
-pip install toolrate
+      <p style="font-size:0.7rem;color:#0a95fd;margin:0 0 0.3rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Recommended — modern &amp; fastest</p>
+      <pre style="background:#0a0b10;border:1px solid #282c40;border-radius:6px;padding:0.7rem 0.85rem;font-family:'Fira Code',monospace;font-size:0.72rem;color:#d4d8e8;overflow-x:auto;margin:0 0 0.75rem;line-height:1.55"><span style="color:#6a6f85"># Install uv (one-time)</span>
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-<span style="color:#6a6f85"># TypeScript</span>
-npm install toolrate</pre>
-      <p style="font-size:0.7rem;color:#6a6f85;margin:0">Full quickstart in your welcome email · <a href="/docs" style="color:#0a95fd;text-decoration:none">API docs</a></p>
+<span style="color:#6a6f85"># Add ToolRate to your project</span>
+uv add toolrate</pre>
+
+      <p style="font-size:0.7rem;color:#0a95fd;margin:0 0 0.3rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em">Alternative — without uv</p>
+      <pre style="background:#0a0b10;border:1px solid #282c40;border-radius:6px;padding:0.7rem 0.85rem;font-family:'Fira Code',monospace;font-size:0.72rem;color:#d4d8e8;overflow-x:auto;margin:0 0 0.5rem;line-height:1.55">python3 -m venv .venv
+source .venv/bin/activate
+pip install toolrate</pre>
+
+      <p style="font-size:0.7rem;color:#f0c53b;line-height:1.55;margin:0.5rem 0 0.75rem;padding:0.55rem 0.7rem;background:rgba(240,197,59,0.05);border-left:2px solid rgba(240,197,59,0.55);border-radius:3px"><strong>Note:</strong> If you see a <code style="font-family:'Fira Code',monospace">PEP 668</code> &ldquo;externally-managed-environment&rdquo; error with plain <code style="font-family:'Fira Code',monospace">pip</code>, that&rsquo;s because of Homebrew Python. Use one of the methods above instead.</p>
+
+      <p style="font-size:0.7rem;color:#6a6f85;margin:0">TypeScript: <code style="color:#d4d8e8;font-family:'Fira Code',monospace">npm install toolrate</code> (Node 18+) &middot; <a href="/docs" style="color:#0a95fd;text-decoration:none">API docs</a></p>
     </div>
     <div style="margin-top:1.25rem;padding-top:1.25rem;border-top:1px solid #282c40">
       <p style="font-size:0.82rem;color:#d4d8e8;margin-bottom:0.75rem">Need more than 100 calls/day?</p>

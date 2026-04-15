@@ -617,6 +617,91 @@ __SITE_HEADER_CSS__
   font-weight: 600;
 }
 
+/* ── Install ── */
+.install-section {
+  margin-bottom: 4rem;
+  animation: fadeUp 0.7s ease-out 0.4s both;
+}
+.install-section > h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 0.35rem;
+}
+.install-lead {
+  color: var(--text-dim);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+  max-width: 640px;
+  line-height: 1.55;
+}
+.install-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+}
+.install-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem 1.4rem;
+  position: relative;
+}
+.install-card.recommended {
+  border-color: rgba(10, 149, 253, 0.35);
+  box-shadow: 0 0 0 1px rgba(10, 149, 253, 0.18), 0 0 40px rgba(10, 149, 253, 0.08);
+}
+.install-card .install-label {
+  display: inline-block;
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 0.2rem;
+}
+.install-card.recommended .install-label { color: var(--brand); }
+.install-card .install-title {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 0.85rem;
+}
+.install-card pre {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1.7;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+}
+.install-card pre .cm {
+  color: var(--text-dim);
+  font-style: italic;
+}
+.install-note {
+  padding: 0.85rem 1.1rem;
+  background: rgba(240, 197, 59, 0.05);
+  border-left: 3px solid rgba(240, 197, 59, 0.5);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+.install-note strong { color: #f0c53b; }
+.install-note code {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--text-bright);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
 /* ── Code ── */
 .code-section {
   margin-bottom: 5rem;
@@ -944,6 +1029,7 @@ __SITE_HEADER_CSS__
   .pricing-grid { grid-template-columns: 1fr; max-width: 420px; }
   .footer { flex-direction: column; gap: 0.75rem; text-align: center; }
   .code-header { flex-direction: column; gap: 0.75rem; align-items: flex-start; }
+  .install-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -1032,6 +1118,31 @@ __SITE_HEADER_HTML__
   </p>
 </section>
 
+<!-- Install -->
+<section class="install-section">
+  <h2>Install ToolRate</h2>
+  <p class="install-lead">Beginner-friendly in two commands. Works on every platform &mdash; no PEP 668 drama, no virtualenv archaeology.</p>
+  <div class="install-grid">
+    <div class="install-card recommended">
+      <div class="install-label">Recommended</div>
+      <div class="install-title">Modern &amp; fastest</div>
+      <pre><span class="cm"># Install uv (one-time)</span>
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+<span class="cm"># Add ToolRate to your project</span>
+uv add toolrate</pre>
+    </div>
+    <div class="install-card">
+      <div class="install-label">Alternative</div>
+      <div class="install-title">Without uv</div>
+      <pre>python3 -m venv .venv
+source .venv/bin/activate
+pip install toolrate</pre>
+    </div>
+  </div>
+  <div class="install-note"><strong>Note:</strong> If you see a <code>PEP 668</code> &ldquo;externally-managed-environment&rdquo; error with plain <code>pip</code>, that&rsquo;s because of Homebrew Python. Use one of the methods above instead. For TypeScript / Node 18+: <code>npm install toolrate</code>.</div>
+</section>
+
 <!-- Code -->
 <section class="code-section">
   <div class="code-header">
@@ -1043,8 +1154,7 @@ __SITE_HEADER_HTML__
     </div>
   </div>
   <div class="code-block">
-    <div id="tab-python" class="code-panel active"><pre><span class="cm"># Install: uv add toolrate  (or: pip install toolrate in a venv)</span>
-<span class="kw">from</span> toolrate <span class="kw">import</span> ToolRate, guard
+    <div id="tab-python" class="code-panel active"><pre><span class="kw">from</span> toolrate <span class="kw">import</span> ToolRate, guard
 
 client = ToolRate(<span class="str">"nf_live_..."</span>)
 
@@ -1059,8 +1169,7 @@ result = <span class="fn">guard</span>(client, <span class="str">"https://api.st
                    (<span class="str">"https://api.lemonsqueezy.com/v1/checkouts"</span>,
                     <span class="kw">lambda</span>: lemon.create_checkout(...)),
                ])</pre></div>
-    <div id="tab-typescript" class="code-panel"><pre><span class="cm">// Install: npm install toolrate  (Node 18+)</span>
-<span class="kw">import</span> { ToolRate } <span class="kw">from</span> <span class="str">"toolrate"</span>;
+    <div id="tab-typescript" class="code-panel"><pre><span class="kw">import</span> { ToolRate } <span class="kw">from</span> <span class="str">"toolrate"</span>;
 
 <span class="kw">const</span> client = <span class="kw">new</span> <span class="fn">ToolRate</span>(<span class="str">"nf_live_..."</span>);
 

@@ -338,6 +338,97 @@ __SITE_HEADER_CSS__
 }
 .code-panel pre::-webkit-scrollbar-thumb:hover { background: #2f3448; }
 
+/* Install section */
+.demo-install {
+  max-width: 980px;
+  margin: 4rem auto 0;
+  padding: 0 1rem;
+}
+.demo-install h2 {
+  font-size: clamp(1.35rem, 2.5vw, 1.8rem);
+  color: var(--text-bright);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.4rem;
+}
+.demo-install .lead {
+  color: var(--text-dim);
+  font-size: 0.92rem;
+  margin-bottom: 1.5rem;
+  max-width: 640px;
+  line-height: 1.55;
+}
+.demo-install-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+  margin-bottom: 1rem;
+}
+.demo-install-card {
+  background: var(--surface);
+  border: 1px solid var(--border-bright);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem 1.4rem;
+}
+.demo-install-card.recommended {
+  border-color: rgba(10, 149, 253, 0.38);
+  box-shadow: 0 0 0 1px rgba(10, 149, 253, 0.18), 0 0 40px rgba(10, 149, 253, 0.08);
+}
+.demo-install-card .label {
+  font-family: var(--sans);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 0.2rem;
+}
+.demo-install-card.recommended .label { color: var(--brand); }
+.demo-install-card .title {
+  font-family: var(--sans);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 0.85rem;
+}
+.demo-install-card pre {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  line-height: 1.7;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  padding: 0 !important;
+  background: transparent !important;
+  max-height: none !important;
+  overflow: visible !important;
+}
+.demo-install-card pre .cmt {
+  color: var(--text-dim);
+  font-style: italic;
+}
+.demo-install-note {
+  padding: 0.9rem 1.15rem;
+  background: rgba(240, 197, 59, 0.05);
+  border-left: 3px solid rgba(240, 197, 59, 0.5);
+  border-radius: 4px;
+  color: var(--text);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  max-width: 980px;
+  margin: 0 auto;
+}
+.demo-install-note strong { color: #f0c53b; }
+.demo-install-note code {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--text-bright);
+  background: rgba(255,255,255,0.04);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
 /* Trust line */
 .trust-line {
   max-width: 980px;
@@ -427,6 +518,8 @@ __SITE_HEADER_CSS__
   .demo-stats-cell { border-right: none; border-bottom: 1px solid var(--border); }
   .demo-stats-cell:last-child { border-bottom: none; }
   .code-section { padding: 3rem 0 1rem; }
+  .demo-install { margin: 3rem auto 0; }
+  .demo-install-grid { grid-template-columns: 1fr; }
   .code-head { flex-direction: column; align-items: flex-start; }
   .code-panel pre { font-size: 0.74rem; max-height: 60vh; }
   .code-panel-filename { font-size: 0.7rem; }
@@ -510,8 +603,32 @@ __SITE_HEADER_HTML__
     </div>
 
     <p class="trust-line">
-      Based on <strong>1,284 real agent reports</strong> · Hosted in Germany · <strong>uv add toolrate</strong>
+      Based on <strong>1,284 real agent reports</strong> · Hosted in Germany · <strong>zero dependencies to run this demo</strong>
     </p>
+  </section>
+
+  <section class="demo-install">
+    <h2>Install ToolRate on your machine</h2>
+    <p class="lead">Beginner-friendly in two commands. The SDK is what the demo above uses under the hood — drop it into any project.</p>
+    <div class="demo-install-grid">
+      <div class="demo-install-card recommended">
+        <div class="label">Recommended</div>
+        <div class="title">Modern &amp; fastest</div>
+        <pre><span class="cmt"># Install uv (one-time)</span>
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+<span class="cmt"># Add ToolRate to your project</span>
+uv add toolrate</pre>
+      </div>
+      <div class="demo-install-card">
+        <div class="label">Alternative</div>
+        <div class="title">Without uv</div>
+        <pre>python3 -m venv .venv
+source .venv/bin/activate
+pip install toolrate</pre>
+      </div>
+    </div>
+    <p class="demo-install-note"><strong>Note:</strong> If you see a <code>PEP 668</code> &ldquo;externally-managed-environment&rdquo; error with plain <code>pip</code>, that&rsquo;s because of Homebrew Python. Use one of the methods above instead. TypeScript: <code>npm install toolrate</code> (Node 18+).</p>
   </section>
 
   <section class="demo-cta">

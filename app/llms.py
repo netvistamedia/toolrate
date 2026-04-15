@@ -21,9 +21,10 @@ ToolRate delivers real-time reliability scores, failure risk, jurisdiction intel
 
 ## SDKs
 
-- Python (recommended): `uv add toolrate` — uses [uv](https://github.com/astral-sh/uv), the modern Python package manager
-- Python (alternative): `python3 -m venv .venv && source .venv/bin/activate && pip install toolrate`
-- TypeScript: `npm install toolrate`
+- Python (recommended — modern & fastest): install [uv](https://github.com/astral-sh/uv) with `curl -LsSf https://astral.sh/uv/install.sh | sh`, then `uv add toolrate`
+- Python (alternative — without uv): `python3 -m venv .venv && source .venv/bin/activate && pip install toolrate`
+- TypeScript (Node 18+): `npm install toolrate`
+- Note: a bare `pip install toolrate` triggers PEP 668 "externally-managed-environment" on macOS Homebrew and recent Linux distros — use one of the two Python methods above instead.
 
 ## API Base URL
 
@@ -83,23 +84,25 @@ subscription, scales to zero, and the first 100 assessments every day are on us.
 
 ### Python
 
-We recommend [uv](https://github.com/astral-sh/uv) — fast, modern, and avoids the `externally-managed-environment` errors plain `pip` raises on macOS Homebrew and recent Linux distros.
+**Recommended (modern & fastest):**
 
 ```bash
-# One-time: install uv
+# Install uv (one-time)
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Add ToolRate to your project
 uv add toolrate
 ```
 
-Or, with `pip` inside a virtual environment:
+**Alternative (without uv):**
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install toolrate
 ```
+
+> **Note:** If you see a `PEP 668` "externally-managed-environment" error with plain `pip`, that is because of Homebrew Python on macOS or recent Linux distros. Use one of the methods above instead.
 
 ```python
 from toolrate import ToolRate, guard
@@ -124,6 +127,8 @@ result = guard(client, "https://api.stripe.com/v1/charges",
 ```bash
 npm install toolrate
 ```
+
+Requires Node 18+ (uses native `fetch`).
 
 ```typescript
 import { ToolRate } from "toolrate";

@@ -4,12 +4,19 @@ ToolRate + LangChain Integration Example
 An agent that uses ToolRate to check tool reliability before calling tools,
 and reports outcomes back to build community intelligence.
 
-Install (we recommend uv — https://github.com/astral-sh/uv):
+Install ToolRate + LangChain:
+
+  Recommended (modern & fastest):
+    curl -LsSf https://astral.sh/uv/install.sh | sh   # one-time
     uv add toolrate langchain langchain-openai langchain-community
 
-Or with pip inside a virtual environment:
-    python3 -m venv .venv && source .venv/bin/activate
+  Alternative (without uv):
+    python3 -m venv .venv
+    source .venv/bin/activate
     pip install toolrate langchain langchain-openai langchain-community
+
+  Note: a bare `pip install` triggers PEP 668 "externally-managed-environment"
+  on macOS Homebrew and recent Linux distros — use one of the methods above.
 
 Set environment variables:
     export TOOLRATE_API_KEY="nf_live_..."

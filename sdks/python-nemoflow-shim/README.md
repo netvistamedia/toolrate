@@ -6,9 +6,25 @@ from it, while emitting a `DeprecationWarning` on import.
 
 ## Migration
 
+**Recommended (modern & fastest):**
+
 ```bash
+# Install uv (one-time)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Add ToolRate to your project
+uv add toolrate
+```
+
+**Alternative (without uv):**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
 pip install toolrate
 ```
+
+> **Note:** If you see a `PEP 668` "externally-managed-environment" error with plain `pip`, that is because of Homebrew Python. Use one of the methods above instead.
 
 ```python
 # Old
