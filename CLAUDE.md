@@ -32,6 +32,10 @@ ssh nemoflow@178.104.171.216 "cd ~/nemoflow && docker compose exec app python -m
 # Import LLM assessments
 ssh nemoflow@178.104.171.216 "cd ~/nemoflow && docker compose exec app python -m app.import_assessments"
 
+# Import pricing metadata (manual seeds + optional LLM fallback for the rest)
+ssh nemoflow@178.104.171.216 "cd ~/nemoflow && docker compose exec app python -m app.import_pricing"
+ssh nemoflow@178.104.171.216 "cd ~/nemoflow && docker compose exec app python -m app.import_pricing --llm --limit 100"
+
 # View logs
 ssh nemoflow@178.104.171.216 "cd ~/nemoflow && docker compose logs app --tail 50"
 
@@ -71,6 +75,7 @@ app/
   cli.py               — CLI for key creation
   seed.py              — Seed DB with popular tools
   import_assessments.py — Import LLM assessment JSON files
+  import_pricing.py    — Manual pricing seeds (20 tools) + LLM gather path
   api/v1/
     assess.py          — POST /v1/assess
     report.py          — POST /v1/report
@@ -100,6 +105,15 @@ sdks/
 3. Confidence based on effective sample size
 4. Failure risk with 24h trend penalty
 5. Error category aggregation for pitfalls
+6. Cost-aware augmentation in `scoring.finalize_response` — normalizes effective
+   $/call against the category median and returns a `cost_adjusted_score` using
+   one of three strategies (reliability_first 0.80/0.20, balanced 0.55/0.45,
+   cost_first 0.25/0.75). Cached responses are re-augmented per request so
+   budget math always reflects the current caller's `max_price_per_call`,
+   `max_monthly_budget`, `expected_calls_per_month`, and `budget_strategy`.
+   Over-budget alternatives are flagged `within_budget: false`, never filtered.
+   Pricing metadata lives on `tools.pricing` (JSON), with an append-only
+   `tool_pricing_history` audit table. See `app/import_pricing.py`.
 
 ## Key design decisions
 
