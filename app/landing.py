@@ -9,27 +9,42 @@ _LANDING_TEMPLATE = r"""<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ToolRate — Real advice for every tool your agent considers</title>
 <meta name="description" content="ToolRate delivers objective, crowdsourced reliability ratings and actionable intelligence from thousands of real agent executions. Know before you call. Choose correctly the first time.">
+<meta name="author" content="ToolRate">
+<meta name="robots" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+<meta name="googlebot" content="index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1">
+<meta property="og:site_name" content="ToolRate">
+<meta property="og:locale" content="en_US">
 <meta property="og:title" content="ToolRate — Real advice for every tool your agent considers">
 <meta property="og:description" content="Objective, crowdsourced reliability ratings and actionable intelligence for AI agents — based on thousands of real agent executions across production workloads. Know before you call.">
 <meta property="og:image" content="https://toolrate.ai/toolrate-og.jpg">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="720">
 <meta property="og:image:alt" content="ToolRate — stop AI agents from failing in production. Reliability scores, smart fallbacks, powered by real agent runs.">
-<meta property="og:url" content="https://toolrate.ai">
+<meta property="og:url" content="https://toolrate.ai/">
 <meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="ToolRate — Real advice for every tool your agent considers">
 <meta name="twitter:description" content="Objective, crowdsourced reliability ratings and actionable intelligence from thousands of real agent executions. Know before you call.">
 <meta name="twitter:image" content="https://toolrate.ai/toolrate-og.jpg">
 <meta name="twitter:image:alt" content="ToolRate — stop AI agents from failing in production.">
-<link rel="canonical" href="https://toolrate.ai">
+<link rel="canonical" href="https://toolrate.ai/">
+<link rel="alternate" hreflang="en" href="https://toolrate.ai/">
+<link rel="alternate" hreflang="x-default" href="https://toolrate.ai/">
+<link rel="alternate" type="text/markdown" title="llms.txt — LLM-readable overview (41 languages)" href="https://toolrate.ai/llms.txt">
+<link rel="alternate" type="text/markdown" title="llms-full.txt — LLM-readable full reference" href="https://toolrate.ai/llms-full.txt">
 <link rel="icon" href="https://toolrate.ai/toolrate-favicon.png" type="image/png">
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "ToolRate",
-  "url": "https://toolrate.ai",
+  "url": "https://toolrate.ai/",
+  "sameAs": [
+    "https://api.toolrate.ai/docs",
+    "https://github.com/netvistamedia/toolrate",
+    "https://pypi.org/project/toolrate/",
+    "https://www.npmjs.com/package/toolrate"
+  ],
   "description": "Reliability oracle for AI agents. Objective, crowdsourced reliability ratings and actionable intelligence for every tool your agent considers — based on thousands of real agent executions across production workloads. Real-time reliability scores, failure risk, confidence intervals, jurisdiction intelligence, and auto-fallback in one API call.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Any",

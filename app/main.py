@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 mimetypes.add_type("image/webp", ".webp")
 
 import redis.asyncio as aioredis
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
@@ -118,6 +118,110 @@ app = FastAPI(
         {"name": "Billing", "description": "Upgrade to Pro tier via Stripe"},
     ],
 )
+
+# ── Duplicate-content guard ───────────────────────────────────────────────
+# Both `toolrate.ai` (marketing + content) and `api.toolrate.ai` (API +
+# developer docs) resolve to the same FastAPI app, so every path would be
+# reachable under both hostnames and Google + LLM crawlers would see byte-
+# for-byte duplicates. The middleware below:
+#   1. 301-redirects marketing paths from the api subdomain to apex,
+#   2. 301-redirects `api.toolrate.ai/` → `api.toolrate.ai/docs` (developers
+#      expect Swagger UI on the API host, not a marketing landing page),
+#   3. serves api-only paths on the apex with a noindex header + HTTP
+#      `Link: rel="canonical"` pointing at `api.toolrate.ai/<path>` so
+#      bookmarks still work but search engines consolidate on the api host,
+#   4. normalises `www.toolrate.ai` → `toolrate.ai`.
+APEX_HOST = "toolrate.ai"
+API_HOST = "api.toolrate.ai"
+
+# Paths that live on the apex only. If requested on the api host, 301 them
+# to apex. Root `/` is handled separately (redirects to /docs instead).
+_APEX_ONLY_PATHS: frozenset[str] = frozenset({
+    "/demo", "/pricing", "/register", "/privacy",
+    "/dashboard", "/me", "/upgrade",
+    "/llms.txt", "/llms-full.txt",
+    "/sitemap.xml", "/robots.txt",
+    "/favicon.ico",
+    "/toolrate-favicon.png", "/toolrate-logo.webp", "/toolrate-og.jpg",
+})
+_APEX_ONLY_PREFIXES: tuple[str, ...] = (
+    "/billing/",
+    "/llms/",
+    "/static/",
+)
+
+# Paths that are canonically served on `api.toolrate.ai`. On the apex they
+# still work (no redirect, so bookmarks don't break), but the response
+# carries noindex + a canonical header pointing at the api host.
+_API_ONLY_PATHS: frozenset[str] = frozenset({
+    "/docs", "/redoc", "/openapi.json", "/docs/oauth2-redirect",
+})
+_API_ONLY_PREFIXES: tuple[str, ...] = ("/v1/",)
+
+
+def _is_apex_only(path: str) -> bool:
+    return path in _APEX_ONLY_PATHS or any(path.startswith(p) for p in _APEX_ONLY_PREFIXES)
+
+
+def _is_api_only(path: str) -> bool:
+    return path in _API_ONLY_PATHS or any(path.startswith(p) for p in _API_ONLY_PREFIXES)
+
+
+def _with_query(url: str, query: str) -> str:
+    return f"{url}?{query}" if query else url
+
+
+@app.middleware("http")
+async def host_router(request: Request, call_next):
+    host = (request.headers.get("host") or "").lower().split(":", 1)[0]
+    path = request.url.path
+    query = request.url.query
+
+    # www.toolrate.ai → toolrate.ai (standard apex redirect)
+    if host == f"www.{APEX_HOST}":
+        return RedirectResponse(
+            url=_with_query(f"https://{APEX_HOST}{path}", query),
+            status_code=301,
+        )
+
+    if host == API_HOST:
+        # Developers hitting the API host should land on Swagger, not
+        # the marketing homepage.
+        if path == "/":
+            return RedirectResponse(
+                url=f"https://{API_HOST}/docs",
+                status_code=301,
+            )
+        # Marketing / content paths have no business on the API host.
+        if _is_apex_only(path):
+            return RedirectResponse(
+                url=_with_query(f"https://{APEX_HOST}{path}", query),
+                status_code=301,
+            )
+        # Otherwise let the request through (API endpoints, /docs, /redoc,
+        # /openapi.json, /health*). The response is canonical for the
+        # api host — no extra headers needed.
+        return await call_next(request)
+
+    if host == APEX_HOST:
+        # API-only paths on the apex: serve them (bookmarks, SDK fallbacks)
+        # but tell search engines they are not the canonical.
+        if _is_api_only(path):
+            response = await call_next(request)
+            response.headers["X-Robots-Tag"] = "noindex, follow"
+            canonical = f'<https://{API_HOST}{path}>; rel="canonical"'
+            existing_link = response.headers.get("Link")
+            response.headers["Link"] = (
+                f"{existing_link}, {canonical}" if existing_link else canonical
+            )
+            return response
+        # Apex-canonical paths — nothing special to do, handler controls
+        # its own canonical (`<link rel="canonical">` in the HTML).
+        return await call_next(request)
+
+    # Unknown host (direct IP hit, staging, localhost, etc.) — pass through.
+    return await call_next(request)
+
 
 # CORS — restrict to own domains
 app.add_middleware(
@@ -696,10 +800,60 @@ async def llms_full_txt(db: Db, redis: RedisClient):
     return await _render_llms_doc(LLMS_FULL_TXT, db, redis)
 
 
+@app.api_route(
+    "/llms/toolrate-{lang}.md",
+    methods=["GET", "HEAD"],
+    include_in_schema=False,
+)
+async def llms_translation(lang: str):
+    """Serve a single-language ToolRate overview (llmstxt.org multilingual).
+
+    Sets `Content-Language` to the correct BCP 47 tag, emits HTTP `Link`
+    headers with `rel=alternate; hreflang=<code>` for every sibling
+    translation plus `rel=canonical` pointing at the top-level `/llms.txt`.
+    The `lang` parameter is validated against the `TRANSLATIONS` whitelist,
+    so the path cannot be used for directory traversal.
+    """
+    from app.llms import TRANSLATIONS, load_translation
+
+    content = load_translation(lang)
+    if content is None:
+        raise HTTPException(status_code=404, detail="Translation not found")
+
+    alternates = [
+        f'<https://toolrate.ai/llms/toolrate-{code}.md>; rel="alternate"; hreflang="{code}"'
+        for code in TRANSLATIONS
+    ]
+    alternates.append('<https://toolrate.ai/llms.txt>; rel="alternate"; hreflang="x-default"')
+    alternates.append('<https://toolrate.ai/llms.txt>; rel="canonical"')
+
+    headers = {
+        "Content-Language": lang,
+        "Link": ", ".join(alternates),
+        "Cache-Control": "public, max-age=3600, stale-while-revalidate=86400",
+        "X-Robots-Tag": "index, follow",
+    }
+    return Response(
+        content=content,
+        media_type="text/markdown; charset=utf-8",
+        headers=headers,
+    )
+
+
 @app.api_route("/robots.txt", methods=["GET", "HEAD"], include_in_schema=False, response_class=PlainTextResponse)
-async def robots_txt():
-    from app.llms import ROBOTS_TXT
-    return ROBOTS_TXT
+async def robots_txt(request: Request):
+    """Host-aware robots.txt.
+
+    `toolrate.ai` (apex) lists the full site, points at the sitemap, and
+    only disallows the JSON API endpoints. `api.toolrate.ai` only exposes
+    the developer-facing doc surfaces (`/docs`, `/redoc`, `/openapi.json`),
+    disallows everything else, and intentionally omits a `Sitemap:` line
+    so crawlers pick up the single canonical sitemap from the apex.
+    """
+    from app.llms import ROBOTS_TXT_APEX, ROBOTS_TXT_API
+
+    host = (request.headers.get("host") or "").lower().split(":", 1)[0]
+    return ROBOTS_TXT_API if host == API_HOST else ROBOTS_TXT_APEX
 
 
 @app.api_route("/sitemap.xml", methods=["GET", "HEAD"], include_in_schema=False)
@@ -708,9 +862,36 @@ async def sitemap_xml():
     # text/plain as "probably not a sitemap" and skip it. PlainTextResponse
     # was silently breaking discoverability of every page listed here.
     from datetime import datetime, timezone
+
+    from app.llms import TRANSLATIONS
+
     lastmod = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    # Build hreflang alternates block — reused for every translation entry
+    # so that search engines and LLM crawlers understand the cross-language
+    # relationships (reciprocal hreflang is a Google hard requirement).
+    alt_lines = "".join(
+        f'\n    <xhtml:link rel="alternate" hreflang="{code}" '
+        f'href="https://toolrate.ai/llms/toolrate-{code}.md"/>'
+        for code in TRANSLATIONS
+    )
+    alt_lines += (
+        '\n    <xhtml:link rel="alternate" hreflang="x-default" '
+        'href="https://toolrate.ai/llms.txt"/>'
+    )
+
+    translation_entries = "\n".join(
+        f"""  <url>
+    <loc>https://toolrate.ai/llms/toolrate-{code}.md</loc>
+    <lastmod>{lastmod}</lastmod>
+    <priority>0.6</priority>{alt_lines}
+  </url>"""
+        for code in TRANSLATIONS
+    )
+
     xml = f"""<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url><loc>https://toolrate.ai/</loc><lastmod>{lastmod}</lastmod><priority>1.0</priority></url>
   <url><loc>https://toolrate.ai/demo</loc><lastmod>{lastmod}</lastmod><priority>0.95</priority></url>
   <url><loc>https://toolrate.ai/pricing</loc><lastmod>{lastmod}</lastmod><priority>0.9</priority></url>
@@ -720,6 +901,7 @@ async def sitemap_xml():
   <url><loc>https://toolrate.ai/llms-full.txt</loc><lastmod>{lastmod}</lastmod><priority>0.7</priority></url>
   <url><loc>https://api.toolrate.ai/docs</loc><lastmod>{lastmod}</lastmod><priority>0.9</priority></url>
   <url><loc>https://api.toolrate.ai/redoc</loc><lastmod>{lastmod}</lastmod><priority>0.9</priority></url>
+{translation_entries}
 </urlset>"""
     return Response(content=xml, media_type="application/xml")
 

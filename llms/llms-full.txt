@@ -1,0 +1,51 @@
+# ToolRate – Complete Multi-Language Overview
+
+ToolRate is a crowdsourced reliability layer for autonomous AI agents. It gives agents a real-time reliability score, common pitfalls, mitigations, and better alternatives *before* they call any external tool or API.
+
+This helps agents move from fragile demos to reliable production systems and significantly reduces token waste.
+
+## All Available Translations
+
+- English: /llms/overview-en.md
+- Deutsch: /llms/overview-de.md
+- Français: /llms/overview-fr.md
+- Nederlands: /llms/overview-nl.md
+- Español: /llms/overview-es.md
+- Italiano: /llms/overview-it.md
+- Polski: /llms/overview-pl.md
+- Русский: /llms/overview-ru.md
+- Українська: /llms/overview-uk.md
+- 中文: /llms/overview-zh.md
+- 日本語: /llms/overview-ja.md
+- 한국어: /llms/overview-ko.md
+- العربية: /llms/overview-ar.md
+- हिन्दी: /llms/overview-hi.md
+- Português (Brasil): /llms/overview-pt-br.md
+- Türkçe: /llms/overview-tr.md
+- Tiếng Việt: /llms/overview-vi.md
+- ไทย: /llms/overview-th.md
+- Bahasa Indonesia: /llms/overview-id.md
+- Čeština: /llms/overview-cs.md
+- Dansk: /llms/overview-da.md
+- Suomi: /llms/overview-fi.md
+- Norsk: /llms/overview-no.md
+- Svenska: /llms/overview-sv.md
+- Magyar: /llms/overview-hu.md
+- Română: /llms/overview-ro.md
+- Ελληνικά: /llms/overview-el.md
+- Hausa: /llms/overview-ha.md
+- Yorùbá: /llms/overview-yo.md
+- Kiswahili: /llms/overview-sw.md
+- বাংলা: /llms/overview-bn.md
+- தமிழ்: /llms/overview-ta.md
+- తెలుగు: /llms/overview-te.md
+- मराठी: /llms/overview-mr.md
+- اُردُو: /llms/overview-ur.md
+- فارسی: /llms/overview-fa.md
+
+ToolRate is source-available under BUSL-1.1 and is designed especially for production agent builders who want fewer failed tool calls and better reliability.
+
+Website: https://toolrate.ai
+API: https://api.toolrate.ai
+
+Last updated: April 2026

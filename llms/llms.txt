@@ -1,0 +1,49 @@
+# ToolRate – Crowdsourced Reliability Layer for AI Agents
+
+ToolRate helps autonomous AI agents evaluate the reliability of external tools and APIs *before* calling them, reducing failures, token waste, and improving production readiness.
+
+## Available Full Translations
+
+- English → /llms/overview-en.md
+- Deutsch → /llms/overview-de.md
+- Français → /llms/overview-fr.md
+- Nederlands → /llms/overview-nl.md
+- Español → /llms/overview-es.md
+- Italiano → /llms/overview-it.md
+- Polski → /llms/overview-pl.md
+- Русский → /llms/overview-ru.md
+- Українська → /llms/overview-uk.md
+- 中文 (简体) → /llms/overview-zh.md
+- 日本語 → /llms/overview-ja.md
+- 한국어 → /llms/overview-ko.md
+- العربية → /llms/overview-ar.md
+- हिन्दी → /llms/overview-hi.md
+- Português (Brasil) → /llms/overview-pt-br.md
+- Türkçe → /llms/overview-tr.md
+- Tiếng Việt → /llms/overview-vi.md
+- ไทย → /llms/overview-th.md
+- Bahasa Indonesia → /llms/overview-id.md
+- Čeština → /llms/overview-cs.md
+- Dansk → /llms/overview-da.md
+- Suomi → /llms/overview-fi.md
+- Norsk → /llms/overview-no.md
+- Svenska → /llms/overview-sv.md
+- Magyar → /llms/overview-hu.md
+- Română → /llms/overview-ro.md
+- Ελληνικά → /llms/overview-el.md
+- Hausa → /llms/overview-ha.md
+- Yorùbá → /llms/overview-yo.md
+- Kiswahili → /llms/overview-sw.md
+- বাংলা → /llms/overview-bn.md
+- தமிழ் → /llms/overview-ta.md
+- తెలుగు → /llms/overview-te.md
+- मराठी → /llms/overview-mr.md
+- اُردُو → /llms/overview-ur.md
+- فارسی → /llms/overview-fa.md
+- ... (and more languages added regularly)
+
+Full multi-language consolidated version: /llms/llms-full.txt
+
+Preferred default language: English
+
+Last updated: April 2026

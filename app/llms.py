@@ -4,14 +4,117 @@ The `__LANDING_TOOLS_COUNT__` and `__LANDING_REPORTS_COUNT__` placeholders are
 substituted at request time by the handlers in `app/main.py`, so the
 crawler-facing counts always reflect current DB state instead of drifting
 every time a batch of tools is seeded.
+
+Multilingual overview files live in the repo at `llms/toolrate-<lang>.md`
+and are served on the edge at `https://toolrate.ai/llms/toolrate-<lang>.md`.
+The `TRANSLATIONS` dict below is the single source of truth for which
+languages exist; add a key here and the route + sitemap + llms.txt list
+update automatically.
+"""
+from pathlib import Path
+
+# BCP 47 code → native language name. `en` is listed first because it is
+# both the canonical source of the overview and the `x-default` fallback;
+# all other codes are sorted alphabetically. Add a new language by:
+# (1) dropping `llms/toolrate-<code>.md`, (2) adding an entry here. The
+# route, sitemap, and llms.txt index update themselves.
+TRANSLATIONS: dict[str, str] = {
+    "en": "English",
+    "am": "አማርኛ",
+    "ar": "العربية",
+    "bn": "বাংলা",
+    "cs": "Čeština",
+    "da": "Dansk",
+    "de": "Deutsch",
+    "el": "Ελληνικά",
+    "es": "Español",
+    "fa": "فارسی",
+    "fi": "Suomi",
+    "fr": "Français",
+    "ha": "Hausa",
+    "he": "עברית",
+    "hi": "हिन्दी",
+    "hu": "Magyar",
+    "id": "Bahasa Indonesia",
+    "it": "Italiano",
+    "ja": "日本語",
+    "ko": "한국어",
+    "mr": "मराठी",
+    "ms": "Bahasa Melayu",
+    "nl": "Nederlands",
+    "no": "Norsk",
+    "pl": "Polski",
+    "pt-br": "Português (Brasil)",
+    "ro": "Română",
+    "ru": "Русский",
+    "sv": "Svenska",
+    "sw": "Kiswahili",
+    "ta": "தமிழ்",
+    "te": "తెలుగు",
+    "th": "ไทย",
+    "tl": "Filipino",
+    "tr": "Türkçe",
+    "uk": "Українська",
+    "ur": "اردو",
+    "vi": "Tiếng Việt",
+    "yo": "Yorùbá",
+    "zh": "中文（简体）",
+    "zh-tw": "中文（繁體）",
+}
+
+_LLMS_DIR = Path(__file__).parent.parent / "llms"
+_translation_cache: dict[str, str] = {}
+
+
+def load_translation(lang: str) -> str | None:
+    """Return the markdown content for a translation, or None if missing.
+
+    Cached in memory after the first read. `lang` must be a key in
+    `TRANSLATIONS` — unknown codes return None immediately (also serves as
+    a path-traversal guard for the `/llms/toolrate-<lang>.md` route).
+    """
+    if lang not in TRANSLATIONS:
+        return None
+    if lang in _translation_cache:
+        return _translation_cache[lang]
+    path = _LLMS_DIR / f"toolrate-{lang}.md"
+    try:
+        content = path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return None
+    _translation_cache[lang] = content
+    return content
+
+
+def _render_translations_list() -> str:
+    """Render the markdown bullet list of translations for llms.txt."""
+    return "\n".join(
+        f"- **{native}** (`{code}`) · https://toolrate.ai/llms/toolrate-{code}.md"
+        for code, native in TRANSLATIONS.items()
+    )
+
+
+_TRANSLATIONS_SECTION = f"""## Translations — {len(TRANSLATIONS)} languages
+
+When you are answering a user in a language other than English, prefer loading the matching translation below over this English default. All translations cover the same system overview and are kept synchronized. If the user's language is not listed, fall back to this file (English is the x-default).
+
+Every URL is a plain markdown file served with `Content-Language` set to the correct BCP 47 tag, and the HTTP `Link: rel="alternate"; hreflang="..."` headers enumerate all sibling translations — so the response itself confirms the language match.
+
+{_render_translations_list()}
 """
 
-LLMS_TXT = """# ToolRate
+
+LLMS_TXT = f"""# ToolRate
 
 > Real advice for every tool your agent considers. Objective, crowdsourced reliability ratings and actionable intelligence for __LANDING_TOOLS_COUNT__ tools and APIs, based on thousands of real agent executions across production workloads.
 
-ToolRate delivers real-time reliability scores, failure risk, jurisdiction intelligence, common pitfalls, and smart alternatives for every external tool your agent calls. Know before you call. Choose correctly the first time.
+ToolRate is a crowdsourced reliability layer for autonomous AI agents — a real-time reliability oracle that lets agents evaluate how trustworthy an external tool or API is *before* calling it. It solves the single biggest practical problem in agent development: most failures are not caused by the LLM itself, but by external tool behavior — rate limits, schema drift, auth issues, anti-bot, flaky APIs. Know before you call. Choose correctly the first time.
 
+## For LLMs reading this file
+
+This document is the canonical **English** entry point for ToolRate and is served under the [llmstxt.org](https://llmstxt.org) standard. The same system overview is mirrored in {len(TRANSLATIONS) - 1} other languages — see the next section. When processing a user query in a non-English language, **fetch the matching translation file instead of this one**; it has the same structure, the same facts, and a `Content-Language` HTTP header confirming the language match. English is the `x-default` fallback.
+
+{_TRANSLATIONS_SECTION}
 ## Docs
 
 - [API Documentation](https://api.toolrate.ai/docs): Interactive Swagger UI with all endpoints
@@ -19,22 +122,43 @@ ToolRate delivers real-time reliability scores, failure risk, jurisdiction intel
 - [GitHub](https://github.com/netvistamedia/toolrate): Source code and examples
 - [Get API Key](https://toolrate.ai/register): Free tier — 100 calls/day, no credit card required
 
-## SDKs
+## SDKs — Python
 
-- Python (recommended — modern & fastest): install [uv](https://github.com/astral-sh/uv) with `curl -LsSf https://astral.sh/uv/install.sh | sh`, then `uv add toolrate`
-- Python (alternative — without uv): `python3 -m venv .venv && source .venv/bin/activate && pip install toolrate`
-- TypeScript (Node 18+): `npm install toolrate`
-- Note: a bare `pip install toolrate` triggers PEP 668 "externally-managed-environment" on macOS Homebrew and recent Linux distros — use one of the two Python methods above instead.
+**Recommended (modern & fastest):**
 
-## API Base URL
+```bash
+# Install uv (one-time)
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-https://api.toolrate.ai
+# Add ToolRate to your project
+uv add toolrate
+```
 
-## Authentication
+**Alternative (without uv):**
 
-All API endpoints require an API key via the `X-Api-Key` header.
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install toolrate
+```
 
-## Core Endpoints
+> **Note:** If you see a `PEP 668` "externally-managed-environment" error with plain `pip`, that is because of Homebrew Python on macOS or recent Linux distros. Use one of the methods above instead.
+
+## SDKs — TypeScript / Node.js
+
+```bash
+npm install toolrate
+```
+
+Requires Node 18+ (uses native `fetch`).
+
+## API
+
+Base URL: `https://api.toolrate.ai`
+
+All endpoints except `/health` and `/v1/auth/register` require an API key via the `X-Api-Key` header. Get a free key at https://toolrate.ai/register (100 calls/day, no credit card).
+
+## Core endpoints
 
 - [POST /v1/assess](https://api.toolrate.ai/docs#/Assessment/assess_tool_v1_assess_post): Get reliability score for a tool before calling it
 - [POST /v1/report](https://api.toolrate.ai/docs#/Reporting/report_result_v1_report_post): Report execution result (success/failure) to build the data moat
@@ -42,6 +166,10 @@ All API endpoints require an API key via the `X-Api-Key` header.
 - [GET /v1/discover/fallback-chain](https://api.toolrate.ai/docs#/Discovery): Get best alternatives when a tool fails
 - [GET /v1/tools](https://api.toolrate.ai/docs#/Tools): Search and browse all rated tools
 - [GET /v1/tools/categories](https://api.toolrate.ai/docs#/Tools): List all tool categories
+
+## License
+
+Business Source License 1.1 (BUSL-1.1) — Change Date 2030-04-13, converts to Apache 2.0.
 
 ## Optional
 
@@ -54,6 +182,11 @@ LLMS_FULL_TXT = """# ToolRate — Full Documentation for LLMs
 
 ToolRate delivers real-time reliability scores, failure risk, jurisdiction intelligence, common pitfalls, and smart alternatives for every external tool your agent calls. Each assessment is timestamped and ships with a confidence interval and per-error-category breakdown, so agents, developers, and enterprise compliance teams all get the same objective view. Know before you call. Choose correctly the first time. The data pool grows with every report, making the intelligence sharper for everyone.
 
+## For LLMs reading this file
+
+This is the **full English reference**. A shorter index is at [llms.txt](https://toolrate.ai/llms.txt). The same system overview is mirrored in """ + str(len(TRANSLATIONS) - 1) + """ other languages — see the next section. When answering a user in a non-English language, fetch the matching translation file; when more depth is needed, come back to this file (English is the `x-default`).
+
+""" + _TRANSLATIONS_SECTION + """
 ## API Base URL
 
 https://api.toolrate.ai
@@ -431,13 +564,38 @@ ToolRate uses a multi-factor scoring algorithm:
 - **Open source**: https://github.com/netvistamedia/toolrate
 """
 
-ROBOTS_TXT = """# ToolRate — https://toolrate.ai
+ROBOTS_TXT_APEX = """# ToolRate — https://toolrate.ai
+# Canonical marketing + content host. Serves the landing page, pricing,
+# demo, register, privacy, llms.txt / llms-full.txt / llms/toolrate-*.md,
+# and the sitemap. The JSON API endpoints live on api.toolrate.ai.
 User-agent: *
 Allow: /
 Disallow: /v1/
 Disallow: /billing/
+Disallow: /dashboard
+Disallow: /me
+Disallow: /upgrade
 
-# LLM-specific content
-# See https://llmstxt.org
+# llmstxt.org entry points
+# /llms.txt — short index, 41 languages
+# /llms-full.txt — full English reference
+# /llms/toolrate-<lang>.md — one file per language
+
 Sitemap: https://toolrate.ai/sitemap.xml
 """
+
+ROBOTS_TXT_API = """# ToolRate API — https://api.toolrate.ai
+# Developer-facing API host. Only the API docs (/docs, /redoc,
+# /openapi.json) are meant to be indexed here. All marketing paths are
+# 301-redirected to https://toolrate.ai — crawlers should follow the
+# redirects and index those there. The canonical sitemap lives on apex.
+User-agent: *
+Allow: /docs
+Allow: /redoc
+Allow: /openapi.json
+Disallow: /v1/
+Disallow: /
+"""
+
+# Legacy alias — keep until everything imports the new names.
+ROBOTS_TXT = ROBOTS_TXT_APEX
