@@ -204,9 +204,27 @@ async def create_checkout(
     return {"checkout_url": session.url, "session_id": session.id, "plan": plan}
 
 
+# 30 days is well past Stripe's maximum retry window (~3 days) and gives a
+# comfortable buffer for manual replays. 30 * 24 * 3600 = 2_592_000.
+_STRIPE_EVENT_DEDUP_TTL = 2_592_000
+
+
 @router.post("/billing/webhook", tags=["Billing"], include_in_schema=False)
-async def stripe_webhook(request: Request, db: Db):
-    """Handle Stripe webhook events for subscription lifecycle."""
+async def stripe_webhook(request: Request, db: Db, redis: RedisClient):
+    """Handle Stripe webhook events for subscription lifecycle.
+
+    Stripe retries every event on a 5xx or timeout, so the same `event["id"]`
+    will reach this endpoint multiple times during a flaky deploy or brief
+    outage. Without deduplication every retry re-ran the full handler chain
+    (double audit log rows, double tier transitions, double welcome emails).
+
+    The fix is an atomic `SET NX` on `stripe:events:seen:<event_id>` right
+    after signature verification. First delivery wins and proceeds; every
+    replay returns 200 + `deduplicated: True` without touching the database.
+    If the handler itself crashes we *remove* the marker before re-raising,
+    so Stripe's retry is allowed through — otherwise a transient DB error
+    on the first delivery would silently poison the event permanently.
+    """
     if not settings.stripe_secret_key or not settings.stripe_webhook_secret:
         raise HTTPException(503, "Billing is not configured")
 
@@ -220,18 +238,40 @@ async def stripe_webhook(request: Request, db: Db):
     except (ValueError, stripe.SignatureVerificationError):
         raise HTTPException(400, "Invalid webhook signature")
 
+    event_id = event["id"]
+    dedup_key = f"stripe:events:seen:{event_id}"
+
+    # Atomic "have we seen this before?" — `set(..., nx=True)` returns a truthy
+    # value only when the key was absent, which is exactly our first-seen
+    # signal. redis-py's bool return means: True on SET, None on NX rejection.
+    first_seen = await redis.set(dedup_key, "1", nx=True, ex=_STRIPE_EVENT_DEDUP_TTL)
+    if not first_seen:
+        logger.info(
+            "Stripe event %s (%s) already processed — skipping replay",
+            event_id,
+            event["type"],
+        )
+        return {"status": "ok", "deduplicated": True}
+
     event_type = event["type"]
     data = event["data"]["object"]
-    logger.info("Stripe event: %s", event_type)
+    logger.info("Stripe event: %s (id=%s)", event_type, event_id)
 
-    if event_type == "checkout.session.completed":
-        await _handle_checkout_completed(db, data)
-    elif event_type == "customer.subscription.updated":
-        await _handle_subscription_updated(db, data)
-    elif event_type == "customer.subscription.deleted":
-        await _handle_subscription_deleted(db, data)
-    elif event_type == "invoice.payment_failed":
-        await _handle_payment_failed(db, data)
+    try:
+        if event_type == "checkout.session.completed":
+            await _handle_checkout_completed(db, data)
+        elif event_type == "customer.subscription.updated":
+            await _handle_subscription_updated(db, data)
+        elif event_type == "customer.subscription.deleted":
+            await _handle_subscription_deleted(db, data)
+        elif event_type == "invoice.payment_failed":
+            await _handle_payment_failed(db, data)
+    except Exception:
+        # Handler crashed — release the dedup marker so Stripe's next retry
+        # can reach us. Without this, the retry would hit the `not first_seen`
+        # branch above and the event would be lost forever.
+        await redis.delete(dedup_key)
+        raise
 
     return {"status": "ok"}
 
