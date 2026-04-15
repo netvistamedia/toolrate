@@ -1,6 +1,8 @@
 import asyncio
 import hashlib
+import logging
 
+import stripe
 from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field, EmailStr
 from sqlalchemy import select, func, delete
@@ -14,6 +16,7 @@ from app.config import settings
 from app.services.audit import log_audit
 
 router = APIRouter()
+logger = logging.getLogger("nemoflow.auth")
 
 # Strong references to in-flight welcome-email tasks so asyncio's weak-ref
 # GC can't collect them mid-send. See the note in app/services/payg_meter.py.
@@ -221,15 +224,72 @@ async def delete_account(
     db: Db,
     api_key: AuthenticatedKey,
 ):
+    # Snapshot the billing attachment BEFORE we touch the key — we need it
+    # for the Stripe cancel call and for the audit trail.
+    had_subscription = bool(api_key.stripe_subscription_id)
+    subscription_id_to_cancel = api_key.stripe_subscription_id
+
+    canceled_subscription_id: str | None = None
+    stripe_cancel_error: str | None = None
+
+    # Best-effort Stripe subscription cancel. A Stripe outage or a 404 on an
+    # already-canceled subscription must NOT block the account delete — GDPR
+    # Article 17 requires us to honour the erasure request regardless of what
+    # the downstream billing provider does. The error is captured in the
+    # audit log so we can reconcile manually if needed.
+    if had_subscription and settings.stripe_secret_key:
+        try:
+            await asyncio.to_thread(
+                stripe.Subscription.cancel,
+                subscription_id_to_cancel,
+                api_key=settings.stripe_secret_key,
+            )
+            canceled_subscription_id = subscription_id_to_cancel
+            logger.info(
+                "Canceled Stripe subscription %s during account delete for key %s",
+                subscription_id_to_cancel, api_key.key_prefix,
+            )
+        except Exception as e:
+            stripe_cancel_error = str(e)[:200]
+            logger.warning(
+                "Stripe cancel failed during account delete for key %s "
+                "(sub=%s): %s — proceeding with delete regardless",
+                api_key.key_prefix, subscription_id_to_cancel, e,
+            )
+    elif had_subscription and not settings.stripe_secret_key:
+        stripe_cancel_error = "stripe_not_configured"
+        logger.warning(
+            "Account %s had subscription %s but Stripe is not configured "
+            "— subscription NOT canceled, manual reconciliation required",
+            api_key.key_prefix, subscription_id_to_cancel,
+        )
+
     # Delete webhooks
     await db.execute(delete(Webhook).where(Webhook.api_key_id == api_key.id))
 
-    # Deactivate the key (keep the record briefly for audit, but mark inactive)
+    # Deactivate the key and clear all billing attachments. Without clearing
+    # the Stripe IDs here the deleted account would still be reachable via
+    # future Stripe webhooks (subscription_updated on a ghost key), and
+    # the key→identity link would technically survive the erasure.
     api_key.is_active = False
     api_key.data_pool = None  # Remove email hash
+    api_key.stripe_customer_id = None
+    api_key.stripe_subscription_id = None
+    api_key.stripe_subscription_item_id = None
 
-    await log_audit(db, "account_deleted", actor_key_prefix=api_key.key_prefix,
-                    resource_type="api_key", resource_id=api_key.key_prefix)
+    audit_detail: dict = {"had_subscription": had_subscription}
+    if canceled_subscription_id:
+        audit_detail["stripe_subscription_canceled"] = canceled_subscription_id
+    if stripe_cancel_error:
+        audit_detail["stripe_cancel_error"] = stripe_cancel_error
+
+    await log_audit(
+        db, "account_deleted",
+        actor_key_prefix=api_key.key_prefix,
+        resource_type="api_key",
+        resource_id=api_key.key_prefix,
+        detail=audit_detail,
+    )
     await db.commit()
 
     return {
