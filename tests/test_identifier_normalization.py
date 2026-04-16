@@ -56,3 +56,38 @@ class TestNormalizeIdentifier:
         doesn't fragment a domain-level identifier."""
         assert normalize_identifier("https://example.com/") == "https://example.com"
         assert normalize_identifier("https://example.com") == "https://example.com"
+
+
+class TestIdnaNormalization:
+    """IDNA encoding folds visually-identical hostnames onto stable canonicals
+    so a Cyrillic 'ѕtripe.com' lookalike can't pretend to be 'stripe.com' in
+    discovery / fallback-chain queries."""
+
+    def test_pure_ascii_unchanged(self):
+        """ASCII hostnames stay byte-identical (no surprise punycode)."""
+        assert (
+            normalize_identifier("https://api.stripe.com/v1/charges")
+            == "https://api.stripe.com/v1/charges"
+        )
+
+    def test_cyrillic_lookalike_punycode(self):
+        """Cyrillic 'ѕ' (U+0455) host is encoded to its punycode form so the
+        canonical ID is unambiguous and visibly distinguishable from the
+        Latin spelling — different domain, different row, no silent merge."""
+        # 'ѕtripe.com' starts with U+0455 CYRILLIC SMALL LETTER DZE
+        result = normalize_identifier("https://\u0455tripe.com/v1/charges")
+        assert result.startswith("https://xn--")
+        assert "stripe" not in result.split("/")[2]  # host segment
+
+    def test_idna_idempotent(self):
+        """Re-normalizing the IDNA result returns the same string."""
+        once = normalize_identifier("https://\u0455tripe.com/v1/charges")
+        twice = normalize_identifier(once)
+        assert once == twice
+
+    def test_invalid_idna_falls_back_to_lowercased_original(self):
+        """Hosts that fail IDNA validation (e.g. underscore in label) still
+        normalize to a lowercased form rather than 500-ing the request."""
+        # Underscore is not legal in IDNA labels — fallback should handle it.
+        result = normalize_identifier("https://my_service.example.com/v1")
+        assert result == "https://my_service.example.com/v1"

@@ -24,6 +24,37 @@ from urllib.parse import urlsplit, urlunsplit
 _DEFAULT_PORTS: dict[str, int] = {"http": 80, "https": 443}
 
 
+def _to_idna(host: str) -> str:
+    """Best-effort IDNA-encode a hostname so visual lookalikes converge.
+
+    Without this, ``https://ѕtripe.com`` (Cyrillic 'ѕ', U+0455) and
+    ``https://stripe.com`` (Latin 's') become two separate rows, splitting
+    reports across visually-identical identifiers and enabling reputation
+    laundering through homoglyph domains. IDNA encoding folds them onto the
+    same punycode form (``xn--tripe-c0d.com`` vs ``stripe.com`` in this
+    case — different on purpose, since they are in fact different domains
+    that the registrar will route to different operators; the win is that
+    the canonical form is unambiguous).
+
+    ASCII hostnames and IP literals pass through unchanged. Anything that
+    fails IDNA validation falls back to the lowercased original — we'd
+    rather over-store than break a previously-working identifier.
+    """
+    if not host:
+        return host
+    # Already-ASCII fast path. Avoids the .encode('idna') round-trip cost
+    # for the 99% case (every English-speaking caller's URLs).
+    try:
+        host.encode("ascii")
+        return host.lower()
+    except UnicodeEncodeError:
+        pass
+    try:
+        return host.encode("idna").decode("ascii").lower()
+    except (UnicodeError, UnicodeDecodeError):
+        return host.lower()
+
+
 def normalize_identifier(raw: str | None) -> str:
     """Return the canonical form of a tool identifier.
 
@@ -46,7 +77,7 @@ def normalize_identifier(raw: str | None) -> str:
 
     parts = urlsplit(s)
     scheme = parts.scheme.lower()
-    host = parts.hostname.lower() if parts.hostname else ""
+    host = _to_idna(parts.hostname) if parts.hostname else ""
 
     netloc = host
     if parts.port is not None and _DEFAULT_PORTS.get(scheme) != parts.port:

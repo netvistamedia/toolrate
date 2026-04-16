@@ -13,6 +13,7 @@ actually reach for when stubbing SSRF outcomes in integration tests.
 """
 from __future__ import annotations
 
+import json
 import uuid
 from unittest.mock import AsyncMock, MagicMock
 
@@ -619,3 +620,74 @@ class TestAutoDeactivateNotifications:
         # The dispatch incremented failure_count to 11, so this delivery is
         # NOT the transition delivery (which lands at exactly AUTO_DEACTIVATE_AFTER).
         assert audits == []
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Anti-replay: every dispatch carries a unique event_id
+# ──────────────────────────────────────────────────────────────────────────
+
+
+class TestAntiReplay:
+    @pytest.mark.asyncio
+    async def test_dispatch_payload_carries_unique_event_id(
+        self, db_factory, monkeypatch
+    ):
+        """Receivers need a stable per-event identifier to dedupe Stripe-style
+        replays + dispatch retries. Each dispatch must mint its own UUID."""
+        # Spin up two webhooks listening to the same event so a single
+        # dispatch builds the payload once and sends it to both.
+        wh1 = await _create_webhook(db_factory, url="https://example.com/a")
+        wh2 = await _create_webhook(db_factory, url="https://example.com/b")
+        monkeypatch.setattr(webhook_dispatch, "is_public_url", lambda url: True)
+        monkeypatch.setattr(webhook_dispatch, "RETRY_BACKOFFS_SEC", (0, 0, 0))
+        mock_client = _mock_httpx_client(monkeypatch)
+
+        await webhook_dispatch.dispatch_score_change(
+            "https://api.stripe.com/v1/charges",
+            old_score=80.0, new_score=90.0,
+        )
+        # Wait for both fire-and-forget delivery tasks to settle.
+        # _pending_deliveries is a strong-ref set, so we can iterate a copy
+        # and await the in-flight ones safely.
+        for task in list(webhook_dispatch._pending_deliveries):
+            try:
+                await task
+            except Exception:
+                pass
+
+        # Both posts went out, both with the same payload (same dispatch).
+        assert mock_client.post.call_count == 2
+        bodies = [json.loads(c.kwargs["content"]) for c in mock_client.post.call_args_list]
+        for body in bodies:
+            assert "event_id" in body, "every webhook payload needs an event_id"
+            uuid.UUID(body["event_id"])  # raises if not a valid UUID
+        # Same dispatch event → same event_id across both webhook receivers.
+        # That lets a receiver registered on multiple URLs dedupe across
+        # them by (webhook_id, event_id).
+        assert bodies[0]["event_id"] == bodies[1]["event_id"]
+
+    @pytest.mark.asyncio
+    async def test_separate_dispatches_get_distinct_event_ids(
+        self, db_factory, monkeypatch
+    ):
+        """Two score-change events for the same tool produce two distinct
+        event_ids — receivers can tell them apart."""
+        webhook_id = await _create_webhook(db_factory, url="https://example.com/hook")
+        monkeypatch.setattr(webhook_dispatch, "is_public_url", lambda url: True)
+        monkeypatch.setattr(webhook_dispatch, "RETRY_BACKOFFS_SEC", (0, 0, 0))
+        mock_client = _mock_httpx_client(monkeypatch)
+
+        for old, new in [(80.0, 90.0), (90.0, 80.0)]:
+            await webhook_dispatch.dispatch_score_change(
+                "https://api.stripe.com/v1/charges",
+                old_score=old, new_score=new,
+            )
+        for task in list(webhook_dispatch._pending_deliveries):
+            try:
+                await task
+            except Exception:
+                pass
+
+        assert mock_client.post.call_count == 2
+        bodies = [json.loads(c.kwargs["content"]) for c in mock_client.post.call_args_list]
+        assert bodies[0]["event_id"] != bodies[1]["event_id"]

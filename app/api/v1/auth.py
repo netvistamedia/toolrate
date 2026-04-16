@@ -80,34 +80,55 @@ async def register(
     # registration after rotation would hit `MultipleResultsFound` and 500
     # instead of returning a clean 409.
     email_tag = f"email:{email_hash[:16]}"
-    result = await db.execute(
-        select(ApiKey).where(
-            ApiKey.data_pool == email_tag,
-            ApiKey.is_active == True,  # noqa: E712
-        )
-    )
-    existing = result.scalar_one_or_none()
 
-    if existing:
+    # Concurrent same-email registrations used to race past the SELECT below
+    # and both create active free keys (= doubled quota). Postgres can't
+    # express the constraint cleanly because `data_pool` is multi-purpose
+    # (email tag, enterprise pool name, NULL), so we serialize the
+    # check-and-insert window with a Redis SET NX lock keyed on the tag.
+    # 30s TTL is plenty for the request to complete and short enough that a
+    # crashed process doesn't lock out a retry for long.
+    lock_key = f"reg:lock:{email_tag}"
+    got_lock = await redis.set(lock_key, "1", ex=30, nx=True)
+    if not got_lock:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="An API key already exists for this email. Contact support if you lost your key.",
+            detail="A registration for this email is already in progress. Please wait a moment and try again.",
         )
 
-    # Create free-tier key
-    full_key, key_hash, key_prefix = generate_api_key()
-    api_key = ApiKey(
-        key_hash=key_hash,
-        key_prefix=key_prefix,
-        tier="free",
-        daily_limit=settings.free_daily_limit,
-        data_pool=email_tag,
-    )
-    db.add(api_key)
-    await log_audit(db, "key_created", actor_key_prefix=key_prefix,
-                    resource_type="api_key", resource_id=key_prefix,
-                    detail={"tier": "free"}, client_ip=client_ip)
-    await db.commit()
+    try:
+        result = await db.execute(
+            select(ApiKey).where(
+                ApiKey.data_pool == email_tag,
+                ApiKey.is_active == True,  # noqa: E712
+            )
+        )
+        existing = result.scalar_one_or_none()
+
+        if existing:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="An API key already exists for this email. Contact support if you lost your key.",
+            )
+
+        # Create free-tier key
+        full_key, key_hash, key_prefix = generate_api_key()
+        api_key = ApiKey(
+            key_hash=key_hash,
+            key_prefix=key_prefix,
+            tier="free",
+            daily_limit=settings.free_daily_limit,
+            data_pool=email_tag,
+        )
+        db.add(api_key)
+        await log_audit(db, "key_created", actor_key_prefix=key_prefix,
+                        resource_type="api_key", resource_id=key_prefix,
+                        detail={"tier": "free"}, client_ip=client_ip)
+        await db.commit()
+    finally:
+        # Release immediately on success/failure — the 30s TTL is just a
+        # safety net for crashed workers.
+        await redis.delete(lock_key)
 
     # Send welcome email (fire-and-forget, don't block registration).
     # Hold a strong reference to the task in a module-level set — asyncio

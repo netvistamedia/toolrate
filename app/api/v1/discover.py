@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Query
 
 from app.core.categories import normalize_category
+from app.core.identifiers import normalize_identifier
 from app.dependencies import Db, AuthenticatedKey
 from app.services.discovery import get_hidden_gems, get_fallback_chains
 
@@ -34,5 +35,9 @@ async def fallback_chain(
     tool_identifier: str = Query(..., description="The tool to find fallbacks for"),
     limit: int = Query(5, ge=1, le=20, description="Max results"),
 ):
-    chains = await get_fallback_chains(db, tool_identifier=tool_identifier, limit=limit)
-    return {"tool": tool_identifier, "fallback_chain": chains, "count": len(chains)}
+    # ``previous_tool`` is normalized at write time (report_ingest), so the
+    # lookup must normalize too — otherwise the canonical row never matches
+    # for callers querying with mixed-case URLs or trailing slashes.
+    canonical = normalize_identifier(tool_identifier)
+    chains = await get_fallback_chains(db, tool_identifier=canonical, limit=limit)
+    return {"tool": canonical, "fallback_chain": chains, "count": len(chains)}

@@ -9,6 +9,7 @@ import hashlib
 import hmac
 import json
 import logging
+import uuid
 from datetime import datetime, timezone
 
 import httpx
@@ -82,8 +83,12 @@ async def dispatch_score_change(
     if not webhooks:
         return
 
+    # event_id lets receivers dedupe replays + retries on their side. The
+    # HMAC signature covers the whole body, so a tampered event_id breaks
+    # signature verification — receivers can trust it as a stable key.
     payload = {
         "event": "score.change",
+        "event_id": str(uuid.uuid4()),
         "tool_identifier": tool_identifier,
         "old_score": round(old_score, 2),
         "new_score": round(new_score, 2),

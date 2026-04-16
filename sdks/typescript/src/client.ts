@@ -47,6 +47,8 @@ export class ToolRate {
       max_price_per_call: params.maxPricePerCall,
       max_monthly_budget: params.maxMonthlyBudget,
       expected_calls_per_month: params.expectedCallsPerMonth,
+      expected_tokens: params.expectedTokens,
+      task_complexity: params.taskComplexity,
       budget_strategy: params.budgetStrategy,
     });
 
@@ -711,6 +713,8 @@ function mapAssessResponse(raw: RawAssessResponse): AssessResponse {
     estimatedMonthlyCost: raw.estimated_monthly_cost ?? null,
     withinBudget: raw.within_budget ?? null,
     budgetExplanation: raw.budget_explanation ?? null,
+    recommendedModel: raw.recommended_model ?? null,
+    reasoning: raw.reasoning ?? null,
   };
 }
 
@@ -789,6 +793,8 @@ interface RawAssessResponse {
   estimated_monthly_cost?: number | null;
   within_budget?: boolean | null;
   budget_explanation?: string | null;
+  recommended_model?: string | null;
+  reasoning?: string | null;
 }
 
 interface RawBatchAssessResponse {

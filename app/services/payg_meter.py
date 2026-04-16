@@ -158,10 +158,16 @@ async def _attempt_send(event_id: int) -> None:
             return
 
         try:
+            # Idempotency key keyed on the outbox row id — Stripe accepts the
+            # same key across retries for up to 24h and dedupes automatically.
+            # Without this, a transient network error on the response path
+            # (Stripe got the request but we never got the 200) triggers the
+            # retry sweep to re-send, double-billing the customer.
             await asyncio.to_thread(
                 stripe.billing.MeterEvent.create,
                 api_key=settings.stripe_secret_key,
                 event_name=settings.stripe_payg_meter_event_name,
+                idempotency_key=f"meter-{row.id}",
                 payload={
                     "stripe_customer_id": row.stripe_customer_id,
                     "value": str(row.value),

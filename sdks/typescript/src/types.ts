@@ -21,8 +21,24 @@ export interface AssessParams {
   maxMonthlyBudget?: number;
   /** Expected call volume. Drives `estimatedMonthlyCost` and free-tier-aware effective pricing. */
   expectedCallsPerMonth?: number;
-  /** How to trade reliability against cost when computing `costAdjustedScore`. */
-  budgetStrategy?: "reliability_first" | "balanced" | "cost_first";
+  /**
+   * Total tokens (input + output) per LLM call. Triggers exact per-million-
+   * token math for providers that publish per-M pricing. Used by the LLM
+   * router to size the cost model.
+   */
+  expectedTokens?: number;
+  /**
+   * Task complexity hint for the LLM model picker. `"low"` lands on cheap
+   * fast variants (Haiku, gpt-4o-mini), `"very_high"` lands on the strongest
+   * model in a provider's catalog (Opus, gpt-4o). Defaults to `"medium"`
+   * server-side.
+   */
+  taskComplexity?: "low" | "medium" | "high" | "very_high";
+  /**
+   * How to trade reliability against cost (and latency, for `"speed_first"`).
+   * `"speed_first"` adds a third axis using `typicalLatencyMs` from pricing.
+   */
+  budgetStrategy?: "reliability_first" | "balanced" | "cost_first" | "speed_first";
 }
 
 export interface AlternativeTool {
@@ -81,6 +97,14 @@ export interface AssessResponse {
   withinBudget: boolean | null;
   /** Human-readable explanation comparing the tool's cost to the caller's budget. */
   budgetExplanation: string | null;
+  /**
+   * For LLM-router providers: the specific model picked inside the catalog
+   * for the given `taskComplexity` and `budgetStrategy` (e.g. `"claude-haiku-4-5"`).
+   * Null for non-LLM tools or when no catalog is published.
+   */
+  recommendedModel: string | null;
+  /** Always-populated human-readable explanation of the score, model pick, cost, and strategy. */
+  reasoning: string | null;
 }
 
 // ── Batch Assess ────────────────────────────────────────────────────
@@ -270,8 +294,12 @@ export interface GuardOptions<T> {
   maxMonthlyBudget?: number;
   /** Expected call volume for projected monthly cost + free-tier math. */
   expectedCallsPerMonth?: number;
-  /** How to trade reliability against cost — `"reliability_first"` | `"balanced"` | `"cost_first"`. */
-  budgetStrategy?: "reliability_first" | "balanced" | "cost_first";
+  /** Total tokens per LLM call (input + output). Triggers exact per-token math. */
+  expectedTokens?: number;
+  /** Task complexity hint for the LLM model picker. */
+  taskComplexity?: "low" | "medium" | "high" | "very_high";
+  /** How to trade reliability against cost (and latency, for `"speed_first"`). */
+  budgetStrategy?: "reliability_first" | "balanced" | "cost_first" | "speed_first";
   /**
    * Predicate called when the wrapped function throws. Return `true` to
    * record the error as a tool failure (the default for any error not

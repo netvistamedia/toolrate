@@ -373,6 +373,153 @@ async def _seed_quota_counters(redis, key_hash: str, value: str = "9800") -> Non
 
 
 @pytest.mark.asyncio
+async def test_subscription_updated_writes_renewed_audit(billing_client):
+    """Renewal must leave an audit trail. Without this, billing-state changes
+    are invisible in the admin dashboard's tier-history view."""
+    ac, sf, _redis = billing_client
+    key = await _insert_test_key(sf)
+    async with sf() as db:
+        db_key = (await db.execute(select(ApiKey).where(ApiKey.id == key.id))).scalar_one()
+        db_key.stripe_subscription_id = "sub_renew_audit"
+        await db.commit()
+
+    event = {
+        "id": "evt_renew_audit",
+        "type": "customer.subscription.updated",
+        "data": {
+            "object": {
+                "id": "sub_renew_audit",
+                "status": "active",
+                "metadata": {"plan": "pro"},
+            }
+        },
+    }
+    resp = await ac.post(
+        "/v1/billing/webhook",
+        content=json.dumps(event),
+        headers={"stripe-signature": "x"},
+    )
+    assert resp.status_code == 200
+
+    async with sf() as db:
+        actions = (
+            await db.execute(
+                select(AuditLog.action).where(AuditLog.resource_id == str(key.id))
+            )
+        ).scalars().all()
+    assert "renewed_to_pro" in actions
+
+
+@pytest.mark.asyncio
+async def test_subscription_past_due_writes_downgrade_audit(billing_client):
+    """Downgrade-on-non-payment must also leave an audit trail."""
+    ac, sf, _redis = billing_client
+    key = await _insert_test_key(sf)
+    async with sf() as db:
+        db_key = (await db.execute(select(ApiKey).where(ApiKey.id == key.id))).scalar_one()
+        db_key.tier = "pro"
+        db_key.stripe_subscription_id = "sub_pd_audit"
+        await db.commit()
+
+    event = {
+        "id": "evt_pd_audit",
+        "type": "customer.subscription.updated",
+        "data": {
+            "object": {
+                "id": "sub_pd_audit",
+                "status": "past_due",
+                "metadata": {"plan": "pro"},
+            }
+        },
+    }
+    resp = await ac.post(
+        "/v1/billing/webhook",
+        content=json.dumps(event),
+        headers={"stripe-signature": "x"},
+    )
+    assert resp.status_code == 200
+
+    async with sf() as db:
+        actions = (
+            await db.execute(
+                select(AuditLog.action).where(AuditLog.resource_id == str(key.id))
+            )
+        ).scalars().all()
+    assert "downgraded_to_free" in actions
+
+
+@pytest.mark.asyncio
+async def test_subscription_deleted_writes_canceled_audit(billing_client):
+    """Cancellation downgrade should leave a `subscription_canceled` row."""
+    ac, sf, _redis = billing_client
+    key = await _insert_test_key(sf)
+    async with sf() as db:
+        db_key = (await db.execute(select(ApiKey).where(ApiKey.id == key.id))).scalar_one()
+        db_key.tier = "pro"
+        db_key.stripe_subscription_id = "sub_cancel_audit"
+        await db.commit()
+
+    event = {
+        "id": "evt_cancel_audit",
+        "type": "customer.subscription.deleted",
+        "data": {"object": {"id": "sub_cancel_audit"}},
+    }
+    resp = await ac.post(
+        "/v1/billing/webhook",
+        content=json.dumps(event),
+        headers={"stripe-signature": "x"},
+    )
+    assert resp.status_code == 200
+
+    async with sf() as db:
+        actions = (
+            await db.execute(
+                select(AuditLog.action).where(AuditLog.resource_id == str(key.id))
+            )
+        ).scalars().all()
+    assert "subscription_canceled" in actions
+
+
+@pytest.mark.asyncio
+async def test_payment_failed_writes_audit(billing_client):
+    """Failed-payment events should leave an audit row keyed on the Stripe
+    customer (which is what we have on the invoice payload). Stripe handles
+    the actual retry + downgrade via separate subscription.updated events."""
+    ac, sf, _redis = billing_client
+    event = {
+        "id": "evt_pay_failed",
+        "type": "invoice.payment_failed",
+        "data": {
+            "object": {
+                "id": "in_test_failed",
+                "customer": "cus_test_failed",
+                "amount_due": 5000,
+                "attempt_count": 1,
+            }
+        },
+    }
+    resp = await ac.post(
+        "/v1/billing/webhook",
+        content=json.dumps(event),
+        headers={"stripe-signature": "x"},
+    )
+    assert resp.status_code == 200
+
+    async with sf() as db:
+        rows = (
+            await db.execute(
+                select(AuditLog).where(
+                    AuditLog.action == "payment_failed",
+                    AuditLog.resource_id == "cus_test_failed",
+                )
+            )
+        ).scalars().all()
+    assert len(rows) == 1
+    assert rows[0].detail["invoice_id"] == "in_test_failed"
+    assert rows[0].detail["amount_due"] == 5000
+
+
+@pytest.mark.asyncio
 async def test_subscription_renewal_resets_monthly_counter(billing_client):
     """Renewal-after-failure: Pro user hit 9800/10000 monthly, got auto-
     downgraded for non-payment, then paid and renewed. Without the reset,
