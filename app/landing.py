@@ -1048,6 +1048,12 @@ __SITE_HEADER_CSS__
   text-align: center;
   letter-spacing: 0.02em;
 }
+.llm-router-provider--free {
+  grid-column: 1 / -1;
+  background: linear-gradient(90deg, rgba(10, 149, 253, 0.10), rgba(47, 207, 250, 0.06));
+  border-color: rgba(10, 149, 253, 0.35);
+  color: var(--brand-light);
+}
 
 @media (max-width: 860px) {
   .llm-router-grid { grid-template-columns: 1fr; }
@@ -1421,11 +1427,12 @@ curl -X POST https://api.toolrate.ai/v1/report \
 <!-- LLM Router spotlight -->
 <section class="llm-router">
   <div class="llm-router-card">
-    <div class="llm-router-badge">NEW &middot; Intelligent Cost-Aware LLM Router</div>
-    <h2>One smart call. The perfect model, every time.</h2>
+    <div class="llm-router-badge">NEW &middot; LLM Router</div>
+    <h2>LLM Router &mdash; one call, the right model.</h2>
     <p class="llm-router-lead">
-      ToolRate automatically selects the optimal LLM for each task &mdash; combining real-time
-      reliability, exact per-token pricing, and latency awareness across all major models.
+      The ToolRate LLM Router picks the optimal model for each task &mdash; combining real-time
+      reliability, exact per-token pricing, and latency awareness across all major providers,
+      plus Ollama for local and free.
     </p>
     <div class="llm-router-strategies">
       <div class="llm-router-strategy"><strong>reliability_first</strong> &nbsp;80 / 20</div>
@@ -1469,6 +1476,7 @@ curl -X POST https://api.toolrate.ai/v1/report \
           <div class="llm-router-provider">together</div>
           <div class="llm-router-provider">mistral</div>
           <div class="llm-router-provider">deepseek</div>
+          <div class="llm-router-provider llm-router-provider--free">ollama &middot; local &middot; free</div>
         </div>
       </div>
     </div>
