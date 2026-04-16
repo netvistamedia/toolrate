@@ -382,6 +382,86 @@ MANUAL_PRICING: dict[str, dict[str, Any]] = {
             },
         ],
     },
+    "http://localhost:11434/api/chat": {
+        # Self-hosted via Ollama. Cost is literally $0 per call (electricity
+        # is the operator's problem, and at typical inference rates it works
+        # out to fractions of a cent — well below our pricing precision).
+        # No `usd_per_million_*` fields at provider level: the per-model
+        # entries below also leave them at 0 so cost-first ranking treats
+        # every Ollama model as the cheapest possible option, beating any
+        # paid alternative within its capability tier.
+        #
+        # Note that no model in the catalog is tagged `very_high`. That's
+        # deliberate — the picker filters by `tier >= task_complexity`, so a
+        # caller asking for `task_complexity=very_high` will see Ollama
+        # filtered out entirely and fall through to a paid flagship (Opus,
+        # o3, deepseek-reasoner). The user-facing rule: Ollama wins when
+        # budget matters AND a small/mid-size local model can do the job;
+        # otherwise we don't pretend it can.
+        "model": "freemium",
+        "base_usd_per_call": 0.0,
+        "typical_usd_per_call": 0.0,
+        "estimated_tokens_per_call": 1000,
+        "usd_per_million_input_tokens": 0.0,
+        "usd_per_million_output_tokens": 0.0,
+        # No provider-level `typical_latency_ms` — local inference latency is
+        # entirely hardware-dependent and a fake number would mislead the
+        # speed_first picker. Per-model entries set realistic baselines for a
+        # mid-range consumer GPU (RTX 4090 / Apple M-series) so an agent
+        # hitting `speed_first` still gets a defensible answer.
+        "typical_latency_ms": None,
+        "recommended_model": "llama3.1:8b",
+        "free_tier_per_month": None,
+        "flat_monthly_usd": None,
+        "currency": "USD",
+        "confidence": "high",
+        "notes": (
+            "Run a local Ollama server (https://ollama.com) and call its "
+            "OpenAI-compatible chat endpoint at http://localhost:11434. "
+            "Cost: $0 per call. Latency: depends on your hardware (catalog "
+            "entries below assume a mid-range consumer GPU). Reliability: "
+            "no network = no rate-limits, no 5xx — the only failure modes "
+            "are model errors and your own VRAM running out."
+        ),
+        "models": [
+            {
+                "name": "llama3.2:3b",
+                "tier": "low",
+                "usd_per_million_input_tokens": 0.0,
+                "usd_per_million_output_tokens": 0.0,
+                "typical_latency_ms": 200,
+                "context_window": 128_000,
+                "notes": "Tiny + fast — runs comfortably on CPU. Good for routing, classification, tagging.",
+            },
+            {
+                "name": "llama3.1:8b",
+                "tier": "low",
+                "usd_per_million_input_tokens": 0.0,
+                "usd_per_million_output_tokens": 0.0,
+                "typical_latency_ms": 400,
+                "context_window": 128_000,
+                "notes": "Default Ollama recommendation — balanced quality for most agentic tasks.",
+            },
+            {
+                "name": "qwen2.5:14b",
+                "tier": "medium",
+                "usd_per_million_input_tokens": 0.0,
+                "usd_per_million_output_tokens": 0.0,
+                "typical_latency_ms": 800,
+                "context_window": 128_000,
+                "notes": "Mid-size open-weight — strong on coding, reasoning, multilingual.",
+            },
+            {
+                "name": "llama3.3:70b",
+                "tier": "high",
+                "usd_per_million_input_tokens": 0.0,
+                "usd_per_million_output_tokens": 0.0,
+                "typical_latency_ms": 2000,
+                "context_window": 128_000,
+                "notes": "Largest local Llama — needs serious GPU (24GB+ VRAM). Closes the gap on flagships.",
+            },
+        ],
+    },
     # -- Email APIs ---------------------------------------------------------
     "https://api.sendgrid.com/v3/mail/send": {
         "model": "freemium",

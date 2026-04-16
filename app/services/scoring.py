@@ -370,7 +370,12 @@ def _pick_recommended_model(
         )
 
     if budget_strategy == "cost_first":
-        pool.sort(key=lambda m: (_model_cost(m), -_model_tier(m)))
+        # Sort by cost, breaking ties with the SMALLEST capable model first.
+        # For paid catalogs the cost dimension dominates and the tiebreaker
+        # rarely fires; for free catalogs (Ollama, all $0) the tiebreaker is
+        # everything — and "budget friendly" means minimize hardware burden
+        # too, so the 3b model wins over the 70b for low-complexity tasks.
+        pool.sort(key=lambda m: (_model_cost(m), _model_tier(m)))
     elif budget_strategy == "speed_first":
         pool.sort(key=lambda m: (_model_latency(m), _model_cost(m)))
     elif budget_strategy == "reliability_first":

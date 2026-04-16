@@ -591,6 +591,68 @@ class TestPickRecommendedModel:
         assert name == "only-low"
 
 
+class TestOllamaSeededEntry:
+    """Verify the live seeded Ollama entry behaves the way the user-facing
+    rule promises: 'prioritize Ollama when budget matters AND a small/mid-
+    size local model can do the job; otherwise let it fall through.'"""
+
+    @pytest.fixture
+    def ollama_pricing(self) -> dict:
+        from app.import_pricing import MANUAL_PRICING
+
+        return MANUAL_PRICING["http://localhost:11434/api/chat"]
+
+    def test_cost_first_low_picks_smallest_free_model(self, ollama_pricing):
+        """`task_complexity=low` + `cost_first` → llama3.2:3b (cheapest +
+        capable). All Ollama models are $0, so the picker breaks the cost
+        tie by preferring the lower-tier (cheapest) match."""
+        name, _ = _pick_recommended_model(ollama_pricing, "low", "cost_first")
+        assert name == "llama3.2:3b"
+
+    def test_cost_first_medium_picks_capable_mid_model(self, ollama_pricing):
+        """`task_complexity=medium` filters out the two `low`-tier models;
+        cheapest of the remaining is qwen2.5:14b."""
+        name, _ = _pick_recommended_model(ollama_pricing, "medium", "cost_first")
+        assert name == "qwen2.5:14b"
+
+    def test_no_very_high_in_catalog(self, ollama_pricing):
+        """Deliberate: the picker WILL widen and return the largest local
+        model, but the cross-provider comparison handles the 'do the job
+        well' filter via reliability scores. This test pins the contract:
+        no Ollama model is rated very_high."""
+        for model in ollama_pricing["models"]:
+            assert model["tier"] != "very_high", (
+                f"{model['name']} is tagged very_high — the user-facing "
+                f"contract says Ollama should be excluded for very_high "
+                f"tasks via the cross-provider score comparison; tagging a "
+                f"local model very_high silently breaks that promise."
+            )
+
+    def test_zero_cost_normalizes_to_max_cost_side_score(self, ollama_pricing):
+        """The whole point: $0/call → cost_norm = 0 → cost_side = 100. So
+        in cost_first (75% cost, 25% reliability), Ollama beats any paid
+        provider that pays even a fraction of the category median."""
+        cost = _effective_cost(ollama_pricing, expected_calls_per_month=10_000)
+        assert cost == 0.0
+        score = _cost_adjusted_score(
+            reliability_score=85.0,
+            effective_cost=cost,
+            category_median=0.001,  # any non-zero median
+            strategy="cost_first",
+        )
+        # cost_first = 0.25 reliability + 0.75 cost_side
+        # cost_side = 100 (since cost_norm = 0/0.001 = 0 → 1-0 = 1 → *100)
+        # → 0.25*85 + 0.75*100 = 21.25 + 75 = 96.25
+        assert score == 96.2 or score == 96.3 or score == 96.25
+
+    def test_per_token_math_returns_zero_cost(self, ollama_pricing):
+        """Even with `expected_tokens` set, exact per-M math should land at
+        $0 (both per-M prices are 0). Confirms the LLM router doesn't trip
+        over the $0 case."""
+        cost = _per_call_cost_for_tokens(ollama_pricing, expected_tokens=1000)
+        assert cost == 0.0
+
+
 class TestBuildReasoning:
     def _make_response(self, **overrides) -> AssessResponse:
         base = dict(
