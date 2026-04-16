@@ -10,6 +10,7 @@ from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 
@@ -106,8 +107,11 @@ app = FastAPI(
     description=DESCRIPTION,
     version="0.1.0",
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc",
+    # Disable the built-in /docs and /redoc handlers — they use FastAPI's
+    # default green favicon. The custom handlers below point the docs UI
+    # at the ToolRate favicon via `swagger_favicon_url` / `redoc_favicon_url`.
+    docs_url=None,
+    redoc_url=None,
     contact={"name": "ToolRate", "url": "https://toolrate.ai"},
     openapi_tags=[
         {"name": "Auth", "description": "Register for an API key"},
@@ -248,24 +252,57 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 
-@app.get("/toolrate-logo.webp", include_in_schema=False)
+# Brand asset endpoints accept BOTH GET and HEAD. Social card validators
+# (X/Twitter, LinkedIn, Discord, Slack's unfurler) issue a HEAD request
+# first to verify the image exists and read Content-Type/Content-Length
+# before committing to a GET. A 405 on HEAD makes them silently skip the
+# image and render a text-only card — which is why the OG image wasn't
+# showing on X.com before this change.
+@app.api_route("/toolrate-logo.webp", methods=["GET", "HEAD"], include_in_schema=False)
 async def brand_logo():
     return FileResponse("app/static/toolrate-logo.webp", media_type="image/webp")
 
 
-@app.get("/toolrate-favicon.png", include_in_schema=False)
+@app.api_route("/toolrate-favicon.png", methods=["GET", "HEAD"], include_in_schema=False)
 async def brand_favicon():
     return FileResponse("app/static/toolrate-favicon.png", media_type="image/png")
 
 
-@app.get("/toolrate-og.jpg", include_in_schema=False)
+@app.api_route("/toolrate-og.jpg", methods=["GET", "HEAD"], include_in_schema=False)
 async def brand_og_image():
     return FileResponse("app/static/toolrate-og.jpg", media_type="image/jpeg")
 
 
-@app.get("/favicon.ico", include_in_schema=False)
+@app.api_route("/favicon.ico", methods=["GET", "HEAD"], include_in_schema=False)
 async def favicon_ico():
     return FileResponse("app/static/toolrate-favicon.png", media_type="image/png")
+
+
+# ── Custom /docs and /redoc — branded with the ToolRate favicon ──────────
+# FastAPI's built-in docs handlers serve Swagger UI / ReDoc with FastAPI's
+# own green favicon. We override both with the same handler shape that
+# FastAPI uses internally, just passing our favicon URL. No other
+# behaviour changes — the OpenAPI JSON at /openapi.json is unchanged and
+# Swagger UI still loads from jsdelivr via the FastAPI-bundled script tags.
+_SWAGGER_FAVICON = "https://toolrate.ai/toolrate-favicon.png"
+
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui():
+    return get_swagger_ui_html(
+        openapi_url=app.openapi_url,
+        title=f"{app.title} — API Docs",
+        swagger_favicon_url=_SWAGGER_FAVICON,
+    )
+
+
+@app.get("/redoc", include_in_schema=False)
+async def custom_redoc():
+    return get_redoc_html(
+        openapi_url=app.openapi_url,
+        title=f"{app.title} — API Reference",
+        redoc_favicon_url=_SWAGGER_FAVICON,
+    )
 
 
 # Security headers + request logging + timing

@@ -1422,11 +1422,10 @@ curl -X POST https://api.toolrate.ai/v1/report \
 <section class="llm-router">
   <div class="llm-router-card">
     <div class="llm-router-badge">NEW &middot; Intelligent Cost-Aware LLM Router</div>
-    <h2>Stop hardcoding your LLM. Start routing it.</h2>
+    <h2>One smart call. The perfect model, every time.</h2>
     <p class="llm-router-lead">
-      One API call picks the cheapest model that actually handles the task &mdash; across Claude,
-      GPT, Groq, Together, Mistral, and DeepSeek. Real-time reliability, exact per-token cost,
-      latency-aware scoring, and a specific model recommendation in every response.
+      ToolRate automatically selects the optimal LLM for each task &mdash; combining real-time
+      reliability, exact per-token pricing, and latency awareness across all major models.
     </p>
     <div class="llm-router-strategies">
       <div class="llm-router-strategy"><strong>reliability_first</strong> &nbsp;80 / 20</div>
