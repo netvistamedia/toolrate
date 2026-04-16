@@ -272,6 +272,17 @@ export interface GuardOptions<T> {
   expectedCallsPerMonth?: number;
   /** How to trade reliability against cost — `"reliability_first"` | `"balanced"` | `"cost_first"`. */
   budgetStrategy?: "reliability_first" | "balanced" | "cost_first";
+  /**
+   * Predicate called when the wrapped function throws. Return `true` to
+   * record the error as a tool failure (the default for any error not
+   * classified as a programmer mistake) or `false` to re-raise immediately
+   * without reporting. Use this to keep your own bugs (a TypeError in the
+   * lambda, a missing import) from tanking a tool's reliability score.
+   *
+   * When omitted, the default heuristic re-raises common caller-side errors
+   * (TypeError, ReferenceError, RangeError, SyntaxError) without reporting.
+   */
+  errorFilter?: (error: unknown) => boolean;
 }
 
 // ── Errors ──────────────────────────────────────────────────────────

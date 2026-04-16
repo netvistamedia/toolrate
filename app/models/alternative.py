@@ -10,8 +10,16 @@ class Alternative(Base):
     __tablename__ = "alternatives"
 
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
-    tool_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"), nullable=False)
-    alternative_tool_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("tools.id", ondelete="CASCADE"), nullable=False)
+    tool_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tools.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    alternative_tool_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("tools.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     relevance_score: Mapped[float] = mapped_column(Float, default=0.5)
     # LLM-supplied reason this alternative is a good substitute for the parent
     # tool. Surfaced as `top_alternatives[i].reason` in /v1/assess responses.

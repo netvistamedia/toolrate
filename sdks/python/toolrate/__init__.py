@@ -6,6 +6,7 @@ reliability score, common pitfalls, and smart alternatives.
 from .client import (
     ToolRate,
     AsyncToolRate,
+    ToolRateError,
     # Backwards-compatible aliases (the package used to be called `nemoflow`)
     NemoFlowClient,
     AsyncNemoFlowClient,
@@ -18,6 +19,7 @@ nemoflow_guard = toolrate_guard
 __all__ = [
     "ToolRate",
     "AsyncToolRate",
+    "ToolRateError",
     "guard",
     "toolrate_guard",
     # Backwards-compat exports
@@ -25,4 +27,4 @@ __all__ = [
     "AsyncNemoFlowClient",
     "nemoflow_guard",
 ]
-__version__ = "0.3.2"
+__version__ = "0.5.0"

@@ -5,6 +5,7 @@ from sqlalchemy import select, func, case
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.core.error_categories import is_sdk_skip
 from app.core.security import make_fingerprint
 from app.models.report import ExecutionReport
 from app.models.tool import Tool
@@ -919,6 +920,14 @@ async def compute_score(
         result = await db.execute(query)
         reports = list(result.scalars().all())
 
+    # Drop SDK telemetry markers (skipped_low_score / skipped_over_budget) up
+    # front — those rows describe agent decisions, not tool outcomes. Letting
+    # them through would inflate the failure count, distort the trend curve,
+    # and surface "skipped_low_score" as a top pitfall in the assess response.
+    # Fallback-chain analytics live in a separate query path (discovery.py) so
+    # the journey signal is not lost.
+    reports = [r for r in reports if not is_sdk_skip(r.error_category)]
+
     # Cold start — no reports at all. Still honor eu_only/gdpr_required so the
     # caller can surface EU alternatives even for tools we've never seen used.
     if not reports:
@@ -937,12 +946,16 @@ async def compute_score(
     )
     data_source = "llm_estimated" if all_llm else "empirical"
 
-    # Step 1: Recency-weighted success rate
+    # Step 1: Recency-weighted success rate. Error counts use the SAME weight
+    # so 100 ancient timeouts don't drown out 10 fresh rate_limits in the
+    # pitfall ranking — without weighting, the surfaced "common pitfall" was
+    # almost always the oldest noisy category instead of the live problem.
     weighted_successes = 0.0
     weighted_failures = 0.0
     total_weight = 0.0
+    sum_weight_sq = 0.0
     latencies: list[int] = []
-    error_counts: dict[str, int] = {}
+    error_counts: dict[str, float] = {}
     reports_7d = 0
     successes_7d = 0
     successes_24h = 0
@@ -963,9 +976,12 @@ async def compute_score(
         else:
             weighted_failures += weight
             if report.error_category:
-                error_counts[report.error_category] = error_counts.get(report.error_category, 0) + 1
+                error_counts[report.error_category] = (
+                    error_counts.get(report.error_category, 0.0) + weight
+                )
 
         total_weight += weight
+        sum_weight_sq += weight * weight
 
         if report.latency_ms is not None:
             latencies.append(report.latency_ms)
@@ -986,8 +1002,14 @@ async def compute_score(
     beta = beta_prior + weighted_failures
     reliability = alpha / (alpha + beta)
 
-    # Step 3: Confidence
-    n_eff = total_weight
+    # Step 3: Confidence — Kish's effective sample size (Σw)² / Σw².
+    # Using ``total_weight`` (the previous formula) is correct ONLY for
+    # uniform weights; with a 3.5-day half-life the older reports carry
+    # tiny weights, so the naive form was over-reporting confidence by
+    # ~13% on a typical sample. Kish's formula collapses to ``n`` when
+    # all weights are equal and to a much smaller number when one or two
+    # very-recent reports dominate the weighted sum.
+    n_eff = (total_weight * total_weight / sum_weight_sq) if sum_weight_sq > 0 else 0.0
     confidence = 1 - 1 / (1 + math.sqrt(n_eff / 10))
 
     # Step 4: Failure risk with trend adjustment
@@ -1032,19 +1054,24 @@ async def compute_score(
     # Step 6: Structured pitfalls and mitigations. Tool-specific mitigations
     # (set by the on-demand LLM assessment) win over the generic MITIGATIONS
     # dict, so a payment API gets payment-specific advice instead of the
-    # boilerplate "Add request throttling".
-    total_failures = sum(1 for r in reports if not r.success)
+    # boilerplate "Add request throttling". Percentages and counts use the
+    # recency-weighted totals from step 1 so old failures fade out of the
+    # surfaced pitfalls at the same rate as they fade out of the score.
     sorted_errors = sorted(error_counts.items(), key=lambda x: x[1], reverse=True)[:5]
     tool_mitigations = tool.mitigations_by_category or {}
     pitfalls: list[PitfallDetail] = []
     mitigations: list[str] = []
-    for category, count in sorted_errors:
-        pct = round(count / total_failures * 100) if total_failures else 0
+    for category, weighted_count in sorted_errors:
+        pct = (
+            round(weighted_count / weighted_failures * 100)
+            if weighted_failures > 0
+            else 0
+        )
         mitigation = tool_mitigations.get(category) or MITIGATIONS.get(category)
         pitfalls.append(PitfallDetail(
             category=category,
             percentage=pct,
-            count=count,
+            count=max(1, round(weighted_count)),
             mitigation=mitigation,
         ))
         if mitigation:

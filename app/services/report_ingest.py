@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.core.identifiers import normalize_identifier
 from app.core.security import context_hash as _context_hash
 from app.models.report import ExecutionReport
 from app.models.tool import Tool
@@ -21,19 +22,25 @@ return count
 
 
 async def upsert_tool(db: AsyncSession, identifier: str) -> Tool:
-    """Get or create a tool by identifier. Handles concurrent inserts safely."""
-    result = await db.execute(select(Tool).where(Tool.identifier == identifier))
+    """Get or create a tool by identifier. Handles concurrent inserts safely.
+
+    Normalizes the identifier first so case/trailing-slash variants converge
+    on a single ``tools`` row instead of fragmenting reports across two URLs
+    that point at the same endpoint.
+    """
+    normalized = normalize_identifier(identifier)
+    result = await db.execute(select(Tool).where(Tool.identifier == normalized))
     tool = result.scalar_one_or_none()
     if tool:
         return tool
 
-    tool = Tool(identifier=identifier)
+    tool = Tool(identifier=normalized)
     db.add(tool)
     try:
         await db.flush()
     except IntegrityError:
         await db.rollback()
-        result = await db.execute(select(Tool).where(Tool.identifier == identifier))
+        result = await db.execute(select(Tool).where(Tool.identifier == normalized))
         tool = result.scalar_one()
     return tool
 
@@ -52,6 +59,9 @@ async def ingest_report(
     attempt_number: int | None = None,
     previous_tool: str | None = None,
 ) -> tuple[Tool, ExecutionReport | None]:
+    # Normalize previous_tool too so cross-tool fallback chain analytics
+    # join on the same canonical identifier we use for the primary tool.
+    previous_tool = normalize_identifier(previous_tool) if previous_tool else None
     tool = await upsert_tool(db, tool_identifier)
     ctx_hash = _context_hash(context)
 
@@ -75,10 +85,23 @@ async def ingest_report(
     )
     db.add(report)
 
-    # Increment tool report count
+    # Increment tool report count BEFORE flushing the report row so a
+    # unique-constraint failure on (fingerprint, session, attempt) rolls
+    # both writes back together and the counter doesn't tick up for a
+    # rejected duplicate.
     await db.execute(
         update(Tool).where(Tool.id == tool.id).values(report_count=Tool.report_count + 1)
     )
+
+    try:
+        await db.flush()
+    except IntegrityError:
+        # Duplicate (fingerprint, session_id, attempt_number) — concurrent
+        # report for the same agent journey step. Treat as idempotent
+        # success: the first write already captured this attempt, return
+        # the same tool the caller would have seen anyway.
+        await db.rollback()
+        return tool, None
 
     # Read old cached score BEFORE commit (avoids race with cache invalidation).
     # We read the __global__ bucket because that's what webhook score-change

@@ -224,3 +224,124 @@ class TestMultipleErrorCategories:
         assert "timeout" in pitfall_categories
         assert "rate_limit" in pitfall_categories
         assert "auth_failure" in pitfall_categories
+
+
+class TestRecencyWeightedPitfalls:
+    """Pitfall ranking and percentages must use the recency weight, not raw counts."""
+
+    @pytest.mark.asyncio
+    async def test_recent_category_outranks_old_volume(self, db):
+        """100 ancient timeouts should not outrank 10 fresh rate_limits.
+
+        Without recency weighting on error_counts, the surfaced top pitfall
+        was always the highest-volume historical category, drowning out the
+        live problem the agent should react to.
+        """
+        tool = await _create_tool(db)
+        # Old, large-volume category (25 days ago — well past the 3.5d half-life)
+        await _add_reports(db, tool, successes=0, failures=100, age_days=25, error_cat="timeout")
+        # Recent, lower-volume category (today)
+        await _add_reports(db, tool, successes=0, failures=10, age_days=0, error_cat="rate_limit")
+        await db.commit()
+
+        result = await compute_score(db, tool, "__global__")
+        assert result.common_pitfalls, "expected at least one pitfall surfaced"
+        assert result.common_pitfalls[0].category == "rate_limit", (
+            "fresh rate_limit should outrank a much older timeout pile once "
+            "error counts are recency-weighted"
+        )
+
+    @pytest.mark.asyncio
+    async def test_pitfall_percentages_use_weighted_denominator(self, db):
+        """Percentages should sum to ~100 across the surfaced categories.
+
+        With raw-count percentages and weighted ordering, a tool that had
+        most failures aging out could surface a top pitfall at "3%" — clearly
+        wrong. The fix uses the same weight on numerator and denominator.
+        """
+        tool = await _create_tool(db)
+        await _add_reports(db, tool, successes=0, failures=20, age_days=0, error_cat="timeout")
+        await _add_reports(db, tool, successes=0, failures=10, age_days=0, error_cat="rate_limit")
+        await db.commit()
+
+        result = await compute_score(db, tool, "__global__")
+        total_pct = sum(p.percentage for p in result.common_pitfalls)
+        # Two categories, both with same age → ratios should be ~67/33.
+        assert 95 <= total_pct <= 105, (
+            f"weighted-pct categories should sum to ~100, got {total_pct} "
+            f"({[(p.category, p.percentage) for p in result.common_pitfalls]})"
+        )
+
+
+class TestEffectiveSampleSize:
+    """Confidence should use Kish's effective sample size, not raw Σw."""
+
+    @pytest.mark.asyncio
+    async def test_uniform_recent_weights_collapse_to_n(self, db):
+        """When every weight ≈ 1 (all reports are very recent), Kish's
+        formula collapses to ``n`` — same answer as the previous code."""
+        tool = await _create_tool(db)
+        await _add_reports(db, tool, successes=50, failures=0, age_days=0)
+        await db.commit()
+        result = await compute_score(db, tool, "__global__")
+        assert result.confidence > 0.6  # ~50 effective samples
+
+    @pytest.mark.asyncio
+    async def test_one_recent_with_old_history_lowers_confidence(self, db):
+        """50 ancient reports + 1 fresh one used to give nearly the same
+        confidence as 51 fresh — the old (Σw) formula treated the recent
+        report as worth ~50× more confidence than it really is. Kish's
+        formula correctly down-weights to roughly the effective sample
+        the data supports."""
+        tool_uniform = await _create_tool(db, "uniform")
+        await _add_reports(db, tool_uniform, successes=51, failures=0, age_days=0)
+
+        tool_skewed = await _create_tool(db, "skewed")
+        await _add_reports(db, tool_skewed, successes=50, failures=0, age_days=20)
+        await _add_reports(db, tool_skewed, successes=1, failures=0, age_days=0)
+
+        await db.commit()
+        uniform = await compute_score(db, tool_uniform, "__global__")
+        skewed = await compute_score(db, tool_skewed, "__global__")
+
+        # Skewed sample should report STRICTLY lower confidence than the
+        # equivalent-volume uniform sample under the corrected formula.
+        assert skewed.confidence < uniform.confidence
+
+
+class TestSdkSkipMarkersExcluded:
+    """SDK telemetry rows must not affect reliability scoring."""
+
+    @pytest.mark.asyncio
+    async def test_skipped_low_score_does_not_lower_reliability(self, db):
+        """Skipped tools are caller-choice, not tool failures."""
+        tool_clean = await _create_tool(db, "clean")
+        await _add_reports(db, tool_clean, successes=50, failures=0)
+
+        tool_skipped = await _create_tool(db, "skipped")
+        await _add_reports(db, tool_skipped, successes=50, failures=0)
+        # Pretend the SDK marked 30 calls as skipped — currently they would
+        # nuke the reliability score; after the fix, they are filtered out.
+        await _add_reports(
+            db, tool_skipped, successes=0, failures=30,
+            error_cat="skipped_low_score",
+        )
+        await db.commit()
+
+        clean_result = await compute_score(db, tool_clean, "__global__")
+        skipped_result = await compute_score(db, tool_skipped, "__global__")
+        assert skipped_result.reliability_score == clean_result.reliability_score
+
+    @pytest.mark.asyncio
+    async def test_skipped_over_budget_not_in_pitfalls(self, db):
+        tool = await _create_tool(db)
+        await _add_reports(db, tool, successes=10, failures=0)
+        await _add_reports(
+            db, tool, successes=0, failures=10,
+            error_cat="skipped_over_budget",
+        )
+        await db.commit()
+        result = await compute_score(db, tool, "__global__")
+        categories = [p.category for p in result.common_pitfalls]
+        assert "skipped_over_budget" not in categories
+        assert "skipped_low_score" not in categories

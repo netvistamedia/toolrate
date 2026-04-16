@@ -2,7 +2,7 @@ import secrets
 import uuid as _uuid
 
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel, Field, HttpUrl, field_validator
+from pydantic import BaseModel, EmailStr, Field, HttpUrl, field_validator
 from sqlalchemy import select, func
 
 from app.core.url_safety import is_public_url
@@ -14,9 +14,29 @@ router = APIRouter()
 
 class WebhookCreate(BaseModel):
     url: HttpUrl = Field(..., description="HTTPS URL to receive webhook POST requests")
-    event: str = Field("score.change", description="Event type (currently only 'score.change')")
-    tool_identifier: str | None = Field(None, description="Only fire for this tool (omit for all tools)")
+    # Cap event + tool_identifier so a 10 MB string can't DoS the API. Both
+    # were previously unbounded and could fill the audit log + DB row with
+    # arbitrary garbage.
+    event: str = Field(
+        "score.change",
+        max_length=64,
+        description="Event type (currently only 'score.change')",
+    )
+    tool_identifier: str | None = Field(
+        None,
+        max_length=512,
+        description="Only fire for this tool (omit for all tools)",
+    )
     threshold: int = Field(5, ge=1, le=50, description="Minimum score change (points) to trigger webhook")
+    notification_email: EmailStr | None = Field(
+        None,
+        max_length=256,
+        description=(
+            "Optional contact address. If your webhook gets auto-deactivated "
+            "after 10 consecutive failures, ToolRate will email this address "
+            "so you can fix the endpoint and re-enable it."
+        ),
+    )
 
     @field_validator("url")
     @classmethod
@@ -67,6 +87,7 @@ async def create_webhook(
         tool_identifier=body.tool_identifier,
         threshold=body.threshold,
         secret=secret,
+        notification_email=str(body.notification_email) if body.notification_email else None,
     )
     db.add(wh)
     from app.services.audit import log_audit

@@ -1,11 +1,72 @@
 from __future__ import annotations
 
+import json as _json
 from typing import Any, Optional
 
 import httpx
 
 _DEFAULT_BASE_URL = "https://api.toolrate.ai"
 _DEFAULT_TIMEOUT = 30.0
+
+
+class ToolRateError(Exception):
+    """Raised when the ToolRate API returns an error or an unparseable body.
+
+    Mirrors the TypeScript SDK's ``ToolRateError`` so error handling is the
+    same shape across languages. Carries the HTTP status code (or 0 for
+    transport-level failures) and the parsed body when available — callers
+    can branch on ``err.status`` for retry policy and inspect ``err.body``
+    for structured error details.
+    """
+
+    def __init__(self, message: str, status: int = 0, body: Any = None) -> None:
+        super().__init__(message)
+        self.status = status
+        self.body = body
+
+
+def _parse_json_or_raise(resp: httpx.Response) -> dict[str, Any]:
+    """Decode a successful response body, surfacing junk as ToolRateError.
+
+    Every method used to do ``resp.raise_for_status(); return resp.json()``,
+    which crashes with a bare ``JSONDecodeError`` when an upstream proxy
+    returns a 200 with an empty body or a chunk of HTML. The TS SDK was
+    fixed in commit ``f4f9b41``; this is the parallel Python fix. Status
+    is included in the message so the caller can distinguish "got a real
+    200 with garbage" from "got a 502 HTML page".
+    """
+    try:
+        resp.raise_for_status()
+    except httpx.HTTPStatusError as e:
+        # Try to parse the error body for structured detail; fall back to
+        # the raw text if it's not JSON.
+        body: Any
+        try:
+            body = resp.json()
+        except _json.JSONDecodeError:
+            body = resp.text[:500] if resp.text else None
+        raise ToolRateError(
+            f"ToolRate API error: {resp.status_code} {resp.reason_phrase}",
+            status=resp.status_code,
+            body=body,
+        ) from e
+
+    try:
+        data = resp.json()
+    except _json.JSONDecodeError as e:
+        raise ToolRateError(
+            f"ToolRate API returned an unparseable body (HTTP {resp.status_code})",
+            status=resp.status_code,
+            body=resp.text[:500] if resp.text else None,
+        ) from e
+
+    if data is None:
+        raise ToolRateError(
+            f"ToolRate API returned an empty response (HTTP {resp.status_code})",
+            status=resp.status_code,
+            body=None,
+        )
+    return data
 
 
 class ToolRate:
@@ -83,8 +144,7 @@ class ToolRate:
             body["budget_strategy"] = budget_strategy
 
         resp = self._client.post("/v1/assess", json=body)
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     def assess_batch(
         self,
@@ -97,8 +157,7 @@ class ToolRate:
                    Example: [{"tool_identifier": "https://api.stripe.com/v1/charges", "context": "payment"}]
         """
         resp = self._client.post("/v1/assess/batch", json={"tools": tools})
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     # -- Reporting -------------------------------------------------------------
 
@@ -136,8 +195,7 @@ class ToolRate:
             body["previous_tool"] = previous_tool
 
         resp = self._client.post("/v1/report", json=body)
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     # -- Discovery -------------------------------------------------------------
 
@@ -149,8 +207,7 @@ class ToolRate:
         if category:
             params["category"] = category
         resp = self._client.get("/v1/discover/hidden-gems", params=params)
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     def discover_fallback_chain(
         self, tool_identifier: str, limit: int = 5
@@ -160,8 +217,7 @@ class ToolRate:
             "/v1/discover/fallback-chain",
             params={"tool_identifier": tool_identifier, "limit": limit},
         )
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     # -- Tools -----------------------------------------------------------------
 
@@ -179,28 +235,24 @@ class ToolRate:
         if category:
             params["category"] = category
         resp = self._client.get("/v1/tools", params=params)
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     def list_categories(self) -> dict[str, Any]:
         """List all tool categories with counts."""
         resp = self._client.get("/v1/tools/categories")
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     # -- Stats -----------------------------------------------------------------
 
     def get_stats(self) -> dict[str, Any]:
         """Get platform-wide statistics."""
         resp = self._client.get("/v1/stats")
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     def get_my_stats(self) -> dict[str, Any]:
         """Get personal usage statistics (tier, limits, usage)."""
         resp = self._client.get("/v1/stats/me")
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     # -- Webhooks --------------------------------------------------------------
 
@@ -220,20 +272,17 @@ class ToolRate:
         if tool_identifier is not None:
             body["tool_identifier"] = tool_identifier
         resp = self._client.post("/v1/webhooks", json=body)
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     def list_webhooks(self) -> dict[str, Any]:
         """List all your registered webhooks."""
         resp = self._client.get("/v1/webhooks")
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     def delete_webhook(self, webhook_id: str) -> dict[str, Any]:
         """Delete a webhook by ID."""
         resp = self._client.delete(f"/v1/webhooks/{webhook_id}")
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     # -- Account ---------------------------------------------------------------
 
@@ -243,8 +292,7 @@ class ToolRate:
         Important: Update your client with the new key after calling this.
         """
         resp = self._client.post("/v1/auth/rotate-key")
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     def delete_account(self) -> dict[str, Any]:
         """Permanently delete your account and all associated data.
@@ -253,8 +301,7 @@ class ToolRate:
         and all webhooks removed.
         """
         resp = self._client.delete("/v1/account")
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     # -- Lifecycle -------------------------------------------------------------
 
@@ -340,8 +387,7 @@ class AsyncToolRate:
             body["budget_strategy"] = budget_strategy
 
         resp = await self._client.post("/v1/assess", json=body)
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     async def assess_batch(
         self,
@@ -349,8 +395,7 @@ class AsyncToolRate:
     ) -> dict[str, Any]:
         """Assess up to 20 tools in a single request."""
         resp = await self._client.post("/v1/assess/batch", json={"tools": tools})
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     # -- Reporting -------------------------------------------------------------
 
@@ -383,8 +428,7 @@ class AsyncToolRate:
             body["previous_tool"] = previous_tool
 
         resp = await self._client.post("/v1/report", json=body)
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     # -- Discovery -------------------------------------------------------------
 
@@ -396,8 +440,7 @@ class AsyncToolRate:
         if category:
             params["category"] = category
         resp = await self._client.get("/v1/discover/hidden-gems", params=params)
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     async def discover_fallback_chain(
         self, tool_identifier: str, limit: int = 5
@@ -407,8 +450,7 @@ class AsyncToolRate:
             "/v1/discover/fallback-chain",
             params={"tool_identifier": tool_identifier, "limit": limit},
         )
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     # -- Tools -----------------------------------------------------------------
 
@@ -426,28 +468,24 @@ class AsyncToolRate:
         if category:
             params["category"] = category
         resp = await self._client.get("/v1/tools", params=params)
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     async def list_categories(self) -> dict[str, Any]:
         """List all tool categories with counts."""
         resp = await self._client.get("/v1/tools/categories")
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     # -- Stats -----------------------------------------------------------------
 
     async def get_stats(self) -> dict[str, Any]:
         """Get platform-wide statistics."""
         resp = await self._client.get("/v1/stats")
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     async def get_my_stats(self) -> dict[str, Any]:
         """Get personal usage statistics (tier, limits, usage)."""
         resp = await self._client.get("/v1/stats/me")
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     # -- Webhooks --------------------------------------------------------------
 
@@ -463,34 +501,29 @@ class AsyncToolRate:
         if tool_identifier is not None:
             body["tool_identifier"] = tool_identifier
         resp = await self._client.post("/v1/webhooks", json=body)
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     async def list_webhooks(self) -> dict[str, Any]:
         """List all your registered webhooks."""
         resp = await self._client.get("/v1/webhooks")
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     async def delete_webhook(self, webhook_id: str) -> dict[str, Any]:
         """Delete a webhook by ID."""
         resp = await self._client.delete(f"/v1/webhooks/{webhook_id}")
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     # -- Account ---------------------------------------------------------------
 
     async def rotate_key(self) -> dict[str, Any]:
         """Rotate your API key. Returns a new key; the current key is deactivated."""
         resp = await self._client.post("/v1/auth/rotate-key")
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     async def delete_account(self) -> dict[str, Any]:
         """Permanently delete your account and all associated data."""
         resp = await self._client.delete("/v1/account")
-        resp.raise_for_status()
-        return resp.json()
+        return _parse_json_or_raise(resp)
 
     # -- Lifecycle -------------------------------------------------------------
 

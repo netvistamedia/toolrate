@@ -23,3 +23,8 @@ class Webhook(Base):
     )
     last_triggered_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     failure_count: Mapped[int] = mapped_column(Integer, default=0)
+    # Owner-supplied opt-in email for "your webhook just got auto-deactivated"
+    # notifications. Plain (not hashed) — this is a per-webhook contact field
+    # the owner gives us at registration time, not the account email which we
+    # only ever store as a hash in api_keys.data_pool.
+    notification_email: Mapped[str | None] = mapped_column(String(256), nullable=True)

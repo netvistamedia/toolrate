@@ -1,10 +1,21 @@
 from pydantic import BaseModel, Field
 
+from app.core.error_categories import ErrorCategory
+
 
 class ReportRequest(BaseModel):
     tool_identifier: str = Field(..., max_length=512, description="URL or name of the tool that was called")
     success: bool = Field(..., description="Whether the tool call succeeded")
-    error_category: str | None = Field(None, max_length=128, description="Error type: timeout, rate_limit, auth_failure, validation_error, server_error, connection_error, not_found, permission_denied")
+    error_category: ErrorCategory | None = Field(
+        None,
+        description=(
+            "Failure category. One of: timeout, rate_limit, auth_failure, "
+            "validation_error, server_error, connection_error, not_found, "
+            "permission_denied. The SDK guard() helper also emits "
+            "skipped_low_score / skipped_over_budget for journey tracking — "
+            "those are recorded but do not affect the reliability score."
+        ),
+    )
     latency_ms: int | None = Field(None, ge=0, le=300000, description="Execution latency in milliseconds")
     context: str = Field("", max_length=1024, description="Workflow context (hashed for privacy)")
     session_id: str | None = Field(None, max_length=64, description="Groups related tool calls in the same workflow. Use a UUID or random string per agent session.")

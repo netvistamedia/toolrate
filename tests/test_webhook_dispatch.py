@@ -41,6 +41,10 @@ async def db_factory(monkeypatch):
 
     The ``raising=False`` on the monkeypatch lets us set the attribute even
     if the import has been lazy-deferred somewhere in the module chain.
+
+    Also collapses the retry backoff schedule to all-zeros so failure tests
+    don't spend 36s sleeping between retry attempts. Production behaviour
+    (1s/5s/30s) is exercised by the dedicated retry-policy tests below.
     """
     engine = create_async_engine(TEST_DATABASE_URL)
     async with engine.begin() as conn:
@@ -50,6 +54,7 @@ async def db_factory(monkeypatch):
     monkeypatch.setattr(
         "app.db.session.async_session", session_factory, raising=False
     )
+    monkeypatch.setattr(webhook_dispatch, "RETRY_BACKOFFS_SEC", (0, 0, 0))
 
     yield session_factory
 
@@ -256,11 +261,13 @@ class TestHappyPath:
     async def test_5xx_response_counts_as_failure(
         self, db_factory, payload, monkeypatch
     ):
+        """5xx is retryable, so the call gets retried up to the cap, then
+        registers a single strike against the failure counter."""
         webhook_id = await _create_webhook(
             db_factory, url="https://example.com/hook"
         )
         monkeypatch.setattr(webhook_dispatch, "is_public_url", lambda url: True)
-        _mock_httpx_client(monkeypatch, status_code=500)
+        mock_client = _mock_httpx_client(monkeypatch, status_code=500)
 
         await webhook_dispatch._deliver(
             webhook_id, "https://example.com/hook", "secret", payload
@@ -269,13 +276,16 @@ class TestHappyPath:
         wh = await _get_webhook(db_factory, webhook_id)
         assert wh.failure_count == 1
         assert wh.is_active is True
+        # All four attempts fired (initial + 3 retries) before giving up.
+        assert mock_client.post.call_count == 4
 
     @pytest.mark.asyncio
     async def test_network_exception_counts_as_failure(
         self, db_factory, payload, monkeypatch
     ):
         """httpx raises (connect timeout, TLS error, etc.) → caught and
-        recorded as a failure, never leaks out of ``_deliver``."""
+        recorded as a single strike after retries exhaust, never leaks out
+        of ``_deliver``."""
         import httpx
 
         webhook_id = await _create_webhook(
@@ -296,6 +306,7 @@ class TestHappyPath:
 
         wh = await _get_webhook(db_factory, webhook_id)
         assert wh.failure_count == 1
+        assert mock_client.post.call_count == 4
 
 
 # ──────────────────────────────────────────────────────────────────────────
@@ -362,3 +373,249 @@ class TestAutoDeactivation:
         wh = await _get_webhook(db_factory, webhook_id)
         assert wh.failure_count == 10
         assert wh.is_active is False
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Retry policy — transient blips should not strike the failure counter
+# ──────────────────────────────────────────────────────────────────────────
+
+
+class TestRetryPolicy:
+    @pytest.mark.asyncio
+    async def test_5xx_then_2xx_succeeds_with_no_strike(
+        self, db_factory, payload, monkeypatch
+    ):
+        """One transient 503 followed by 200 should be a clean delivery.
+        The whole purpose of the retry loop: a single blip does NOT count
+        as a failure."""
+        webhook_id = await _create_webhook(
+            db_factory, url="https://example.com/hook", failure_count=0,
+        )
+        monkeypatch.setattr(webhook_dispatch, "is_public_url", lambda url: True)
+
+        responses = [MagicMock(status_code=503), MagicMock(status_code=200)]
+        mock_client = MagicMock()
+        mock_client.post = AsyncMock(side_effect=responses)
+        monkeypatch.setattr(webhook_dispatch, "_get_client", lambda: mock_client)
+
+        await webhook_dispatch._deliver(
+            webhook_id, "https://example.com/hook", "secret", payload
+        )
+
+        wh = await _get_webhook(db_factory, webhook_id)
+        assert wh.failure_count == 0  # clean delivery
+        assert wh.is_active is True
+        assert wh.last_triggered_at is not None
+        assert mock_client.post.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_4xx_does_not_retry_and_counts_as_one_strike(
+        self, db_factory, payload, monkeypatch
+    ):
+        """4xx (other than 408/429) is a permanent caller error — retrying
+        won't help and burns budget. Bail fast, register one strike."""
+        webhook_id = await _create_webhook(
+            db_factory, url="https://example.com/hook", failure_count=0,
+        )
+        monkeypatch.setattr(webhook_dispatch, "is_public_url", lambda url: True)
+        mock_client = _mock_httpx_client(monkeypatch, status_code=404)
+
+        await webhook_dispatch._deliver(
+            webhook_id, "https://example.com/hook", "secret", payload
+        )
+
+        wh = await _get_webhook(db_factory, webhook_id)
+        assert wh.failure_count == 1
+        assert mock_client.post.call_count == 1  # no retries
+
+    @pytest.mark.asyncio
+    async def test_429_is_retryable(self, db_factory, payload, monkeypatch):
+        """429 (rate limit) is technically 4xx but transient — must retry."""
+        webhook_id = await _create_webhook(
+            db_factory, url="https://example.com/hook", failure_count=0,
+        )
+        monkeypatch.setattr(webhook_dispatch, "is_public_url", lambda url: True)
+
+        responses = [MagicMock(status_code=429), MagicMock(status_code=200)]
+        mock_client = MagicMock()
+        mock_client.post = AsyncMock(side_effect=responses)
+        monkeypatch.setattr(webhook_dispatch, "_get_client", lambda: mock_client)
+
+        await webhook_dispatch._deliver(
+            webhook_id, "https://example.com/hook", "secret", payload
+        )
+
+        wh = await _get_webhook(db_factory, webhook_id)
+        assert wh.failure_count == 0
+        assert mock_client.post.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_ssrf_block_does_not_retry(
+        self, db_factory, payload, monkeypatch
+    ):
+        """SSRF-block is a property of the URL, not a transient condition.
+        Retrying inside seconds won't unflip the DNS — bail immediately."""
+        webhook_id = await _create_webhook(db_factory, url="http://10.0.0.5/hook")
+        mock_client = _mock_httpx_client(monkeypatch)
+
+        await webhook_dispatch._deliver(
+            webhook_id, "http://10.0.0.5/hook", "secret", payload
+        )
+
+        wh = await _get_webhook(db_factory, webhook_id)
+        assert wh.failure_count == 1
+        mock_client.post.assert_not_called()
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# Auto-deactivation: audit log + owner email
+# ──────────────────────────────────────────────────────────────────────────
+
+
+class TestAutoDeactivateNotifications:
+    @pytest.mark.asyncio
+    async def test_audit_row_written_on_auto_deactivate(
+        self, db_factory, payload, monkeypatch
+    ):
+        """Crossing the strike threshold writes a webhook_auto_disabled
+        audit row so admin dashboards can surface the silent transition."""
+        from app.models.audit_log import AuditLog
+
+        webhook_id = await _create_webhook(
+            db_factory, url="http://10.0.0.5/hook", failure_count=9,
+        )
+        _mock_httpx_client(monkeypatch)
+
+        await webhook_dispatch._deliver(
+            webhook_id, "http://10.0.0.5/hook", "secret", payload
+        )
+
+        async with db_factory() as db:
+            audits = (
+                await db.execute(
+                    select(AuditLog).where(
+                        AuditLog.action == "webhook_auto_disabled",
+                        AuditLog.resource_id == str(webhook_id),
+                    )
+                )
+            ).scalars().all()
+        assert len(audits) == 1
+        assert audits[0].detail["url"] == "http://10.0.0.5/hook"
+        assert audits[0].detail["failure_count"] == 10
+
+    @pytest.mark.asyncio
+    async def test_email_sent_when_notification_email_set(
+        self, db_factory, payload, monkeypatch
+    ):
+        """Owner who opted into notifications gets an email at the moment
+        of auto-deactivation."""
+        # Pre-load notification_email at create time
+        async with db_factory() as db:
+            api_key = ApiKey(
+                key_hash="audit_hash_" + uuid.uuid4().hex,
+                key_prefix="nf_aud",
+                tier="pro",
+                daily_limit=10000,
+            )
+            db.add(api_key)
+            await db.flush()
+            wh = Webhook(
+                id=uuid.uuid4(),
+                api_key_id=api_key.id,
+                url="http://10.0.0.5/hook",
+                event="score.change",
+                threshold=5,
+                secret="secret",
+                is_active=True,
+                failure_count=9,
+                notification_email="owner@example.com",
+            )
+            db.add(wh)
+            await db.commit()
+            webhook_id = wh.id
+
+        _mock_httpx_client(monkeypatch)
+
+        sent_args = {}
+
+        async def _capture_email(to_email, *, webhook_url, failure_count, last_error=None):
+            sent_args["to"] = to_email
+            sent_args["url"] = webhook_url
+            sent_args["fc"] = failure_count
+            sent_args["last_error"] = last_error
+
+        monkeypatch.setattr(
+            "app.services.email.send_webhook_deactivated_email", _capture_email
+        )
+
+        await webhook_dispatch._deliver(
+            webhook_id, "http://10.0.0.5/hook", "secret", payload
+        )
+
+        assert sent_args.get("to") == "owner@example.com"
+        assert sent_args.get("url") == "http://10.0.0.5/hook"
+        assert sent_args.get("fc") == 10
+
+    @pytest.mark.asyncio
+    async def test_no_email_attempted_without_notification_email(
+        self, db_factory, payload, monkeypatch
+    ):
+        """No notification_email = no email send call. The audit row still
+        gets written so the dashboard surfacing path still works."""
+        webhook_id = await _create_webhook(
+            db_factory, url="http://10.0.0.5/hook", failure_count=9,
+        )
+        _mock_httpx_client(monkeypatch)
+
+        called = {"n": 0}
+
+        async def _spy(*a, **kw):
+            called["n"] += 1
+
+        monkeypatch.setattr(
+            "app.services.email.send_webhook_deactivated_email", _spy
+        )
+
+        await webhook_dispatch._deliver(
+            webhook_id, "http://10.0.0.5/hook", "secret", payload
+        )
+
+        assert called["n"] == 0
+
+    @pytest.mark.asyncio
+    async def test_no_audit_row_on_subsequent_failures(
+        self, db_factory, payload, monkeypatch
+    ):
+        """Once disabled, additional failures (which shouldn't happen because
+        dispatch filters by is_active=True, but a race could land one) must
+        NOT keep writing duplicate audit rows."""
+        from app.models.audit_log import AuditLog
+
+        # Already crossed the threshold
+        webhook_id = await _create_webhook(
+            db_factory, url="http://10.0.0.5/hook", failure_count=10,
+        )
+        async with db_factory() as db:
+            await db.execute(
+                update(Webhook).where(Webhook.id == webhook_id).values(is_active=False)
+            )
+            await db.commit()
+
+        _mock_httpx_client(monkeypatch)
+
+        await webhook_dispatch._deliver(
+            webhook_id, "http://10.0.0.5/hook", "secret", payload
+        )
+
+        async with db_factory() as db:
+            audits = (
+                await db.execute(
+                    select(AuditLog).where(
+                        AuditLog.action == "webhook_auto_disabled",
+                        AuditLog.resource_id == str(webhook_id),
+                    )
+                )
+            ).scalars().all()
+        # The dispatch incremented failure_count to 11, so this delivery is
+        # NOT the transition delivery (which lands at exactly AUTO_DEACTIVATE_AFTER).
+        assert audits == []

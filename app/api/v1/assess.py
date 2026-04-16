@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy import select
 
 from app.config import settings
+from app.core.identifiers import normalize_identifier
 from app.core.security import context_hash as _context_hash, effective_data_pool
 from app.dependencies import Db, RedisClient, AuthenticatedKey
 from app.models.tool import Tool
@@ -66,6 +67,13 @@ async def assess_tool(
     # Billable unit — record first so PAYG overage metering is counted even
     # on cached responses (the agent still got a valid score).
     await record_assessment(redis, api_key)
+
+    # Normalize the inbound identifier so e.g.
+    # ``https://API.Stripe.com/v1/charges/`` and ``https://api.stripe.com/v1/charges``
+    # hit the same cache key and the same DB row. Without this the same tool
+    # under two case/slash variants would carry independent scores and twice
+    # the LLM-bootstrap cost.
+    body.tool_identifier = normalize_identifier(body.tool_identifier)
 
     ctx_hash = _context_hash(body.context)
     data_pool = effective_data_pool(api_key.data_pool)

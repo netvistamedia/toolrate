@@ -47,6 +47,26 @@ T = TypeVar("T")
 
 Fallbacks = Union[list[tuple[str, Callable[[], T]]], Literal["auto"], None]
 
+# Default set of "this is a programmer bug, not a tool failure" exception
+# types. When a caller's lambda raises one of these, ``guard()`` re-raises
+# immediately without reporting the tool as failed — otherwise a typo in
+# the user's code would systematically lower the tool's reliability score.
+# Callers who want different semantics can pass a custom ``error_filter``.
+_PROGRAMMER_ERRORS: tuple[type[BaseException], ...] = (
+    TypeError,       # wrong arg count, wrong type, missing self, etc.
+    AttributeError,  # missing method on a result object
+    KeyError,        # dict access typo
+    IndexError,      # off-by-one, empty list
+    NameError,       # undefined variable
+    ImportError,     # missing dependency
+    SyntaxError,     # exec'd template, eval'd snippet
+)
+
+
+def _is_programmer_error(exc: BaseException) -> bool:
+    """Heuristic: True for caller-side bugs we should not report as tool failures."""
+    return isinstance(exc, _PROGRAMMER_ERRORS)
+
 
 def guard(
     client: ToolRate,
@@ -62,6 +82,7 @@ def guard(
     max_monthly_budget: float | None = None,
     expected_calls_per_month: int | None = None,
     budget_strategy: str | None = None,
+    error_filter: Callable[[BaseException], bool] | None = None,
 ) -> T:
     """Execute a tool call with ToolRate reliability and budget guards.
 
@@ -94,6 +115,15 @@ def guard(
         budget_strategy: ``"reliability_first"`` (default), ``"balanced"``,
             or ``"cost_first"``. Used when ``fallbacks="auto"`` so the auto
             resolver prefers tools that fit the caller's budget.
+        error_filter: Predicate called when ``fn`` raises. Return ``True``
+            to record the exception as a tool failure (the default for any
+            error not classified as a programmer mistake) or ``False`` to
+            re-raise immediately without reporting. Use this to keep your
+            own bugs (a TypeError in the lambda, a missing import) from
+            tanking a tool's reliability score. When ``None``, the default
+            heuristic re-raises common caller-side errors (TypeError,
+            AttributeError, KeyError, IndexError, NameError, ImportError,
+            SyntaxError) without reporting.
 
     Returns:
         The result of the successful tool call
@@ -187,6 +217,24 @@ def guard(
             return result
 
         except Exception as e:
+            # Decide whether this counts as a tool failure or a caller bug.
+            # Caller bugs (TypeError from a wrong-shape call, KeyError when
+            # the user's lambda assumes a key the API never returned, etc.)
+            # used to be reported as "server_error" against the tool, slowly
+            # poisoning its reliability score. The error_filter parameter
+            # (or the default programmer-error heuristic) lets us detect
+            # those and re-raise WITHOUT polluting the score.
+            if error_filter is not None:
+                should_report = error_filter(e)
+            else:
+                should_report = not _is_programmer_error(e)
+
+            if not should_report:
+                # Programmer mistake — propagate without recording. We don't
+                # try the next fallback either; a TypeError in your code is
+                # a TypeError in your code, no other tool will fix it.
+                raise
+
             latency_ms = int((time.perf_counter() - start) * 1000)
             last_error = e
 
@@ -217,6 +265,7 @@ def toolrate_guard(
     max_monthly_budget: float | None = None,
     expected_calls_per_month: int | None = None,
     budget_strategy: str | None = None,
+    error_filter: Callable[[BaseException], bool] | None = None,
 ):
     """Decorator version of guard. Accepts the same cost-aware kwargs.
 
@@ -239,6 +288,7 @@ def toolrate_guard(
                 max_monthly_budget=max_monthly_budget,
                 expected_calls_per_month=expected_calls_per_month,
                 budget_strategy=budget_strategy,
+                error_filter=error_filter,
             )
         return wrapper
     return decorator

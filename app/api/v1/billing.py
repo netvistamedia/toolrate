@@ -1,12 +1,15 @@
 import asyncio
 import logging
 import uuid as _uuid
+from datetime import datetime, timezone
 
 import httpx
 import stripe
 from fastapi import APIRouter, Request, HTTPException
 from pydantic import BaseModel, EmailStr, Field
+from redis.asyncio import Redis
 from sqlalchemy import select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.dependencies import Db, AuthenticatedKey, RedisClient
@@ -175,10 +178,17 @@ async def create_checkout(
     if api_key.stripe_customer_id:
         customer_id = api_key.stripe_customer_id
     else:
+        # Two concurrent checkouts for the same Free user used to create two
+        # Stripe customers, with the second one's ID overwriting the first
+        # in the DB. Stripe's idempotency_key folds both calls onto the same
+        # customer record — Stripe's own retry-safety primitive, no DB lock
+        # needed. Key shape is stable per api_key so retries within Stripe's
+        # 24h idempotency window converge.
         customer = await asyncio.to_thread(
             stripe.Customer.create,
             api_key=sk,
             metadata={"api_key_id": str(api_key.id), "key_prefix": api_key.key_prefix},
+            idempotency_key=f"customer-create-{api_key.id}",
         )
         customer_id = customer.id
         api_key.stripe_customer_id = customer_id
@@ -259,11 +269,11 @@ async def stripe_webhook(request: Request, db: Db, redis: RedisClient):
 
     try:
         if event_type == "checkout.session.completed":
-            await _handle_checkout_completed(db, data)
+            await _handle_checkout_completed(db, redis, data)
         elif event_type == "customer.subscription.updated":
-            await _handle_subscription_updated(db, data)
+            await _handle_subscription_updated(db, redis, data)
         elif event_type == "customer.subscription.deleted":
-            await _handle_subscription_deleted(db, data)
+            await _handle_subscription_deleted(db, redis, data)
         elif event_type == "invoice.payment_failed":
             await _handle_payment_failed(db, data)
     except Exception:
@@ -293,7 +303,86 @@ def _plan_values(plan: str) -> dict:
     }
 
 
-async def _handle_checkout_completed(db, session):
+async def _reset_quota_counters(redis: Redis, key_hashes: list[str]) -> None:
+    """Wipe both the daily and monthly Redis quota counters for these API keys.
+
+    Called whenever an API key transitions between tiers (Stripe webhook
+    handlers below). Without this reset, a Pro user who hit 9800/10000 monthly
+    and got auto-downgraded for a failed payment, then re-upgraded after the
+    retry succeeded, would land back on Pro with the monthly counter still
+    reading 9800 — instant rate-limit on the very next assess. Symmetrically,
+    a downgrade leaves the counter from the higher tier sitting in Redis
+    until the period rolls over.
+
+    Both daily and monthly keys are cleared regardless of direction. The
+    "exploit" path (pay → cancel for free quota) doesn't open up because
+    every counter the new tier reads is fresh anyway, and Stripe processing
+    time alone makes this strictly worse than just waiting for the daily
+    rollover.
+    """
+    if not key_hashes:
+        return
+    now = datetime.now(timezone.utc)
+    keys: list[str] = []
+    for kh in key_hashes:
+        keys.append(f"rl:{kh}:m:{now.strftime('%Y-%m')}")
+        keys.append(f"rl:{kh}:{now.strftime('%Y-%m-%d')}")
+    await redis.delete(*keys)
+
+
+async def _key_hashes_for_subscription(
+    db: AsyncSession, subscription_id: str
+) -> list[str]:
+    """Look up every api_key.key_hash tied to a Stripe subscription.
+
+    A subscription can in principle map to multiple API keys (key rotation
+    leaves stripe_subscription_id pointing at the old row briefly), so the
+    helper always returns a list — callers iterate.
+    """
+    result = await db.execute(
+        select(ApiKey.key_hash).where(
+            ApiKey.stripe_subscription_id == subscription_id,
+        )
+    )
+    return [row[0] for row in result.all()]
+
+
+async def _resolve_subscription_item_id(subscription_id: str | None) -> str | None:
+    """Look up the first subscription_item_id for a Stripe subscription.
+
+    PAYG metering needs the subscription_item_id to attach meter events;
+    the rotation handler already copies it across, but the initial
+    ``checkout.session.completed`` event never had it because Stripe only
+    returns the subscription id in the session payload. Fetching it here
+    keeps the column populated from day one instead of NULL until the
+    customer rotates their key.
+
+    Best-effort: a Stripe outage or 404 returns None and lets the audit
+    flow continue. The retry sweep in payg_meter handles the missing-
+    attachment case downstream.
+    """
+    if not subscription_id or not settings.stripe_secret_key:
+        return None
+    try:
+        sub = await asyncio.to_thread(
+            stripe.Subscription.retrieve,
+            subscription_id,
+            api_key=settings.stripe_secret_key,
+        )
+    except Exception as e:
+        logger.warning(
+            "Could not fetch subscription %s for item_id resolution: %s",
+            subscription_id, e,
+        )
+        return None
+    items = (sub.get("items") or {}).get("data") or []
+    if not items:
+        return None
+    first = items[0]
+    return first.get("id")
+
+
+async def _handle_checkout_completed(db, redis: Redis, session):
     """Apply the plan the user just paid for."""
     meta = session.get("metadata") or {}
     api_key_id = meta.get("api_key_id")
@@ -311,20 +400,37 @@ async def _handle_checkout_completed(db, session):
         logger.error("Invalid api_key_id in checkout metadata: %s — Stripe will retry", api_key_id)
         raise HTTPException(500, "Invalid api_key_id in checkout metadata")
 
+    subscription_item_id = await _resolve_subscription_item_id(subscription_id)
+
     values = _plan_values(plan) | {
         "stripe_customer_id": customer_id,
         "stripe_subscription_id": subscription_id,
+        "stripe_subscription_item_id": subscription_item_id,
     }
     await db.execute(update(ApiKey).where(ApiKey.id == key_uuid).values(**values))
     await log_audit(
         db, f"upgraded_to_{plan}", resource_type="api_key",
-        resource_id=api_key_id, detail={"subscription_id": subscription_id},
+        resource_id=api_key_id, detail={
+            "subscription_id": subscription_id,
+            "subscription_item_id": subscription_item_id,
+        },
     )
     await db.commit()
+
+    # Clear any stale daily counter from the previous tier. Pro reads the
+    # monthly counter (fresh by construction at first checkout), but a free
+    # user upgrading mid-day with 80/100 used would still see those 80 sitting
+    # in Redis if they ever downgraded back to free same-day — keep the slate
+    # clean from the start.
+    key_row = await db.execute(select(ApiKey.key_hash).where(ApiKey.id == key_uuid))
+    key_hash = key_row.scalar_one_or_none()
+    if key_hash:
+        await _reset_quota_counters(redis, [key_hash])
+
     logger.info("Upgraded API key %s to %s (sub %s)", api_key_id, plan, subscription_id)
 
 
-async def _handle_subscription_updated(db, subscription):
+async def _handle_subscription_updated(db, redis: Redis, subscription):
     """Handle subscription changes (plan change, renewal, pause).
 
     Enterprise keys are never touched — they're managed out-of-band and may
@@ -345,6 +451,12 @@ async def _handle_subscription_updated(db, subscription):
             .values(**values)
         )
         await db.commit()
+        # Renewal-after-failure path: the previous month's counter may have
+        # accumulated to the cap before the auto-downgrade. Without a reset
+        # the renewed Pro key would re-hit the cap immediately.
+        await _reset_quota_counters(
+            redis, await _key_hashes_for_subscription(db, subscription_id),
+        )
     elif status in ("past_due", "unpaid", "paused"):
         await db.execute(
             update(ApiKey)
@@ -359,12 +471,22 @@ async def _handle_subscription_updated(db, subscription):
             )
         )
         await db.commit()
+        # Tier dropped from monthly to daily — the leftover monthly counter
+        # is harmless to a fresh daily limiter, but the symmetric reset
+        # keeps the contract simple: any tier transition = fresh counters.
+        await _reset_quota_counters(
+            redis, await _key_hashes_for_subscription(db, subscription_id),
+        )
         logger.warning("Subscription %s → %s, downgraded to free limits", subscription_id, status)
 
 
-async def _handle_subscription_deleted(db, subscription):
+async def _handle_subscription_deleted(db, redis: Redis, subscription):
     """Downgrade to free when a subscription is cancelled. Skips enterprise."""
     subscription_id = subscription["id"]
+
+    # Snapshot the affected key_hashes BEFORE we null out stripe_subscription_id —
+    # otherwise the lookup helper finds zero matches and we skip the reset.
+    affected_hashes = await _key_hashes_for_subscription(db, subscription_id)
 
     await db.execute(
         update(ApiKey)
@@ -380,6 +502,7 @@ async def _handle_subscription_deleted(db, subscription):
         )
     )
     await db.commit()
+    await _reset_quota_counters(redis, affected_hashes)
     logger.info("Downgraded subscription %s to free tier", subscription_id)
 
 

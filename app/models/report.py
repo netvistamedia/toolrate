@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import Boolean, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Boolean, Integer, String, DateTime, ForeignKey, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models import Base
@@ -28,6 +28,18 @@ class ExecutionReport(Base):
     )
 
     __table_args__ = (
-        # Primary query path for scoring
-        # Index("idx_reports_tool_context_created", "tool_id", "context_hash", created_at.desc()),
+        # Concurrent reports for the same (fingerprint, session_id, attempt)
+        # used to insert side-by-side, double-counting the journey in the
+        # fallback chain analytics. The unique index enforces "one report per
+        # attempt within a session for a given reporter". Both Postgres and
+        # SQLite treat NULL as distinct in unique indexes, so legacy reports
+        # without session/attempt data (both columns NULL) can coexist freely
+        # — only rows that opt into journey tracking are de-duplicated.
+        Index(
+            "uq_reports_fingerprint_session_attempt",
+            "reporter_fingerprint",
+            "session_id",
+            "attempt_number",
+            unique=True,
+        ),
     )

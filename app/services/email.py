@@ -1,9 +1,11 @@
 """
 Email service using SendGrid.
 
-Sends welcome emails on registration with getting-started guide.
+Sends welcome emails on registration with getting-started guide, plus
+operational notifications such as webhook auto-deactivation.
 """
 import logging
+from html import escape
 
 import httpx
 
@@ -12,6 +14,101 @@ from app.config import settings
 logger = logging.getLogger("nemoflow.email")
 
 SENDGRID_API = "https://api.sendgrid.com/v3/mail/send"
+
+
+async def _send_via_sendgrid(payload: dict, *, log_label: str) -> None:
+    """Single-shot SendGrid POST with timeout + structured logging.
+
+    Tiny helper so every outbound transactional email goes through the same
+    timeout, error handling, and "log_label" tag — without each caller
+    replicating its own try/except around httpx.
+    """
+    if not settings.sendgrid_api_key:
+        logger.debug("SendGrid not configured, skipping %s", log_label)
+        return
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                SENDGRID_API,
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {settings.sendgrid_api_key}",
+                    "Content-Type": "application/json",
+                },
+                timeout=10.0,
+            )
+        if resp.status_code >= 300:
+            logger.warning(
+                "SendGrid (%s) returned %s: %s",
+                log_label, resp.status_code, resp.text[:300],
+            )
+        else:
+            logger.info("Email sent: %s", log_label)
+    except Exception as e:
+        logger.warning("SendGrid send failed (%s): %s", log_label, e)
+
+
+async def send_webhook_deactivated_email(
+    to_email: str,
+    *,
+    webhook_url: str,
+    failure_count: int,
+    last_error: str | None = None,
+) -> None:
+    """Notify the webhook owner that we just auto-deactivated their endpoint.
+
+    Triggered the moment ``failure_count`` crosses 10. Owners had no way to
+    discover this transition before — the dispatcher used to silently flip
+    ``is_active`` and stop calling them. The email is fire-and-forget;
+    SendGrid not configured = silently skipped, exactly like the welcome
+    email path.
+    """
+    if not to_email:
+        return
+
+    safe_url = escape(webhook_url)
+    last_error_html = (
+        f'<p style="margin:0.5rem 0;color:#666;font-size:0.85rem">'
+        f'Last error: <code>{escape(last_error)}</code></p>'
+        if last_error else ""
+    )
+
+    html = f"""
+<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;color:#333">
+  <div style="text-align:center;padding:1.5rem 0">
+    <h1 style="font-size:1.5rem;margin:0;color:#c0392b">Webhook auto-deactivated</h1>
+    <p style="color:#666;margin-top:0.5rem">After {failure_count} consecutive failed deliveries</p>
+  </div>
+
+  <div style="background:#fff5f5;border-left:4px solid #c0392b;border-radius:4px;padding:1rem 1.25rem;margin-bottom:1rem">
+    <p style="margin:0 0 0.5rem"><strong>Endpoint:</strong></p>
+    <p style="margin:0;font-family:Menlo,Monaco,monospace;font-size:0.85rem;word-break:break-all"><code>{safe_url}</code></p>
+    {last_error_html}
+  </div>
+
+  <p style="line-height:1.55">ToolRate stops sending events to a webhook after 10 consecutive failures so we don't keep hammering a dead endpoint. Your webhook is now inactive — no events will be delivered until you re-enable it.</p>
+
+  <p style="margin-top:1.25rem"><strong>To re-enable:</strong></p>
+  <ol style="padding-left:1.25rem;line-height:1.7">
+    <li>Fix the endpoint (verify TLS, deploy the missing route, etc.)</li>
+    <li>Delete and re-create the webhook via <code>POST /v1/webhooks</code></li>
+    <li>Or contact <a href="mailto:bleep@toolrate.ai" style="color:#0a95fd">support</a> to reset the failure counter without rotating the signing secret</li>
+  </ol>
+
+  <p style="color:#999;font-size:0.75rem;margin-top:2rem;text-align:center">
+    ToolRate — Reliability oracle for AI agents<br>
+    You received this because you set notification_email on your webhook.
+  </p>
+</div>
+""".strip()
+
+    payload = {
+        "personalizations": [{"to": [{"email": to_email}]}],
+        "from": {"email": settings.sendgrid_from_email, "name": "ToolRate"},
+        "subject": "[ToolRate] Webhook auto-deactivated",
+        "content": [{"type": "text/html", "value": html}],
+    }
+    await _send_via_sendgrid(payload, log_label="webhook_deactivated")
 
 
 async def send_welcome_email(to_email: str, api_key_prefix: str):

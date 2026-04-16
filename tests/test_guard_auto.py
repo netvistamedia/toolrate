@@ -264,3 +264,98 @@ class TestGuardAutoFallback:
             fallbacks=[("https://b.example", lambda: "b-ok")],
         )
         assert result == "b-ok"
+
+
+class TestGuardErrorFilter:
+    """``guard`` should not poison reliability data with caller-side bugs."""
+
+    def test_typeerror_in_lambda_propagates_without_report(self):
+        """A TypeError in the user's lambda is a programmer mistake, not a
+        tool failure. Re-raise immediately — do NOT report and do NOT try
+        the fallback (the fallback won't fix the typo)."""
+        client = FakeClient(assessments={
+            "https://primary.example": {"reliability_score": 100},
+        })
+
+        def caller_bug():
+            return "x" + 1  # TypeError: can only concatenate str ... to str
+
+        with pytest.raises(TypeError):
+            guard(
+                client, "https://primary.example", caller_bug,
+                fallbacks=[("https://backup.example", lambda: "backup-ok")],
+            )
+
+        # Nothing reported as a tool failure
+        failure_reports = [r for r in client.reports if r["success"] is False]
+        assert failure_reports == []
+
+    def test_keyerror_in_lambda_propagates_without_report(self):
+        client = FakeClient(assessments={"https://x.example": {"reliability_score": 100}})
+
+        def caller_bug():
+            d = {"a": 1}
+            return d["b"]  # KeyError
+
+        with pytest.raises(KeyError):
+            guard(client, "https://x.example", caller_bug)
+
+        assert client.reports == []
+
+    def test_runtimeerror_still_treated_as_tool_failure(self):
+        """RuntimeError + every other non-programmer error class still flows
+        through the existing "this counts as a tool failure" path."""
+        client = FakeClient(assessments={"https://x.example": {"reliability_score": 100}})
+
+        def real_failure():
+            raise RuntimeError("upstream timeout")
+
+        with pytest.raises(RuntimeError):
+            guard(client, "https://x.example", real_failure)
+
+        assert len(client.reports) == 1
+        assert client.reports[0]["success"] is False
+
+    def test_custom_error_filter_takes_precedence(self):
+        """A caller can opt-in to reporting TypeErrors AND opt-out of
+        reporting some otherwise-tool-looking errors via error_filter."""
+        client = FakeClient(assessments={"https://x.example": {"reliability_score": 100}})
+
+        class MyOwnException(Exception):
+            pass
+
+        def filter_out_my_exception(exc):
+            return not isinstance(exc, MyOwnException)
+
+        def raises_mine():
+            raise MyOwnException("internal flow control")
+
+        with pytest.raises(MyOwnException):
+            guard(
+                client, "https://x.example", raises_mine,
+                error_filter=filter_out_my_exception,
+            )
+
+        assert client.reports == []  # custom filter said don't report
+
+    def test_custom_filter_can_force_typeerror_reporting(self):
+        """If a caller explicitly wants TypeErrors reported (e.g. they're
+        wrapping calls into a typed-API wrapper that throws TypeError on
+        wire-format issues), error_filter must be able to opt-in."""
+        client = FakeClient(assessments={"https://x.example": {"reliability_score": 100}})
+
+        def report_everything(_exc):
+            return True
+
+        def caller_or_tool():
+            raise TypeError("wire decoder rejected payload")
+
+        with pytest.raises(TypeError):
+            guard(
+                client, "https://x.example", caller_or_tool,
+                error_filter=report_everything,
+            )
+
+        # Filter said "report" → one failure landed
+        assert len(client.reports) == 1
+        assert client.reports[0]["success"] is False

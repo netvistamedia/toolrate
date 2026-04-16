@@ -333,6 +333,7 @@ export class ToolRate {
     const maxMonthlyBudget = options?.maxMonthlyBudget;
     const expectedCallsPerMonth = options?.expectedCallsPerMonth;
     const budgetStrategy = options?.budgetStrategy;
+    const errorFilter = options?.errorFilter;
     const sessionId = makeSessionId();
 
     const autoMode = options?.fallbacks === "auto";
@@ -449,6 +450,22 @@ export class ToolRate {
       } catch (e) {
         const latencyMs = Math.round(performance.now() - start);
         lastError = e instanceof Error ? e : new Error(String(e));
+
+        // Decide whether this counts as a tool failure or a caller bug.
+        // Caller bugs (a TypeError because the lambda calls a method that
+        // doesn't exist, a ReferenceError on an undefined variable, etc.)
+        // used to be reported as "server_error" against the tool — slowly
+        // poisoning its reliability score with someone else's typos.
+        const shouldReport = errorFilter
+          ? errorFilter(e)
+          : !isProgrammerError(e);
+
+        if (!shouldReport) {
+          // Programmer mistake — propagate without recording. Don't try the
+          // next fallback either; a TypeError in your code is a TypeError
+          // in your code, no other tool will fix it.
+          throw lastError;
+        }
 
         // Report failure (best-effort)
         try {
@@ -695,6 +712,20 @@ function mapAssessResponse(raw: RawAssessResponse): AssessResponse {
     withinBudget: raw.within_budget ?? null,
     budgetExplanation: raw.budget_explanation ?? null,
   };
+}
+
+// ── Programmer-error detection ───────────────────────────────────
+// JavaScript's built-in error classes used as a heuristic for "this is a
+// caller bug, not a tool failure". Mirrors the Python SDK's
+// _PROGRAMMER_ERRORS tuple. Callers can override via GuardOptions.errorFilter.
+
+function isProgrammerError(error: unknown): boolean {
+  return (
+    error instanceof TypeError ||
+    error instanceof ReferenceError ||
+    error instanceof RangeError ||
+    error instanceof SyntaxError
+  );
 }
 
 // ── Error classification ─────────────────────────────────────────
