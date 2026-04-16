@@ -71,6 +71,25 @@ async def ingest_report(
     if fp_count > settings.max_reports_per_fingerprint_per_tool_per_day:
         return tool, None  # silently drop, don't reveal the limit
 
+    # Journey dedup — concurrent /v1/report calls for the same
+    # (fingerprint, session, attempt) tuple used to insert side-by-side
+    # and double-count the journey in fallback-chain analytics. We can't
+    # use a UNIQUE constraint because ``execution_reports`` is partitioned
+    # on ``created_at``; instead, do a SELECT-before-INSERT against the
+    # supporting index. The residual race window (between SELECT and
+    # INSERT) is microseconds — small enough that it doesn't materially
+    # affect the analytics.
+    if session_id is not None and attempt_number is not None:
+        existing = await db.execute(
+            select(ExecutionReport.id).where(
+                ExecutionReport.reporter_fingerprint == reporter_fingerprint,
+                ExecutionReport.session_id == session_id,
+                ExecutionReport.attempt_number == attempt_number,
+            ).limit(1)
+        )
+        if existing.scalar_one_or_none() is not None:
+            return tool, None
+
     report = ExecutionReport(
         tool_id=tool.id,
         success=success,
@@ -85,23 +104,10 @@ async def ingest_report(
     )
     db.add(report)
 
-    # Increment tool report count BEFORE flushing the report row so a
-    # unique-constraint failure on (fingerprint, session, attempt) rolls
-    # both writes back together and the counter doesn't tick up for a
-    # rejected duplicate.
+    # Increment tool report count
     await db.execute(
         update(Tool).where(Tool.id == tool.id).values(report_count=Tool.report_count + 1)
     )
-
-    try:
-        await db.flush()
-    except IntegrityError:
-        # Duplicate (fingerprint, session_id, attempt_number) — concurrent
-        # report for the same agent journey step. Treat as idempotent
-        # success: the first write already captured this attempt, return
-        # the same tool the caller would have seen anyway.
-        await db.rollback()
-        return tool, None
 
     # Read old cached score BEFORE commit (avoids race with cache invalidation).
     # We read the __global__ bucket because that's what webhook score-change

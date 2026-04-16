@@ -28,18 +28,17 @@ class ExecutionReport(Base):
     )
 
     __table_args__ = (
-        # Concurrent reports for the same (fingerprint, session_id, attempt)
-        # used to insert side-by-side, double-counting the journey in the
-        # fallback chain analytics. The unique index enforces "one report per
-        # attempt within a session for a given reporter". Both Postgres and
-        # SQLite treat NULL as distinct in unique indexes, so legacy reports
-        # without session/attempt data (both columns NULL) can coexist freely
-        # — only rows that opt into journey tracking are de-duplicated.
+        # Lookup index supporting the app-layer dedup check in
+        # ``report_ingest.ingest_report`` — we can't add a UNIQUE constraint
+        # because ``execution_reports`` is partitioned on ``created_at``
+        # and Postgres requires unique indexes on partitioned tables to
+        # include every partition key column. The pre-insert SELECT on
+        # this index is cheap and the residual race window for true
+        # concurrent inserts is small (microseconds).
         Index(
-            "uq_reports_fingerprint_session_attempt",
+            "idx_reports_fingerprint_session_attempt",
             "reporter_fingerprint",
             "session_id",
             "attempt_number",
-            unique=True,
         ),
     )
