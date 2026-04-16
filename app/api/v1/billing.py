@@ -286,6 +286,20 @@ async def stripe_webhook(request: Request, db: Db, redis: RedisClient):
     return {"status": "ok"}
 
 
+_ALLOWED_PLANS = ("pro", "payg")
+
+
+def _normalize_plan(plan: str | None) -> str:
+    """Coerce a Stripe-supplied plan label to a known value.
+
+    Stripe `metadata` is operator-set (we control it during checkout), but a
+    misconfigured price or a malicious dashboard edit could land arbitrary
+    junk here — and that junk gets interpolated into audit log action strings
+    (`upgraded_to_<plan>`), polluting the indexed `action` column.
+    """
+    return plan if plan in _ALLOWED_PLANS else "pro"
+
+
 def _plan_values(plan: str) -> dict:
     """Return the ApiKey column values for a given plan name."""
     if plan == "pro":
@@ -386,7 +400,7 @@ async def _handle_checkout_completed(db, redis: Redis, session):
     """Apply the plan the user just paid for."""
     meta = session.get("metadata") or {}
     api_key_id = meta.get("api_key_id")
-    plan = meta.get("plan", "pro")  # Legacy sessions default to pro
+    plan = _normalize_plan(meta.get("plan"))  # Legacy sessions default to pro
     customer_id = session.get("customer")
     subscription_id = session.get("subscription")
 
@@ -438,7 +452,7 @@ async def _handle_subscription_updated(db, redis: Redis, subscription):
     """
     subscription_id = subscription["id"]
     status = subscription["status"]
-    plan = (subscription.get("metadata") or {}).get("plan", "pro")
+    plan = _normalize_plan((subscription.get("metadata") or {}).get("plan"))
 
     if status == "active":
         values = _plan_values(plan)

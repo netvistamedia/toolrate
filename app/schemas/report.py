@@ -16,7 +16,7 @@ class ReportRequest(BaseModel):
             "those are recorded but do not affect the reliability score."
         ),
     )
-    latency_ms: int | None = Field(None, ge=0, le=300000, description="Execution latency in milliseconds")
+    latency_ms: int | None = Field(None, ge=1, le=300000, description="Execution latency in milliseconds")
     context: str = Field("", max_length=1024, description="Workflow context (hashed for privacy)")
     session_id: str | None = Field(None, max_length=64, description="Groups related tool calls in the same workflow. Use a UUID or random string per agent session.")
     attempt_number: int | None = Field(None, ge=1, le=20, description="Which attempt is this? 1 = first try, 2 = fallback after first tool failed, etc.")

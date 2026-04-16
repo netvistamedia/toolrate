@@ -1045,10 +1045,16 @@ async def compute_score(
             change_24h=change,
         )
 
-    # Step 5: Success rate strings
+    # Step 5: Success rate string. Uses the same recency-weighted ratio as
+    # ``reliability_score`` (without the Bayesian prior) so the two numbers
+    # tell a consistent story — previously this was raw count / total, which
+    # diverged from the score by 5-15pp on tools with a noisy backlog.
     total = len(reports)
-    successes_total = sum(1 for r in reports if r.success)
-    sr_30d = round(successes_total / total * 100) if total else 0
+    sr_30d = (
+        round(weighted_successes / total_weight * 100)
+        if total_weight > 0
+        else 0
+    )
     success_rate_str = f"{sr_30d}% (last 30 days, {total} calls)"
 
     # Step 6: Structured pitfalls and mitigations. Tool-specific mitigations

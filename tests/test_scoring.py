@@ -273,6 +273,36 @@ class TestRecencyWeightedPitfalls:
         )
 
 
+class TestHistoricalSuccessRate:
+    """historical_success_rate should mirror reliability_score's recency
+    weighting, so a tool can't show "30% historical / 78% reliability" — two
+    numbers from the same data that diverge by 40+ pp because one ignored age.
+    """
+
+    @pytest.mark.asyncio
+    async def test_old_failures_fade_from_displayed_rate(self, db):
+        tool = await _create_tool(db)
+        # Inside the 30-day lookback but well past the 3.5-day half-life:
+        # ~exp(-20 * ln(2)/3.5) ≈ 0.02 weight per failure.
+        await _add_reports(db, tool, successes=0, failures=100, age_days=20)
+        # Today: weight ≈ 1.0 per success.
+        await _add_reports(db, tool, successes=10, failures=0, age_days=0)
+        await db.commit()
+
+        result = await compute_score(db, tool, "__global__")
+        # Raw rate would be 10/110 = 9%. Weighted rate is ~10/(10 + 100*0.02)
+        # = 10/12 ≈ 83% — close to the reliability_score and far from 9%.
+        displayed = int(result.historical_success_rate.split("%")[0])
+        assert displayed >= 70, (
+            f"historical_success_rate should reflect recency weighting; got "
+            f"{result.historical_success_rate} for 100 aging failures + "
+            f"10 fresh successes"
+        )
+        # Total call count is still raw — "we have 110 data points" is honest
+        # even when most of them are barely contributing to the rate.
+        assert "110 calls" in result.historical_success_rate
+
+
 class TestEffectiveSampleSize:
     """Confidence should use Kish's effective sample size, not raw Σw."""
 

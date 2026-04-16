@@ -314,6 +314,19 @@ class ToolRate:
     def __exit__(self, *exc: Any) -> None:
         self.close()
 
+    def __del__(self) -> None:
+        # Last-resort cleanup if the caller never invoked close() / used the
+        # context manager. ``httpx.Client`` already closes on GC, but being
+        # explicit avoids "unclosed connection" warnings for users who hold
+        # the client at module scope. Swallow everything: __del__ runs during
+        # interpreter shutdown when modules and attributes may already be gone.
+        try:
+            client = getattr(self, "_client", None)
+            if client is not None:
+                client.close()
+        except Exception:
+            pass
+
 
 class AsyncToolRate:
     """Asynchronous client for the ToolRate API."""
@@ -535,6 +548,26 @@ class AsyncToolRate:
 
     async def __aexit__(self, *exc: Any) -> None:
         await self.close()
+
+    def __del__(self) -> None:
+        # Async clients can't be reliably aclose()-d from __del__ (no event
+        # loop guaranteed to be running), so just emit a warning when the
+        # caller leaks one. ``httpx.AsyncClient`` does the same — this just
+        # surfaces the issue under the toolrate namespace so users know
+        # which SDK to fix.
+        try:
+            client = getattr(self, "_client", None)
+            if client is not None and not client.is_closed:
+                import warnings
+                warnings.warn(
+                    "AsyncToolRate was not closed before garbage collection. "
+                    "Use 'async with AsyncToolRate(...) as client:' or call "
+                    "'await client.close()' to release connection pool.",
+                    ResourceWarning,
+                    stacklevel=2,
+                )
+        except Exception:
+            pass
 
 
 # Backwards-compatible aliases (deprecated names kept for existing imports)

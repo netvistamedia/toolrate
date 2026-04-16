@@ -270,6 +270,87 @@ async def test_unknown_event_type_still_marks_seen(billing_client):
     assert await redis.get("stripe:events:seen:evt_unknown_type") == "1"
 
 
+# ── Plan-metadata sanitization ────────────────────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_checkout_with_junk_plan_metadata_normalizes_to_pro(billing_client):
+    """A misconfigured price (or a malicious dashboard edit) putting an
+    arbitrary string in `metadata.plan` MUST NOT be interpolated verbatim
+    into the audit log action — that column is indexed and used for upgrade
+    analytics."""
+    ac, sf, _redis = billing_client
+    key = await _insert_test_key(sf)
+    event = {
+        "id": "evt_junk_plan",
+        "type": "checkout.session.completed",
+        "data": {
+            "object": {
+                "id": "cs_test_junk",
+                "customer": "cus_junk",
+                "subscription": "sub_junk",
+                "metadata": {
+                    "api_key_id": str(key.id),
+                    "plan": "../../etc/passwd",
+                },
+            }
+        },
+    }
+    resp = await ac.post(
+        "/v1/billing/webhook",
+        content=json.dumps(event),
+        headers={"stripe-signature": "x"},
+    )
+    assert resp.status_code == 200
+
+    # Audit action falls back to the safe default, NOT "upgraded_to_../../etc/passwd"
+    async with sf() as db:
+        actions = (
+            await db.execute(
+                select(AuditLog.action).where(AuditLog.resource_id == str(key.id))
+            )
+        ).scalars().all()
+    assert "upgraded_to_pro" in actions
+    assert not any("etc/passwd" in a for a in actions)
+
+
+@pytest.mark.asyncio
+async def test_subscription_updated_with_junk_plan_normalizes_to_pro(billing_client):
+    """Same defense at the subscription-updated path — Stripe's metadata is
+    operator-set but should still be defended in depth."""
+    ac, sf, _redis = billing_client
+    key = await _insert_test_key(sf)
+    async with sf() as db:
+        db_key = (await db.execute(select(ApiKey).where(ApiKey.id == key.id))).scalar_one()
+        db_key.stripe_subscription_id = "sub_junk_update"
+        await db.commit()
+
+    event = {
+        "id": "evt_junk_update",
+        "type": "customer.subscription.updated",
+        "data": {
+            "object": {
+                "id": "sub_junk_update",
+                "status": "active",
+                "metadata": {"plan": "free; DROP TABLE api_keys"},
+            }
+        },
+    }
+    resp = await ac.post(
+        "/v1/billing/webhook",
+        content=json.dumps(event),
+        headers={"stripe-signature": "x"},
+    )
+    assert resp.status_code == 200
+
+    async with sf() as db:
+        updated = (
+            await db.execute(select(ApiKey).where(ApiKey.id == key.id))
+        ).scalar_one()
+    assert updated.tier == "pro"
+    assert updated.billing_period == "monthly"
+
+
 # ── Tier-transition quota reset ───────────────────────────────────────────
 
 
