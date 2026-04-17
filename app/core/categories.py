@@ -30,7 +30,6 @@ CANONICAL_CATEGORIES: frozenset[str] = frozenset({
     "Code Execution",
     "E-commerce",
     "Other APIs",
-    "Other",
 })
 
 
@@ -120,11 +119,15 @@ _ALIASES: dict[str, str] = {
     "e-commerce":           "E-commerce",
     "ecom":                 "E-commerce",
     "e_commerce":           "E-commerce",
-    # Other
-    "other":                "Other",
-    "miscellaneous":        "Other",
-    "misc":                 "Other",
-    "unknown":              "Other",
+    # Other — everything unfamiliar funnels into the single "Other APIs"
+    # bucket. "Other" used to be a separate canonical, which quietly
+    # fragmented the taxonomy (the fallback at the bottom of normalize_category
+    # always returned "Other APIs" while these aliases returned "Other").
+    "other":                "Other APIs",
+    "other_apis":           "Other APIs",
+    "miscellaneous":        "Other APIs",
+    "misc":                 "Other APIs",
+    "unknown":              "Other APIs",
 }
 
 

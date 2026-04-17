@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy import case, func, select
 
 from app.core.categories import normalize_category
+from app.core.identifiers import normalize_identifier
 from app.core.security import context_hash as _context_hash, effective_data_pool
 from app.dependencies import Db, RedisClient, AuthenticatedKey
 from app.models.report import ExecutionReport
@@ -99,12 +100,17 @@ async def get_tool_detail(
     redis: RedisClient,
     api_key: AuthenticatedKey,
 ):
-    result = await db.execute(select(Tool).where(Tool.identifier == identifier))
+    # Canonicalise so `/v1/tools/HTTPS:%2F%2FAPI.Stripe.Com%2F` hits the same
+    # DB row as `/v1/tools/https:%2F%2Fapi.stripe.com`. Rows are stored under
+    # the normalized identifier, so a raw lookup 404s on any case/slash
+    # variant of a tool that actually exists.
+    canonical = normalize_identifier(identifier)
+    result = await db.execute(select(Tool).where(Tool.identifier == canonical))
     tool = result.scalar_one_or_none()
     if not tool:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Tool not found: {identifier}",
+            detail=f"Tool not found: {canonical}",
         )
 
     ctx_hash = _context_hash("")

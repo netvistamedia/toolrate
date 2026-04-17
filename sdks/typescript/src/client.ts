@@ -50,6 +50,8 @@ export class ToolRate {
       expected_tokens: params.expectedTokens,
       task_complexity: params.taskComplexity,
       budget_strategy: params.budgetStrategy,
+      eu_only: params.euOnly || undefined,
+      gdpr_required: params.gdprRequired || undefined,
     });
 
     return mapAssessResponse(raw);
@@ -715,6 +717,20 @@ function mapAssessResponse(raw: RawAssessResponse): AssessResponse {
     budgetExplanation: raw.budget_explanation ?? null,
     recommendedModel: raw.recommended_model ?? null,
     reasoning: raw.reasoning ?? null,
+    hostingJurisdiction: raw.hosting_jurisdiction ?? null,
+    gdprCompliant: raw.gdpr_compliant ?? false,
+    dataResidencyRisk: raw.data_residency_risk ?? "medium",
+    jurisdictionSource: raw.jurisdiction_source ?? null,
+    jurisdictionConfidence: raw.jurisdiction_confidence ?? null,
+    jurisdictionNotes: raw.jurisdiction_notes ?? null,
+    recommendedFor: raw.recommended_for ?? [],
+    euAlternatives: (raw.eu_alternatives ?? []).map((a) => ({
+      tool: a.tool,
+      score: a.score,
+      reason: a.reason,
+      pricePerCall: a.price_per_call ?? null,
+      withinBudget: a.within_budget ?? null,
+    })),
   };
 }
 
@@ -742,14 +758,17 @@ function classifyError(error: Error): string {
     return "timeout";
   if (name.includes("ratelimit") || (msg.includes("rate") && msg.includes("limit")) || msg.includes("429") || msg.includes("too many"))
     return "rate_limit";
-  if (name.includes("auth") || msg.includes("unauthorized") || msg.includes("401") || msg.includes("403"))
+  // 403 Forbidden is an authorization failure (authenticated but lacks
+  // permission), not an authentication failure — classify it before the
+  // generic auth bucket so it doesn't get mis-labelled as a credential issue.
+  if (msg.includes("permission") || msg.includes("forbidden") || msg.includes("403"))
+    return "permission_denied";
+  if (name.includes("auth") || msg.includes("unauthorized") || msg.includes("401"))
     return "auth_failure";
   if (name.includes("validation") || msg.includes("invalid") || msg.includes("422"))
     return "validation_error";
   if (msg.includes("not found") || msg.includes("404"))
     return "not_found";
-  if (msg.includes("permission") || msg.includes("forbidden"))
-    return "permission_denied";
   if (name.includes("connect") || msg.includes("connection") || msg.includes("econnrefused"))
     return "connection_error";
 
@@ -795,6 +814,20 @@ interface RawAssessResponse {
   budget_explanation?: string | null;
   recommended_model?: string | null;
   reasoning?: string | null;
+  hosting_jurisdiction?: string | null;
+  gdpr_compliant?: boolean;
+  data_residency_risk?: "none" | "low" | "medium" | "high";
+  jurisdiction_source?: string | null;
+  jurisdiction_confidence?: string | null;
+  jurisdiction_notes?: string | null;
+  recommended_for?: string[];
+  eu_alternatives?: Array<{
+    tool: string;
+    score: number;
+    reason: string;
+    price_per_call?: number | null;
+    within_budget?: boolean | null;
+  }>;
 }
 
 interface RawBatchAssessResponse {

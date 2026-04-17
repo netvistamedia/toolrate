@@ -400,7 +400,10 @@ async def enrich_tool(tool: Any) -> bool:
     tool.jurisdiction_source = info.get("jurisdiction_source")
     tool.jurisdiction_confidence = info.get("jurisdiction_confidence")
     notes = info.get("notes")
-    if notes:
-        # Preserve prior notes only when adding more detail.
+    if notes and (not tool.notes or len(notes) > len(tool.notes)):
+        # Preserve prior notes (often richer, hand-curated from the seed data)
+        # unless the resolver produced something strictly longer. Without this
+        # guard a WHOIS fallback ("Registrant country from WHOIS...") would
+        # overwrite the detailed seed notes the next time enrich_tool ran.
         tool.notes = notes
     return True

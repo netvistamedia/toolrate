@@ -281,11 +281,17 @@ async def create_tool_from_assessment(
     tool.report_count = num_reports
 
     # Store alternatives
+    from app.core.identifiers import normalize_identifier
     alternatives = assessment.get("alternatives", [])
     for alt_data in alternatives[:3]:
         alt_identifier = alt_data.get("identifier", "").strip()
         if not alt_identifier:
             continue
+        # Canonicalise so the LLM's capitalization/trailing-slash quirks
+        # don't leak into the DB — otherwise `https://api.openai.com/` and
+        # `https://API.openai.com` would create two separate Tool rows and
+        # fragment every downstream metric for the same endpoint.
+        alt_identifier = normalize_identifier(alt_identifier)
 
         # Find or create the alternative tool. The insert is wrapped in a
         # SAVEPOINT so that a concurrent cold-start recommending the same

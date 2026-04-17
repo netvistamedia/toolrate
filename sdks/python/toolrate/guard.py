@@ -367,16 +367,19 @@ def _classify_error(error: Exception) -> str:
 
     if "timeout" in name or "timeout" in message or "timed out" in message:
         return "timeout"
-    if "ratelimit" in name or "rate" in message and "limit" in message or "429" in message or "too many" in message:
+    if "ratelimit" in name or ("rate" in message and "limit" in message) or "429" in message or "too many" in message:
         return "rate_limit"
-    if "auth" in name or "unauthorized" in message or "403" in message or "401" in message:
+    # 403 is "Forbidden" — authenticated but not authorized. Check this
+    # BEFORE the generic auth_failure bucket so 403 doesn't get miscategorised
+    # as a credential problem when it's really a permission scope issue.
+    if "permission" in name or "forbidden" in message or "403" in message:
+        return "permission_denied"
+    if "auth" in name or "unauthorized" in message or "401" in message:
         return "auth_failure"
     if "validation" in name or "invalid" in message or "422" in message:
         return "validation_error"
     if "notfound" in name or "not found" in message or "404" in message:
         return "not_found"
-    if "permission" in name or "forbidden" in message:
-        return "permission_denied"
     if "connect" in name or "connection" in message or "dns" in message:
         return "connection_error"
 

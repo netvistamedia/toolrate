@@ -122,9 +122,14 @@ async def import_to_db(tools: list[dict]):
     updated = 0
     reports_created = 0
 
+    from app.core.identifiers import normalize_identifier
+
     async with async_session() as db:
         for tool_data in tools:
-            identifier = tool_data["identifier"]
+            # Canonicalise the identifier from the import JSON so a variant
+            # spelling (trailing slash, mixed case) doesn't create a second
+            # Tool row alongside the canonical one already in the DB.
+            identifier = normalize_identifier(tool_data["identifier"])
             reliability = tool_data["reliability_estimate"]
             avg_latency = tool_data["avg_latency_ms"]
             errors = tool_data["common_errors"]

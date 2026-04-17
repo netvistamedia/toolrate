@@ -134,7 +134,11 @@ async def ingest_report(
     if stale_keys:
         await redis.delete(*stale_keys)
 
-    # Dispatch webhooks if score changed significantly
+    # Dispatch webhooks if score changed significantly. Use the tool's
+    # canonical identifier (set by upsert_tool) so the webhook filter match
+    # works — a report posted with a non-canonical URL (mixed case, trailing
+    # slash) would otherwise never trigger a webhook that was registered
+    # under the canonical form.
     if old_score is not None:
         from app.services.scoring import compute_score
         await db.refresh(tool)
@@ -142,6 +146,6 @@ async def ingest_report(
         new_score = new_response.reliability_score
         if abs(new_score - old_score) >= 1:
             from app.services.webhook_dispatch import dispatch_score_change
-            await dispatch_score_change(tool_identifier, old_score, new_score)
+            await dispatch_score_change(tool.identifier, old_score, new_score)
 
     return tool, report

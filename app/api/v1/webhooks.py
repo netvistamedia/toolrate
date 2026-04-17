@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, EmailStr, Field, HttpUrl, field_validator
 from sqlalchemy import select, func
 
+from app.core.identifiers import normalize_identifier
 from app.core.url_safety import is_public_url
 from app.dependencies import Db, AuthenticatedKey
 from app.models.webhook import Webhook
@@ -79,12 +80,20 @@ async def create_webhook(
     if body.event != "score.change":
         raise HTTPException(400, f"Unsupported event type: {body.event}. Currently only 'score.change' is supported.")
 
+    # Canonicalise the filter key so it matches what dispatch_score_change
+    # looks up. Without this, a webhook registered against
+    # `HTTPS://API.Stripe.com/v1/charges/` would never fire for reports
+    # ingested under the canonical `https://api.stripe.com/v1/charges`.
+    stored_tool_identifier = (
+        normalize_identifier(body.tool_identifier) if body.tool_identifier else None
+    )
+
     secret = secrets.token_hex(32)
     wh = Webhook(
         api_key_id=api_key.id,
         url=str(body.url),
         event=body.event,
-        tool_identifier=body.tool_identifier,
+        tool_identifier=stored_tool_identifier,
         threshold=body.threshold,
         secret=secret,
         notification_email=str(body.notification_email) if body.notification_email else None,
@@ -100,7 +109,7 @@ async def create_webhook(
         id=str(wh.id),
         url=wh.url,
         event=wh.event,
-        tool_identifier=wh.tool_identifier,
+        tool_identifier=stored_tool_identifier,
         threshold=wh.threshold,
         secret=secret,
         is_active=True,

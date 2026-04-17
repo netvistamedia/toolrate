@@ -39,6 +39,13 @@ export interface AssessParams {
    * `"speed_first"` adds a third axis using `typicalLatencyMs` from pricing.
    */
   budgetStrategy?: "reliability_first" | "balanced" | "cost_first" | "speed_first";
+  /** Populate `euAlternatives` with EU-hosted tools. */
+  euOnly?: boolean;
+  /**
+   * Superset of `euOnly` — also includes GDPR-adequate jurisdictions
+   * (UK, Canada, etc.) in `euAlternatives`.
+   */
+  gdprRequired?: boolean;
 }
 
 export interface AlternativeTool {
@@ -105,6 +112,22 @@ export interface AssessResponse {
   recommendedModel: string | null;
   /** Always-populated human-readable explanation of the score, model pick, cost, and strategy. */
   reasoning: string | null;
+  /** Human-readable hosting jurisdiction, e.g. "EU (Germany - Frankfurt)". */
+  hostingJurisdiction: string | null;
+  /** True for EU and GDPR-adequate jurisdictions. */
+  gdprCompliant: boolean;
+  /** GDPR residency risk: none, low, medium, or high. */
+  dataResidencyRisk: "none" | "low" | "medium" | "high";
+  /** Where the jurisdiction verdict came from: manual, whois, ip_geolocation, or cdn_detected. */
+  jurisdictionSource: string | null;
+  /** Trustworthiness of the jurisdiction verdict: high, medium, or low. */
+  jurisdictionConfidence: string | null;
+  /** Short explanation of the jurisdiction assignment. */
+  jurisdictionNotes: string | null;
+  /** Workflow tags this tool is suited for, e.g. "eu_companies", "gdpr_strict_workflows". */
+  recommendedFor: string[];
+  /** EU-hosted (or GDPR-adequate) alternatives when `euOnly`/`gdprRequired` is set. */
+  euAlternatives: AlternativeTool[];
 }
 
 // ── Batch Assess ────────────────────────────────────────────────────

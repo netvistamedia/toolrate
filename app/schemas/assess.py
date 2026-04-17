@@ -47,7 +47,7 @@ class AssessRequest(BaseModel):
         description="Maximum USD spend per month. Combined with expected_calls_per_month to evaluate the within_budget flag.",
     )
     expected_calls_per_month: int | None = Field(
-        None, ge=0,
+        None, ge=0, le=100_000_000,
         description="Expected call volume. Used for estimated_monthly_cost projection and free-tier-aware effective cost.",
     )
     expected_tokens: int | None = Field(

@@ -100,6 +100,8 @@ class ToolRate:
         expected_tokens: Optional[int] = None,
         task_complexity: Optional[str] = None,
         budget_strategy: Optional[str] = None,
+        eu_only: bool = False,
+        gdpr_required: bool = False,
     ) -> dict[str, Any]:
         """Assess a tool's reliability and get recommendations.
 
@@ -123,6 +125,10 @@ class ToolRate:
         - ``budget_strategy``: one of ``"reliability_first"`` (default),
           ``"balanced"``, ``"cost_first"``, or ``"speed_first"``. Determines
           how ``cost_adjusted_score`` weights reliability vs. cost vs. latency.
+        - ``eu_only``: when True, populate ``eu_alternatives`` with tools
+          hosted inside the EU.
+        - ``gdpr_required``: superset of ``eu_only`` — also includes
+          GDPR-adequate jurisdictions (UK, Canada, etc.).
         """
         body: dict[str, Any] = {
             "tool_identifier": tool_identifier,
@@ -142,6 +148,10 @@ class ToolRate:
             body["task_complexity"] = task_complexity
         if budget_strategy is not None:
             body["budget_strategy"] = budget_strategy
+        if eu_only:
+            body["eu_only"] = True
+        if gdpr_required:
+            body["gdpr_required"] = True
 
         resp = self._client.post("/v1/assess", json=body)
         return _parse_json_or_raise(resp)
@@ -359,6 +369,8 @@ class AsyncToolRate:
         expected_tokens: Optional[int] = None,
         task_complexity: Optional[str] = None,
         budget_strategy: Optional[str] = None,
+        eu_only: bool = False,
+        gdpr_required: bool = False,
     ) -> dict[str, Any]:
         """Assess a tool's reliability and get recommendations.
 
@@ -379,6 +391,10 @@ class AsyncToolRate:
         - ``budget_strategy``: ``"reliability_first"`` (default),
           ``"balanced"``, ``"cost_first"``, or ``"speed_first"``. The last
           strategy adds a latency dimension to the score.
+        - ``eu_only``: when True, populate ``eu_alternatives`` with tools
+          hosted inside the EU.
+        - ``gdpr_required``: superset of ``eu_only`` — also includes
+          GDPR-adequate jurisdictions (UK, Canada, etc.).
         """
         body: dict[str, Any] = {
             "tool_identifier": tool_identifier,
@@ -398,6 +414,10 @@ class AsyncToolRate:
             body["task_complexity"] = task_complexity
         if budget_strategy is not None:
             body["budget_strategy"] = budget_strategy
+        if eu_only:
+            body["eu_only"] = True
+        if gdpr_required:
+            body["gdpr_required"] = True
 
         resp = await self._client.post("/v1/assess", json=body)
         return _parse_json_or_raise(resp)
