@@ -20,7 +20,7 @@ export async function handler(input: RegisterInput) {
     const { body } = await apiRequest<RawRegisterResponse>({
       method: "POST",
       path: "/v1/auth/register",
-      body: { email: input.email },
+      body: { email: input.email, source: "mcp" },
       authenticated: false,
     });
 

@@ -25,11 +25,23 @@ _pending_welcome_tasks: set[asyncio.Task] = set()
 
 class RegisterRequest(BaseModel):
     email: EmailStr = Field(..., max_length=256, description="Your email address (hashed, never stored in plain text)")
+    source: str | None = Field(
+        None,
+        max_length=32,
+        pattern=r"^[a-z0-9_]+$",
+        description=(
+            "Optional provenance tag for analytics. Stored on the key and "
+            "never updated. Examples: 'web' (default if omitted), 'mcp' "
+            "(@toolrate/mcp-server), 'partner_<name>'. Lowercase letters, "
+            "digits, underscore only."
+        ),
+    )
 
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {"email": "dev@example.com"},
+                {"email": "dev@example.com", "source": "mcp"},
             ]
         }
     }
@@ -113,17 +125,19 @@ async def register(
 
         # Create free-tier key
         full_key, key_hash, key_prefix = generate_api_key()
+        source = body.source or "web"
         api_key = ApiKey(
             key_hash=key_hash,
             key_prefix=key_prefix,
             tier="free",
             daily_limit=settings.free_daily_limit,
             data_pool=email_tag,
+            source=source,
         )
         db.add(api_key)
         await log_audit(db, "key_created", actor_key_prefix=key_prefix,
                         resource_type="api_key", resource_id=key_prefix,
-                        detail={"tier": "free"}, client_ip=client_ip)
+                        detail={"tier": "free", "source": source}, client_ip=client_ip)
         await db.commit()
     finally:
         # Release immediately on success/failure — the 30s TTL is just a

@@ -26,6 +26,11 @@ class ApiKey(Base):
     stripe_subscription_id: Mapped[str | None] = mapped_column(String(64))
     stripe_subscription_item_id: Mapped[str | None] = mapped_column(String(64))
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    # Provenance tag for analytics. Set at registration time, never updated.
+    # Common values: "web" (landing page), "mcp" (@toolrate/mcp-server),
+    # "cli" (admin-issued via app.cli), null for legacy keys created before
+    # the column existed.
+    source: Mapped[str | None] = mapped_column(String(32), index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)
     )
