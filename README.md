@@ -103,6 +103,20 @@ const result = await client.guard(
 
 `guard()` automatically assesses reliability before calling, executes the tool, reports the outcome, and on failure tries your fallback tools.
 
+## Use it from your editor (MCP)
+
+Plug ToolRate into Claude Code, Cursor, Zed, or any [Model Context Protocol](https://modelcontextprotocol.io) client and your agent gets `toolrate_assess`, `toolrate_route_llm`, `toolrate_report`, `toolrate_fallback_chain`, and four more tools natively — no SDK to import.
+
+**Claude Code:**
+
+```bash
+claude mcp add toolrate npx -y @toolrate/mcp-server --env TOOLRATE_API_KEY=nf_live_xxxxx
+```
+
+**Cursor / Zed / others** — see [`mcp/typescript/README.md`](./mcp/typescript/README.md) for config snippets.
+
+The package is [`@toolrate/mcp-server`](https://www.npmjs.com/package/@toolrate/mcp-server) on npm. No install step needed — `npx` fetches and runs it on demand.
+
 ## The problem
 
 AI agents fail **60-80% of the time** on external tool calls. Timeouts, rate limits, auth failures, flaky APIs. Your agent retries blindly, burns tokens, and still fails. ToolRate gives it the information it needs to make smarter choices.
@@ -187,7 +201,7 @@ If the primary tool's score is below `min_score`, guard skips straight to the hi
 | **Hidden gems** | Discover tools that are rarely the first choice but consistently succeed as fallbacks. |
 | **Fallback chains** | See what agents actually switch to when a tool fails, ranked by success rate. |
 | **Webhooks** | Get notified when a tool's reliability score changes significantly. |
-| **MCP server** | Works with Claude Code and Cursor as an MCP tool provider. |
+| **MCP server** | [`@toolrate/mcp-server`](./mcp/typescript) — drop into Claude Code, Cursor, or Zed and get 8 ToolRate tools natively. |
 | **Journey tracking** | Track multi-step agent sessions with `session_id` and `attempt_number` to build fallback intelligence. |
 | **GDPR compliant** | Hosted in Germany (Hetzner, Nuremberg). Only hashes stored, no payloads. |
 

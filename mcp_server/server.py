@@ -1,23 +1,25 @@
 """
+DEPRECATED: This Python MCP prototype is superseded by the TypeScript MCP
+server in `mcp/typescript/`, published as `@toolrate/mcp-server` on npm.
+
+The new server adds toolrate_route_llm, toolrate_my_usage, the trimmed
+assess response with a `summary` block, rate-limit headers in `_meta`, and
+the conditional toolrate_register bootstrap.
+
+Migrate your editor config from:
+    {"command": "python", "args": ["-m", "mcp_server"], ...}
+to:
+    {"command": "npx", "args": ["-y", "@toolrate/mcp-server"], ...}
+
+This module will be removed in a future cleanup PR.
+
+──────────────────────────────────────────────────────────────────────────
+
 ToolRate MCP Server — lets Claude Code, Cursor, and other MCP clients
 use ToolRate natively as tool-calling capabilities.
 
 Run:
     python -m mcp_server  (stdio mode, for IDE integrations)
-
-Configure in Claude Code settings or .cursor/mcp.json:
-    {
-      "mcpServers": {
-        "toolrate": {
-          "command": "python",
-          "args": ["-m", "mcp_server"],
-          "env": {
-            "TOOLRATE_API_KEY": "nf_live_...",
-            "TOOLRATE_BASE_URL": "https://api.toolrate.ai"
-          }
-        }
-      }
-    }
 """
 import os
 

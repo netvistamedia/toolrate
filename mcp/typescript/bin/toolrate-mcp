@@ -1,0 +1,5 @@
+#!/usr/bin/env node
+import("../dist/index.js").catch((err) => {
+  process.stderr.write(`toolrate-mcp failed to start: ${err?.message ?? err}\n`);
+  process.exit(1);
+});

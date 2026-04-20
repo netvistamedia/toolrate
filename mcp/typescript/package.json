@@ -1,0 +1,56 @@
+{
+  "name": "@toolrate/mcp-server",
+  "version": "0.1.0",
+  "description": "Official MCP server for ToolRate — let Claude Code, Cursor, and any MCP-compatible agent rate tools, route LLMs, and report outcomes natively.",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "toolrate-mcp": "bin/toolrate-mcp"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "prompts",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "smoke": "node --test dist/test/smoke.test.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "toolrate",
+    "claude-code",
+    "cursor",
+    "ai",
+    "agents",
+    "llm-router",
+    "reliability"
+  ],
+  "author": "ToolRate <bleep@toolrate.ai>",
+  "license": "MIT",
+  "homepage": "https://toolrate.ai",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/netvistamedia/toolrate.git",
+    "directory": "mcp/typescript"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
