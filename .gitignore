@@ -10,6 +10,9 @@ venv/
 # Environment
 .env
 
+# Internal docs — local only, not for source-available repo
+marketing/
+
 # Secrets — never commit
 api_key.py
 *.token
