@@ -119,7 +119,7 @@ claude mcp add toolrate --env TOOLRATE_API_KEY=nf_live_xxxxx -- npx -y @toolrate
 claude mcp add toolrate --env TOOLRATE_API_KEY=nf_live_xxxxx -- uvx toolrate-mcp
 ```
 
-**Cursor / Zed / others** — see [`mcp/typescript/README.md`](./mcp/typescript/README.md) or [`mcp/python/README.md`](./mcp/python/README.md) for config snippets.
+**Cursor / Zed / others** — see the setup snippets in the dedicated repo: [`toolrate-mcp`](https://github.com/netvistamedia/toolrate-mcp) (TypeScript + Python source, both runtimes).
 
 Both runtimes ship the same 9 tools and read the same `TOOLRATE_API_KEY`. Pick whichever your editor's MCP integration prefers — [`@toolrate/mcp-server`](https://www.npmjs.com/package/@toolrate/mcp-server) on npm, [`toolrate-mcp`](https://pypi.org/project/toolrate-mcp/) on PyPI. No install step needed — `npx`/`uvx` fetch and run on demand.
 
@@ -207,7 +207,7 @@ If the primary tool's score is below `min_score`, guard skips straight to the hi
 | **Hidden gems** | Discover tools that are rarely the first choice but consistently succeed as fallbacks. |
 | **Fallback chains** | See what agents actually switch to when a tool fails, ranked by success rate. |
 | **Webhooks** | Get notified when a tool's reliability score changes significantly. |
-| **MCP servers** | [`@toolrate/mcp-server`](./mcp/typescript) on npm or [`toolrate-mcp`](./mcp/python) on PyPI — drop into Claude Code, Cursor, or Zed and get 9 ToolRate tools natively. |
+| **MCP servers** | [`@toolrate/mcp-server`](https://www.npmjs.com/package/@toolrate/mcp-server) on npm or [`toolrate-mcp`](https://pypi.org/project/toolrate-mcp/) on PyPI — drop into Claude Code, Cursor, or Zed and get 9 ToolRate tools natively. Source at [netvistamedia/toolrate-mcp](https://github.com/netvistamedia/toolrate-mcp). |
 | **Journey tracking** | Track multi-step agent sessions with `session_id` and `attempt_number` to build fallback intelligence. |
 | **GDPR compliant** | Hosted in Germany (Hetzner, Nuremberg). Only hashes stored, no payloads. |
 
