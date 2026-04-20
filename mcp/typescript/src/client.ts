@@ -48,7 +48,7 @@ export async function apiRequest<T>(opts: RequestOptions): Promise<ApiResponse<T
 
   const headers: Record<string, string> = {
     Accept: "application/json",
-    "User-Agent": "toolrate-mcp/0.1.0",
+    "User-Agent": "toolrate-mcp/0.1.2",
   };
 
   if (opts.authenticated !== false) {

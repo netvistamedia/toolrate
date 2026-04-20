@@ -1,6 +1,6 @@
 {
   "name": "@toolrate/mcp-server",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Official MCP server for ToolRate — let Claude Code, Cursor, and any MCP-compatible agent rate tools, route LLMs, and report outcomes natively.",
   "type": "module",
   "main": "dist/index.js",
@@ -36,8 +36,8 @@
   "homepage": "https://toolrate.ai",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/netvistamedia/toolrate.git",
-    "directory": "mcp/typescript"
+    "url": "git+https://github.com/netvistamedia/toolrate-mcp.git",
+    "directory": "typescript"
   },
   "engines": {
     "node": ">=18.17.0"

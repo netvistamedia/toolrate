@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "toolrate-mcp"
-version = "0.1.0"
+version = "0.1.1"
 description = "Official MCP server for ToolRate — drop native reliability scoring, LLM routing, and fallback chains into any Python-first MCP client."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -45,7 +45,7 @@ toolrate-mcp = "toolrate_mcp.cli:main"
 [project.urls]
 Homepage = "https://toolrate.ai"
 Documentation = "https://api.toolrate.ai/docs"
-Repository = "https://github.com/netvistamedia/toolrate"
+Repository = "https://github.com/netvistamedia/toolrate-mcp"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/toolrate_mcp"]
