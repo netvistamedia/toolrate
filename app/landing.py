@@ -91,7 +91,7 @@ _LANDING_TEMPLATE = r"""<!DOCTYPE html>
     "Fallback chain analytics from real agent journeys",
     "Webhook alerts for score changes",
     "Python and TypeScript SDKs",
-    "Official MCP server (@toolrate/mcp-server) — 9 tools for Claude Code, Cursor, Zed",
+    "Official MCP servers (@toolrate/mcp-server on npm, toolrate-mcp on PyPI) — 9 tools for Claude Code, Cursor, Zed",
     "Sub-8ms average response time",
     "GDPR compliant, hosted in Germany"
   ]
@@ -1419,7 +1419,7 @@ curl -X POST https://api.toolrate.ai/v1/report \
     <div class="feature">
       <div class="feature-num">06</div>
       <h3>MCP Server</h3>
-      <p>Drop ToolRate into Claude Code, Cursor, or Zed in one line: <code>npx -y @toolrate/mcp-server</code>. Nine native tools &mdash; assess, route_llm, report, fallback chains &mdash; live on npm.</p>
+      <p>Drop ToolRate into Claude Code, Cursor, or Zed in one line &mdash; <code>npx -y @toolrate/mcp-server</code> or <code>uvx toolrate-mcp</code>. Nine native tools &mdash; assess, route_llm, report, fallback chains &mdash; live on npm and PyPI.</p>
     </div>
   </div>
 </section>

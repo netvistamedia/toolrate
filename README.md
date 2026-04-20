@@ -107,15 +107,21 @@ const result = await client.guard(
 
 Plug ToolRate into Claude Code, Cursor, Zed, or any [Model Context Protocol](https://modelcontextprotocol.io) client and your agent gets `toolrate_assess`, `toolrate_route_llm`, `toolrate_report`, `toolrate_fallback_chain`, and four more tools natively — no SDK to import.
 
-**Claude Code:**
+**Claude Code (npm):**
 
 ```bash
-claude mcp add toolrate npx -y @toolrate/mcp-server --env TOOLRATE_API_KEY=nf_live_xxxxx
+claude mcp add toolrate --env TOOLRATE_API_KEY=nf_live_xxxxx -- npx -y @toolrate/mcp-server
 ```
 
-**Cursor / Zed / others** — see [`mcp/typescript/README.md`](./mcp/typescript/README.md) for config snippets.
+**Claude Code (Python / uvx):**
 
-The package is [`@toolrate/mcp-server`](https://www.npmjs.com/package/@toolrate/mcp-server) on npm. No install step needed — `npx` fetches and runs it on demand.
+```bash
+claude mcp add toolrate --env TOOLRATE_API_KEY=nf_live_xxxxx -- uvx toolrate-mcp
+```
+
+**Cursor / Zed / others** — see [`mcp/typescript/README.md`](./mcp/typescript/README.md) or [`mcp/python/README.md`](./mcp/python/README.md) for config snippets.
+
+Both runtimes ship the same 9 tools and read the same `TOOLRATE_API_KEY`. Pick whichever your editor's MCP integration prefers — [`@toolrate/mcp-server`](https://www.npmjs.com/package/@toolrate/mcp-server) on npm, [`toolrate-mcp`](https://pypi.org/project/toolrate-mcp/) on PyPI. No install step needed — `npx`/`uvx` fetch and run on demand.
 
 ## The problem
 
@@ -201,7 +207,7 @@ If the primary tool's score is below `min_score`, guard skips straight to the hi
 | **Hidden gems** | Discover tools that are rarely the first choice but consistently succeed as fallbacks. |
 | **Fallback chains** | See what agents actually switch to when a tool fails, ranked by success rate. |
 | **Webhooks** | Get notified when a tool's reliability score changes significantly. |
-| **MCP server** | [`@toolrate/mcp-server`](./mcp/typescript) — drop into Claude Code, Cursor, or Zed and get 8 ToolRate tools natively. |
+| **MCP servers** | [`@toolrate/mcp-server`](./mcp/typescript) on npm or [`toolrate-mcp`](./mcp/python) on PyPI — drop into Claude Code, Cursor, or Zed and get 9 ToolRate tools natively. |
 | **Journey tracking** | Track multi-step agent sessions with `session_id` and `attempt_number` to build fallback intelligence. |
 | **GDPR compliant** | Hosted in Germany (Hetzner, Nuremberg). Only hashes stored, no payloads. |
 
