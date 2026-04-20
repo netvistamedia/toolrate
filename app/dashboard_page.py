@@ -310,6 +310,25 @@ __SITE_HEADER_HTML__
   </div>
 </div>
 
+<!-- Registration sources -->
+<div class="section">
+  <div class="section-head">
+    <h2>Registration sources</h2>
+    <div class="meta" id="src-meta">&mdash;</div>
+  </div>
+  <table id="tbl-sources" style="width:100%;border-collapse:collapse;font-size:0.82rem">
+    <thead>
+      <tr style="text-align:left;color:var(--text-dim);font-size:0.66rem;letter-spacing:0.08em;text-transform:uppercase">
+        <th style="padding:0.5rem 0.4rem;border-bottom:1px solid var(--border)">Source</th>
+        <th style="padding:0.5rem 0.4rem;border-bottom:1px solid var(--border);text-align:right">24h</th>
+        <th style="padding:0.5rem 0.4rem;border-bottom:1px solid var(--border);text-align:right">7d</th>
+        <th style="padding:0.5rem 0.4rem;border-bottom:1px solid var(--border);text-align:right">All-time</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
 <!-- Billing -->
 <div class="section">
   <div class="section-head">
@@ -512,6 +531,29 @@ function render(d) {
     return '<span class="pill dim">' + t + ' · ' + d.totals.by_tier[t] + '</span>';
   }).join(' ');
   document.getElementById('p-tiers').innerHTML = tierHtml || '—';
+
+  // Registration sources
+  var srcTbody = document.querySelector('#tbl-sources tbody');
+  srcTbody.innerHTML = '';
+  var sources = d.registration_sources || [];
+  var src24hTotal = 0;
+  sources.forEach(function(row) {
+    src24hTotal += row.last_24h;
+    var tr = document.createElement('tr');
+    var label = row.source === null || row.source === undefined ? '(legacy / unknown)' : row.source;
+    var labelClass = row.source === null || row.source === undefined ? 'color:var(--text-dim)' : 'color:var(--text-bright);font-weight:500';
+    tr.innerHTML =
+      '<td style="padding:0.45rem 0.4rem;border-bottom:1px solid var(--border);' + labelClass + '">' + esc(label) + '</td>' +
+      '<td style="padding:0.45rem 0.4rem;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums">' + fmtNum(row.last_24h) + '</td>' +
+      '<td style="padding:0.45rem 0.4rem;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums">' + fmtNum(row.last_7d) + '</td>' +
+      '<td style="padding:0.45rem 0.4rem;border-bottom:1px solid var(--border);text-align:right;font-variant-numeric:tabular-nums">' + fmtNum(row.all_time) + '</td>';
+    srcTbody.appendChild(tr);
+  });
+  if (sources.length === 0) {
+    srcTbody.innerHTML = '<tr><td colspan="4" style="padding:0.8rem 0.4rem;color:var(--text-dim);text-align:center">No data yet.</td></tr>';
+  }
+  document.getElementById('src-meta').textContent = src24hTotal > 0 ?
+    fmtNum(src24hTotal) + ' new in 24h' : 'no new signups in 24h';
 
   // Billing
   document.getElementById('b-billable').textContent = fmtNum(d.billing.payg_billable_month_to_date);

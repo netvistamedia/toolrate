@@ -267,6 +267,42 @@ async def admin_dashboard(db: Db, redis: RedisClient, api_key: AdminKey):
     )).all()
     tier_breakdown = {row[0]: int(row[1]) for row in tier_rows}
 
+    # ── Registration source breakdown ───────────────────────────────
+    # Splits new signups by their `source` provenance tag (web, mcp, cli,
+    # …). NULL means the key predates the source column (added 2026-04-20)
+    # and is bucketed as "(legacy)" in the UI. Three windows so the
+    # dashboard can show "is the launch landing right now?" at a glance.
+    last_7d = now - timedelta(days=7)
+
+    async def _source_counts(since: datetime | None) -> dict[str | None, int]:
+        stmt = select(ApiKey.source, func.count()).group_by(ApiKey.source)
+        if since is not None:
+            stmt = stmt.where(ApiKey.created_at >= since)
+        return {row[0]: int(row[1]) for row in (await db.execute(stmt)).all()}
+
+    src_24h = await _source_counts(last_24h)
+    src_7d = await _source_counts(last_7d)
+    src_all = await _source_counts(None)
+
+    # Stable ordering: known channels first (alphabetical), then NULL bucket.
+    known = sorted({s for s in (set(src_24h) | set(src_7d) | set(src_all)) if s is not None})
+    rows = [
+        {
+            "source": s,
+            "last_24h": int(src_24h.get(s, 0)),
+            "last_7d": int(src_7d.get(s, 0)),
+            "all_time": int(src_all.get(s, 0)),
+        }
+        for s in known
+    ]
+    if None in src_all:
+        rows.append({
+            "source": None,
+            "last_24h": int(src_24h.get(None, 0)),
+            "last_7d": int(src_7d.get(None, 0)),
+            "all_time": int(src_all.get(None, 0)),
+        })
+
     # ── Billing snapshot — sum PAYG billable counters across keys ───
     # Redis layout from app/services/payg_meter.py:
     #   payg_billable:{key_hash}:{YYYY-MM} → int (monthly billable calls)
@@ -314,6 +350,7 @@ async def admin_dashboard(db: Db, redis: RedisClient, api_key: AdminKey):
             "active_keys": int(total_keys),
             "by_tier": tier_breakdown,
         },
+        "registration_sources": rows,
         "billing": {
             "payg_billable_month_to_date": billable_month_total,
             "payg_keys": tier_breakdown.get("payg", 0),
