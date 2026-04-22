@@ -113,10 +113,6 @@ async def send_webhook_deactivated_email(
 
 async def send_welcome_email(to_email: str, api_key_prefix: str):
     """Send welcome email with getting-started guide. Fire-and-forget."""
-    if not settings.sendgrid_api_key:
-        logger.debug("SendGrid not configured, skipping welcome email")
-        return
-
     html = f"""
 <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:600px;margin:0 auto;color:#333">
   <div style="text-align:center;padding:2rem 0">
@@ -179,21 +175,4 @@ print(score.reliability_score)  <span style="color:#666"># e.g. 94.2</span></cod
         "subject": "Your ToolRate API key is ready",
         "content": [{"type": "text/html", "value": html}],
     }
-
-    try:
-        async with httpx.AsyncClient() as client:
-            resp = await client.post(
-                SENDGRID_API,
-                json=payload,
-                headers={
-                    "Authorization": f"Bearer {settings.sendgrid_api_key}",
-                    "Content-Type": "application/json",
-                },
-                timeout=10.0,
-            )
-        if resp.status_code >= 300:
-            logger.warning("SendGrid returned %s: %s", resp.status_code, resp.text)
-        else:
-            logger.info("Welcome email sent to %s", to_email[:3] + "***")
-    except Exception as e:
-        logger.warning("Failed to send welcome email: %s", e)
+    await _send_via_sendgrid(payload, log_label="welcome")

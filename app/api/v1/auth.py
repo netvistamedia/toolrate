@@ -166,15 +166,13 @@ async def register(
     # Hold a strong reference to the task in a module-level set — asyncio
     # only keeps weak refs, so a bare create_task() can be GC'd mid-flight
     # and the email silently lost.
-    import asyncio
-    import logging as _logging
     from app.services.email import send_welcome_email
 
     async def _safe_send():
         try:
             await send_welcome_email(body.email, key_prefix)
         except Exception as e:
-            _logging.getLogger("nemoflow.auth").warning("Welcome email failed for %s***: %s", body.email[:3], e)
+            logger.warning("Welcome email failed for %s***: %s", body.email[:3], e)
 
     task = asyncio.create_task(_safe_send())
     _pending_welcome_tasks.add(task)

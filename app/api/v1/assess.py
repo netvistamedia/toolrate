@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import uuid as _uuid
 
 from fastapi import APIRouter
@@ -15,6 +16,7 @@ from app.services.cache import get_cached_score, set_cached_score
 from app.services.payg_meter import record_assessment
 from app.services.scoring import compute_score, finalize_response
 
+logger = logging.getLogger("nemoflow.assess")
 router = APIRouter()
 
 
@@ -108,8 +110,7 @@ async def assess_tool(
             try:
                 enriched = await enrich_tool(tool)
             except Exception:
-                import logging
-                logging.getLogger("nemoflow.assess").warning(
+                logger.warning(
                     "Lazy jurisdiction backfill failed for %s", body.tool_identifier,
                     exc_info=True,
                 )
@@ -227,8 +228,7 @@ async def _cold_start(body: AssessRequest, db: Db, redis: RedisClient, ctx_hash:
     try:
         await enrich_tool(tool)
     except Exception:
-        import logging
-        logging.getLogger("nemoflow.assess").warning(
+        logger.warning(
             "Jurisdiction enrichment failed for %s during cold start", body.tool_identifier,
             exc_info=True,
         )
@@ -255,7 +255,6 @@ async def _cold_start(body: AssessRequest, db: Db, redis: RedisClient, ctx_hash:
                 return await _finalize_with_body(response, db, tool, body)
         else:
             # Another request is already running LLM assessment — wait briefly and check cache
-            import asyncio
             await asyncio.sleep(2)
             cached = await get_cached_score(redis, str(tool.id), ctx_hash, data_pool)
             if cached:
