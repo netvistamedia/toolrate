@@ -22,6 +22,14 @@ logger = logging.getLogger("nemoflow.auth")
 # GC can't collect them mid-send. See the note in app/services/payg_meter.py.
 _pending_welcome_tasks: set[asyncio.Task] = set()
 
+# Our own SendGrid-authenticated sending domain. Registrations with an
+# email on this domain are always either a verification script or a
+# mistake — legitimate users (including the team) register from their
+# own mailbox. Blocking prevents a welcome email from looping back
+# through Cloudflare's MX → SendGrid inbound parse, and keeps synthetic
+# verification keys out of the `source` attribution stats.
+_SELF_REGISTER_DOMAINS: frozenset[str] = frozenset({"toolrate.ai"})
+
 
 class RegisterRequest(BaseModel):
     email: EmailStr = Field(..., max_length=256, description="Your email address (hashed, never stored in plain text)")
@@ -66,6 +74,16 @@ async def register(
     redis: RedisClient,
     request: Request,
 ):
+    # Reject registrations on our own sending domain before doing any
+    # work — cheaper than burning a Redis rate-limit slot, and makes the
+    # rejection visible in the 400 bucket rather than the 429 bucket.
+    email_domain = body.email.rsplit("@", 1)[-1].lower() if "@" in body.email else ""
+    if email_domain in _SELF_REGISTER_DOMAINS:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Please register with your own email address, not a ToolRate domain.",
+        )
+
     # Rate limit registration: max 5 per IP per hour. Atomic INCR+EXPIRE so a
     # crash between the two commands can't leave the counter without a TTL
     # and permanently lock out the IP.
