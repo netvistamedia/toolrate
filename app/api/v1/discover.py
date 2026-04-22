@@ -32,7 +32,7 @@ async def hidden_gems(
 async def fallback_chain(
     db: Db,
     api_key: AuthenticatedKey,
-    tool_identifier: str = Query(..., description="The tool to find fallbacks for"),
+    tool_identifier: str = Query(..., max_length=512, description="The tool to find fallbacks for"),
     limit: int = Query(5, ge=1, le=20, description="Max results"),
 ):
     # ``previous_tool`` is normalized at write time (report_ingest), so the

@@ -39,11 +39,11 @@ class AssessRequest(BaseModel):
     eu_only: bool = Field(False, description="If true, surface EU-hosted alternatives in eu_alternatives")
     gdpr_required: bool = Field(False, description="If true, surface EU + GDPR-adequate alternatives in eu_alternatives")
     max_price_per_call: float | None = Field(
-        None, ge=0,
+        None, ge=0, le=10_000,
         description="Maximum USD the caller will pay per call. Tools above this are flagged with within_budget=false but still returned (no silent filtering).",
     )
     max_monthly_budget: float | None = Field(
-        None, ge=0,
+        None, ge=0, le=10_000_000,
         description="Maximum USD spend per month. Combined with expected_calls_per_month to evaluate the within_budget flag.",
     )
     expected_calls_per_month: int | None = Field(
