@@ -43,3 +43,6 @@ sdks/typescript-nemoflow-shim/package-lock.json
 # OS
 .DS_Store
 nemo
+
+# Local media (video drafts etc.)
+*.mp4

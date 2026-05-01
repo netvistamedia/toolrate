@@ -1,6 +1,6 @@
 """/demo page — video walkthrough + copy-paste ready Python demo script.
 
-The page pairs a YouTube walkthrough with the full `demo_toolrate.py` script
+The page pairs a Streamable walkthrough with the full `demo_toolrate.py` script
 that ships in `app/static/`. The script is read once at module import so the
 rendered HTML has zero DB/disk cost per request.
 """
@@ -15,7 +15,7 @@ _DEMO_SCRIPT_SOURCE = _DEMO_SCRIPT_PATH.read_text(encoding="utf-8")
 _DEMO_SCRIPT_ESCAPED = escape(_DEMO_SCRIPT_SOURCE)
 _DEMO_SCRIPT_LINES = _DEMO_SCRIPT_SOURCE.count("\n") + 1
 
-YOUTUBE_VIDEO_ID = "8aA2qge_xMU"
+STREAMABLE_VIDEO_ID = "xs932o"
 
 _DEMO_TEMPLATE = r"""<!DOCTYPE html>
 <html lang="en">
@@ -546,12 +546,11 @@ __SITE_HEADER_HTML__
 
     <div class="video-wrap">
       <iframe
-        src="https://www.youtube-nocookie.com/embed/__YOUTUBE_VIDEO_ID__?rel=0&modestbranding=1"
+        src="https://streamable.com/e/__STREAMABLE_VIDEO_ID__?loop=0"
         title="ToolRate live demo"
         loading="lazy"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowfullscreen
-        referrerpolicy="strict-origin-when-cross-origin"></iframe>
+        allow="fullscreen"
+        allowfullscreen></iframe>
     </div>
     <p class="video-caption">1 minute · <span>turn sound on</span> for the live commentary</p>
 
@@ -702,7 +701,7 @@ DEMO_HTML = (
     .replace("__SITE_HEADER_CSS__", SITE_HEADER_CSS)
     .replace("__SITE_HEADER_HTML__", SITE_HEADER_HTML)
     .replace("__SITE_HEADER_JS__", SITE_HEADER_JS)
-    .replace("__YOUTUBE_VIDEO_ID__", YOUTUBE_VIDEO_ID)
+    .replace("__STREAMABLE_VIDEO_ID__", STREAMABLE_VIDEO_ID)
     .replace("__DEMO_LINE_COUNT__", str(_DEMO_SCRIPT_LINES))
     .replace("__DEMO_CODE__", _DEMO_SCRIPT_ESCAPED)
 )
